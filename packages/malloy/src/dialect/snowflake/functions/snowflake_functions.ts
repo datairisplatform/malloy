@@ -21,33 +21,28 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {
-  arg,
-  overload,
-  param,
-  minScalar,
-  anyExprType,
-  sql,
-  DialectFunctionOverloadDef,
-} from './util';
+import {FUNCTIONS} from '../../functions';
+import {fnChr} from './chr';
+import {fnDiv} from './div';
+import {fnIsInf} from './is_inf';
+import {fnIsNan} from './is_nan';
+import {fnLength} from './length';
+import {fnRand} from './rand';
+import {fnRegexpExtract} from './regexp_extract';
+import {fnStartsWith, fnEndsWith} from './starts_ends_with';
+import {fnStrpos} from './strpos';
+import {fnTrunc} from './trunc';
 
-export function fnLength(): DialectFunctionOverloadDef[] {
-  return [
-    overload(
-      minScalar('number'),
-      [param('value', anyExprType('string'))],
-      sql`LENGTH(${arg('value')})`
-    ),
-  ];
-}
-
-// TODO: add support for byte length in postgres, duckdb
-export function fnByteLength(): DialectFunctionOverloadDef[] {
-  return [
-    overload(
-      minScalar('number'),
-      [param('value', anyExprType('string'))],
-      sql`BYTE_LENGTH(${arg('value')})`
-    ),
-  ];
-}
+export const SNOWFLAKE_FUNCTIONS = FUNCTIONS.clone();
+SNOWFLAKE_FUNCTIONS.add('chr', fnChr);
+SNOWFLAKE_FUNCTIONS.add('div', fnDiv);
+SNOWFLAKE_FUNCTIONS.add('is_inf', fnIsInf);
+SNOWFLAKE_FUNCTIONS.add('is_nan', fnIsNan);
+SNOWFLAKE_FUNCTIONS.add('length', fnLength);
+SNOWFLAKE_FUNCTIONS.add('rand', fnRand);
+SNOWFLAKE_FUNCTIONS.add('regexp_extract', fnRegexpExtract);
+SNOWFLAKE_FUNCTIONS.add('starts_with', fnStartsWith);
+SNOWFLAKE_FUNCTIONS.add('ends_with', fnEndsWith);
+SNOWFLAKE_FUNCTIONS.add('strpos', fnStrpos);
+SNOWFLAKE_FUNCTIONS.add('trunc', fnTrunc);
+SNOWFLAKE_FUNCTIONS.seal();
