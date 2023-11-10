@@ -20,16 +20,24 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-export {MalloySQLParser} from './malloySQLParser';
-export {MalloySQLParseError} from './malloySQLErrors';
-export {MalloySQLSQLParser} from './malloySQLSQLParser';
-export type {MalloySQLParse} from './malloySQLParser';
-export type {MalloySQLSQLParse} from './malloySQLSQLParser';
-export type {
-  MalloySQLMalloyStatement,
-  MalloySQLSQLStatement,
-  MalloySQLStatement,
-  MalloySQLParseErrorExpected,
-  EmbeddedMalloyQuery,
-} from './types';
-export {MalloySQLStatementType} from './types';
+
+import {PipeSegment, isPartialSegment} from '../../model';
+
+// We don't want to ever generate actual 'partial' stages, so convert this
+// into a reduce so the compiler doesn't explode
+export function detectAndRemovePartialStages(pipeline: PipeSegment[]): {
+  hasPartials: boolean;
+  pipeline: PipeSegment[];
+} {
+  const cleaned: PipeSegment[] = [];
+  let hasPartials = false;
+  for (const segment of pipeline) {
+    if (isPartialSegment(segment)) {
+      cleaned.push({...segment, type: 'reduce'});
+      hasPartials = true;
+    } else {
+      cleaned.push(segment);
+    }
+  }
+  return {hasPartials, pipeline: cleaned};
+}

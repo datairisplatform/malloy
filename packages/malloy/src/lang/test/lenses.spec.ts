@@ -114,6 +114,17 @@ describe('lenses', () => {
       'cannot refine index view with project view'
     );
   });
+  test('cannot reference dimension at head of query ', () => {
+    expect(
+      markSource`
+        source: x is a extend {
+          dimension: n is 1
+          view: d is { group_by: n1 is 1 }
+        }
+        run: x -> n + d
+      `
+    ).translationToFailWith("'n' is not a query");
+  });
   test('cannot reference dimension', () => {
     expect(
       markSource`
@@ -126,6 +137,164 @@ describe('lenses', () => {
     ).translationToFailWith(
       'named refinement `n` must be a view, found a number'
     );
+  });
+  test('can reference dimension at head of query when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          dimension: n is 1
+        }
+        run: x -> n
+      `
+    ).toTranslate();
+  });
+  test('can reference dimension in refinement when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          dimension: n is 1
+          view: d is { group_by: n1 is 1 }
+        }
+        run: x -> d + n
+      `
+    ).toTranslate();
+  });
+  test('can reference join field when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_cross: y is a extend { dimension: n is 1 } on true
+        }
+        run: x -> y.n
+      `
+    ).toTranslate();
+  });
+  test('can reference join field in refinement when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_cross: y is a extend { dimension: n is 1 } on true
+        }
+        run: x -> ai + y.n
+      `
+    ).toTranslate();
+  });
+  test('can reference join field in nest refinement when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_cross: y is a extend { dimension: n is 1 } on true
+        }
+        run: x -> { nest: ai + y.n }
+      `
+    ).toTranslate();
+  });
+  test('can nest dimension when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          dimension: n is 1
+          view: d is { nest: n }
+        }
+        run: x -> d
+      `
+    ).toTranslate();
+  });
+  test('cannot use join_name in refinement shortcut', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a on true
+          view: m is { aggregate: c is count() }
+        }
+        run: x -> m + y + { limit: 1 }`
+    ).translationToFailWith(
+      'named refinement `y` must be a view, found a struct'
+    );
+  });
+  test('cannot use view from join as whole pipeline', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a extend {
+            view: z is { group_by: d is 1 }
+          } on true
+        }
+        run: x -> y.z
+      `
+    ).translationToFailWith('Cannot use view from join');
+  });
+  test('cannot use view from join in nest', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a extend {
+            view: z is { group_by: d is 1 }
+          } on true
+        }
+        run: x -> { nest: y.z }
+      `
+    ).translationToFailWith('Cannot nest view from join');
+  });
+  test('cannot use view from join as nest view head', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a extend {
+            view: z is { group_by: d is 1 }
+          } on true
+        }
+        run: x -> { nest: y.z + { limit: 1 } }
+      `
+    ).translationToFailWith('Cannot use view from join');
+  });
+  test('cannot use view from join as lens in query', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a extend {
+            view: z is { group_by: d is 1 }
+          } on true
+        }
+        run: x -> ai + y.z
+      `
+    ).translationToFailWith('Cannot use view from join as refinement');
+  });
+  test('cannot use view from join as lens in nest', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          join_one: y is a extend {
+            view: z is { group_by: d is 1 }
+          } on true
+        }
+        run: x -> { nest: ai + y.z }
+      `
+    ).translationToFailWith('Cannot use view from join as refinement');
+  });
+  test('can nest dimension with refinement when experiment is enabled', () => {
+    expect(
+      markSource`
+        ##! experimental { scalar_lenses }
+        source: x is a extend {
+          dimension: n is 1
+          view: d is { nest: n + { where: n > 0 } }
+        }
+        run: x -> d
+      `
+    ).toTranslate();
   });
   test('cannot reference join', () => {
     expect(
@@ -156,6 +325,62 @@ describe('lenses', () => {
     ).translationToFailWith(
       'Named refinements of multi-stage views are not supported',
       'named refinement `multi` must have exactly one stage'
+    );
+  });
+});
+
+describe('partial views', () => {
+  test('allow where-headed refinement chains', () => {
+    expect(
+      markSource`
+        source: x is a extend {
+          view: metrics is { aggregate: c is count() }
+          view: cool_metrics is { where: true } + metrics
+        }
+      `
+    ).toTranslate();
+  });
+  test.skip('partial with index', () => {
+    expect(
+      markSource`
+        source: x is a extend {
+          view: idx is { index: * }
+        }
+        run: x -> { where: true } + idx
+      `
+    ).toTranslate();
+  });
+  test('disallow chains that have no fields in view', () => {
+    expect(
+      markSource`
+        source: x is a extend {
+          view: bad1 is { where: true }
+          view: bad2 is { where: true } + { where: false }
+        }
+      `
+    ).translationToFailWith(
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)",
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)"
+    );
+  });
+  test('disallow chains that have no fields in multi-stage', () => {
+    expect(
+      markSource`
+        source: x is a extend {
+          view: v is { group_by: ai }
+          view: v2 is v -> { where: true }
+          view: v3 is { where: true } -> { group_by: undef }
+        }
+        run: x -> v -> { where: true }
+        run: x -> { where: true } -> { group_by: undef }
+      `
+    ).translationToFailWith(
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)",
+      "'undef' is not defined",
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)",
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)",
+      "'undef' is not defined",
+      "Can't determine view type (`group_by` / `aggregate` / `nest`, `project`, `index`)"
     );
   });
 });

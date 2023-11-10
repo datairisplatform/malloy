@@ -20,16 +20,12 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-export {MalloySQLParser} from './malloySQLParser';
-export {MalloySQLParseError} from './malloySQLErrors';
-export {MalloySQLSQLParser} from './malloySQLSQLParser';
-export type {MalloySQLParse} from './malloySQLParser';
-export type {MalloySQLSQLParse} from './malloySQLSQLParser';
-export type {
-  MalloySQLMalloyStatement,
-  MalloySQLSQLStatement,
-  MalloySQLStatement,
-  MalloySQLParseErrorExpected,
-  EmbeddedMalloyQuery,
-} from './types';
-export {MalloySQLStatementType} from './types';
+import {PipeSegment} from '../../../model';
+import {ReduceBuilder} from './reduce-builder';
+
+export class PartialBuilder extends ReduceBuilder {
+  finalize(fromSeg: PipeSegment | undefined): PipeSegment {
+    const seg = super.finalize(fromSeg);
+    return {...seg, type: 'partial'};
+  }
+}
