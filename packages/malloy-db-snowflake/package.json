@@ -1,5 +1,5 @@
 {
-  "name": "@datairis/db-snowflake",
+  "name": "@malloydata/db-snowflake",
   "version": "0.0.1",
   "license": "MIT",
   "main": "dist/index.js",
