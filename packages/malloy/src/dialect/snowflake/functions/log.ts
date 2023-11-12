@@ -21,4 +21,24 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export {SnowflakeConnection} from './snowflake_connection';
+import {
+  overload,
+  minScalar,
+  anyExprType,
+  sql,
+  makeParam,
+  DialectFunctionOverloadDef,
+} from '../../functions/util';
+
+export function fnLog(): DialectFunctionOverloadDef[] {
+  const value = makeParam('value', anyExprType('number'));
+  const base = makeParam('base', anyExprType('number'));
+  return [
+    overload(
+      minScalar('number'),
+      [value.param, base.param],
+      // Snowflake take base first, then value
+      sql`LOG(${base.arg}, ${value.arg})`
+    ),
+  ];
+}

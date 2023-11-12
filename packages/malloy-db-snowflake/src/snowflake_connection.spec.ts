@@ -33,6 +33,7 @@ describe('db:Snowflake', () => {
 
   beforeAll(() => {
     conn = new SnowflakeConnection('snowflake');
+    conn.runSQL('USE database malloytest');
     const files = {
       readURL: async (url: URL) => {
         const filePath = fileURLToPath(url);
@@ -53,7 +54,7 @@ describe('db:Snowflake', () => {
 
   it('runs a Malloy query', async () => {
     const sql = await runtime
-      .loadModel("source: aircraft is snowflake.table('aircraft')")
+      .loadModel("source: aircraft is snowflake.table('malloytest.aircraft')")
       .loadQuery(
         `run:  aircraft -> {
         where: state != null
@@ -72,7 +73,9 @@ describe('db:Snowflake', () => {
 
   it('runs a Malloy query on an sql source', async () => {
     const sql = await runtime
-      .loadModel("source: aircraft is snowflake.sql('SELECT * FROM AIRCRAFT')")
+      .loadModel(
+        "source: aircraft is snowflake.sql('SELECT * FROM malloytest.AIRCRAFT')"
+      )
       .loadQuery('run:  aircraft -> { aggregate: cnt is count() }')
       .getSQL();
     const res = await conn.runSQL(sql);
@@ -82,7 +85,7 @@ describe('db:Snowflake', () => {
 
   it('runs a Malloy function with overrides', async () => {
     const sql = await runtime
-      .loadModel("source: aircraft is snowflake.table('aircraft')")
+      .loadModel("source: aircraft is snowflake.table('malloytest.aircraft')")
       .loadQuery('run: aircraft -> { select: rand is rand(), limit: 1}')
       .getSQL();
     const res = await conn.runSQL(sql);
