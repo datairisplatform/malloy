@@ -116,7 +116,9 @@ export class SnowflakeDialect extends Dialect {
   }
 
   sqlGroupSetTable(groupSetCount: number): string {
-    return `CROSS JOIN (SELECT seq4() as group_set FROM TABLE(GENERATOR(ROWCOUNT => ${groupSetCount}))) as group_set`;
+    return `CROSS JOIN (SELECT seq4() as group_set FROM TABLE(GENERATOR(ROWCOUNT => ${
+      groupSetCount + 1
+    }))) as group_set`;
   }
 
   /*
@@ -139,7 +141,7 @@ from
   );
   */
   sqlAnyValue(groupSet: number, fieldName: string): string {
-    return `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN ${fieldName} END)[0]`;
+    return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN ${fieldName} END) WITHIN GROUP (ORDER BY ${fieldName} ASC NULLS LAST))[0]`;
   }
 
   mapFields(fieldList: DialectFieldList): string {
@@ -161,7 +163,7 @@ from
     limit: number | undefined
   ): string {
     const fields = this.mapFieldsForObjectConstruct(fieldList);
-    const orderByClause = orderBy ? ` WITHIN GROUP (ORDER BY ${orderBy})` : '';
+    const orderByClause = orderBy ? ` WITHIN GROUP (${orderBy})` : '';
     const aggClause = `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN OBJECT_CONSTRUCT(${fields}) END)${orderByClause}`;
     if (limit === undefined) {
       return `COALESCE(${aggClause}, [])`;
@@ -171,7 +173,7 @@ from
 
   sqlAnyValueTurtle(groupSet: number, fieldList: DialectFieldList): string {
     const fields = this.mapFieldsForObjectConstruct(fieldList);
-    return `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN OBJECT_CONSTRUCT(${fields}) END)[0]`;
+    return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN OBJECT_CONSTRUCT(${fields}) END) WITHIN GROUP (ORDER BY 1 ASC NULLS LAST))[0]`;
   }
 
   sqlAnyValueLastTurtle(
@@ -179,7 +181,7 @@ from
     groupSet: number,
     sqlName: string
   ): string {
-    return `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN ${name}) END)[0] as ${sqlName}`;
+    return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN ${name} END) WITHIN GROUP (ORDER BY ${name} ASC NULLS LAST))[0] AS ${sqlName}`;
   }
 
   sqlCoaleseMeasuresInline(
@@ -225,7 +227,7 @@ from
   sqlSumDistinctHashedKey(sqlDistinctKey: string): string {
     sqlDistinctKey = `${sqlDistinctKey}::STRING`;
     const upperPart = `to_number(substr(md5_hex(${sqlDistinctKey}), 1, 15), repeat('X', 15)) * 4294967296`;
-    const lowerPart = `to_number(substr(md5_hex(${sqlDistinctKey}), 16, 8), repeat('X', 8)`;
+    const lowerPart = `to_number(substr(md5_hex(${sqlDistinctKey}), 16, 8), repeat('X', 8))`;
     const precisionShiftMultiplier = '0.000000001';
     return `(${upperPart} + ${lowerPart}) * ${precisionShiftMultiplier}`;
   }
@@ -263,7 +265,7 @@ from
   }
 
   sqlSelectAliasAsStruct(alias: string): string {
-    return `SELECT OBJECT_CONSTRUCT(*) FROM ${alias}`;
+    return `OBJECT_CONSTRUCT(${alias}.*)`;
   }
   sqlMaybeQuoteIdentifier(identifier: string): string {
     return `"${identifier}"`;
@@ -282,6 +284,7 @@ ${indent(sql)}
     return mkExpr`CURRENT_TIMESTAMP()`;
   }
 
+  // FIXME: does not work with timezone
   sqlTrunc(qi: QueryInfo, sqlTime: TimeValue, units: TimestampUnit): Expr {
     // adjusting for monday/sunday weeks
     const week = units === 'week';
@@ -291,12 +294,12 @@ ${indent(sql)}
     if (sqlTime.valueType === 'timestamp') {
       const tz = qtz(qi);
       if (tz) {
-        const civilSource = mkExpr`(${truncThis}::TIMESTAMPTZ AT TIME ZONE '${tz}')`;
+        const civilSource = mkExpr`CONVERT_TIMEZONE('${tz}', ${truncThis})`;
         let civilTrunc = mkExpr`DATE_TRUNC('${units}', ${civilSource})`;
         // MTOY todo ... only need to do this if this is a date ...
         civilTrunc = mkExpr`${civilTrunc}::TIMESTAMP`;
-        const truncTsTz = mkExpr`${civilTrunc} AT TIME ZONE '${tz}'`;
-        return mkExpr`(${truncTsTz})::TIMESTAMP`;
+        const truncTsTz = mkExpr`CONVERT_TIMEZONE('${tz}', ${civilTrunc})`;
+        return mkExpr`(${truncTsTz})`;
       }
     }
     let result = mkExpr`DATE_TRUNC('${units}', ${truncThis})`;
@@ -312,7 +315,7 @@ ${indent(sql)}
     if (from.valueType === 'timestamp') {
       const tz = qtz(qi);
       if (tz) {
-        extractFrom = mkExpr`(${extractFrom}::TIMESTAMPTZ AT TIME ZONE '${tz}')`;
+        extractFrom = mkExpr`CONVERT_TIMEZONE('${tz}', ${extractFrom})`;
       }
     }
     const extracted = mkExpr`EXTRACT(${sflUnits} FROM ${extractFrom})`;
@@ -366,7 +369,7 @@ ${indent(sql)}
     } else if (type === 'timestamp') {
       const tz = timezone || qtz(qi);
       if (tz) {
-        return `TO_TIMESTAMP_TZ('${timeString} ${tz}')`;
+        return `CONVERT_TIMEZONE('${tz}', TO_TIMESTAMP_NTZ('${timeString}'))`;
       }
       return `TO_TIMESTAMP('${timeString}')`;
     }

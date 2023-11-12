@@ -21,6 +21,7 @@
     "@malloydata/db-bigquery": "^0.0.101",
     "@malloydata/db-duckdb": "^0.0.101",
     "@malloydata/db-postgres": "^0.0.101",
+    "@malloydata/db-snowflake": "^0.0.1",
     "@malloydata/malloy": "^0.0.101",
     "@malloydata/render": "^0.0.101",
     "jsdom": "^22.1.0",

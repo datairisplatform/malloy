@@ -1193,7 +1193,7 @@ function sqlSumDistinct(
      SUM(DISTINCT ${uniqueInt})
   )`;
   let ret = `(${sumSQL}/(${multiplier}*1.0))`;
-  ret = `CAST(${ret} as ${dialect.defaultNumberType})`;
+  ret = `CAST(${ret} AS ${dialect.defaultNumberType})`;
   return ret;
 }
 
