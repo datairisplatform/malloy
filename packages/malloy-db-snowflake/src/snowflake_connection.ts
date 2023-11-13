@@ -157,10 +157,15 @@ export class SnowflakeConnection
     tableKey: string,
     tablePath: string
   ): Promise<StructDef> {
-    // TODO: break tableKey into table_schema and tablePath to handle properly
-    // snowflake has all tables and columns in upper case, convert them to lower case
-    // to be similar to other dialects
+    // looks like snowflake:schemaName.tableName
     tableKey = tableKey.toLowerCase();
+
+    let [schemaPrefix, tableName] = ['', tablePath];
+    const schema_and_table = tablePath.split('.');
+    if (schema_and_table.length === 2) {
+      [schemaPrefix, tableName] = schema_and_table;
+      schemaPrefix = schemaPrefix + '.';
+    }
 
     const structDef: StructDef = {
       type: 'struct',
@@ -176,7 +181,7 @@ export class SnowflakeConnection
     // FIXME: only variant is probably shown, cannot infer element types, so how do we deal with variants?
 
     const infoQuery = `
-    SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS where table_name = UPPER('${tablePath}');
+    SELECT COLUMN_NAME, DATA_TYPE FROM ${schemaPrefix}INFORMATION_SCHEMA.COLUMNS where table_name = UPPER('${tableName}');
     `;
 
     await this.schemaFromQuery(infoQuery, structDef);
@@ -242,14 +247,11 @@ export class SnowflakeConnection
       .update(sqlRef.selectStr)
       .digest('hex');
     const tempTableName = `tt_${hash}`;
-    // FIXME: we run multiple queries today since multi-query mode is not yet supported
 
-    // drop temp table with same name if exists
-    this.runSQL(`DROP TABLE IF EXISTS ${tempTableName};`);
     // create temp table with same schema as the query
     this.runSQL(
       `
-      CREATE TEMP TABLE ${tempTableName} as SELECT * FROM (
+      CREATE OR REPLACE TEMP TABLE ${tempTableName} as SELECT * FROM (
         ${sqlRef.selectStr}
       ) as x WHERE false;
       `
