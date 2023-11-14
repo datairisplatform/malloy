@@ -38,6 +38,16 @@ import {
 } from '@malloydata/malloy';
 import {SnowflakeExecutor, SnowflakeQueryOptions} from './snowflake_executor';
 import {FetchSchemaOptions} from '@malloydata/malloy/dist/runtime_types';
+import {ConnectionOptions} from 'snowflake-sdk';
+import {Options as PoolOptions} from 'generic-pool';
+
+export interface SnowflakeConnectionOptions extends ConnectionOptions {
+  // the database and schema where we can perform temporary table operations.
+  // for example, if we want to create a temp table for fetching schema of an sql block
+  // we could use this database & schema instead of the main database & schema
+  scratchSpace?: {database: string; schema: string};
+  poolOptions?: PoolOptions;
+}
 
 export class SnowflakeConnection
   implements Connection, PersistSQLResults, StreamingConnection
@@ -63,8 +73,22 @@ export class SnowflakeConnection
     | {error: string; structDef?: undefined; timestamp: number}
   >();
 
-  constructor(public readonly name: string) {
-    this.executor = new SnowflakeExecutor();
+  // the database where we do temporary operations like creating a temp table
+  private scratchDatabase?: string;
+  // the schema within scratchDatabase where we do temporary operations like creating a temp table
+  private scratchSchema?: string;
+
+  constructor(
+    public readonly name: string,
+    connOptions?: SnowflakeConnectionOptions
+  ) {
+    this.executor = new SnowflakeExecutor(
+      connOptions,
+      connOptions?.poolOptions
+    );
+    this.scratchDatabase = connOptions?.scratchSpace?.database;
+    this.scratchSchema = connOptions?.scratchSpace?.schema;
+
     // set some default session parameters
     // this is quite imporant for snowflake because malloy tends to add quotes to all database identifiers
     // and snowflake is case sensitive by with quotes but matches against all caps identifiers without quotes
@@ -103,20 +127,20 @@ export class SnowflakeConnection
     await this.executor.done();
   }
 
-  private convert_column_to_lowercase(row: QueryDataRow): QueryDataRow {
-    const result: QueryDataRow = {};
-    for (const key in row) {
-      result[key.toLowerCase()] = row[key];
+  private getTempTableName(sqlCommand: string): string {
+    const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
+    let tableName = `tt${hash}`;
+    if (this.scratchDatabase && this.scratchSchema) {
+      tableName = `${this.scratchDatabase}.${this.scratchSchema}.${tableName}`;
     }
-    return result;
+    return tableName;
   }
 
   public async runSQL(
     sql: string,
     _options?: RunSQLOptions
   ): Promise<MalloyQueryData> {
-    let rows = await this.executor.batch(sql);
-    rows = rows.map(row => this.convert_column_to_lowercase(row));
+    const rows = await this.executor.batch(sql);
     return {rows, totalRows: rows.length};
   }
 
@@ -125,7 +149,7 @@ export class SnowflakeConnection
     options?: SnowflakeQueryOptions
   ): AsyncIterableIterator<QueryDataRow> {
     for await (const row of await this.executor.stream(sqlCommand, options)) {
-      yield this.convert_column_to_lowercase(row);
+      yield row;
     }
   }
 
@@ -135,18 +159,16 @@ export class SnowflakeConnection
   ): Promise<void> {
     const rows = await this.executor.batch(infoQuery);
     for (const row of rows) {
-      const snowflakeDataType = row['DATA_TYPE'] as string;
+      const snowflakeDataType = row['data_type'] as string;
       const s = structDef;
       const malloyType = this.dialect.sqlTypeToMalloyType(snowflakeDataType);
-      // all column names are in uppercase, convert to lower case for consistency
-      const name = (row['COLUMN_NAME'] as string).toLowerCase();
-      name.toLowerCase();
+      const name = row['column_name'] as string;
       if (malloyType) {
         s.fields.push({...malloyType, name});
       } else {
         s.fields.push({
           type: 'unsupported',
-          rawType: snowflakeDataType.toLowerCase(),
+          rawType: snowflakeDataType,
           name,
         });
       }
@@ -160,11 +182,10 @@ export class SnowflakeConnection
     // looks like snowflake:schemaName.tableName
     tableKey = tableKey.toLowerCase();
 
-    let [schemaPrefix, tableName] = ['', tablePath];
+    let [schema, tableName] = ['', tablePath];
     const schema_and_table = tablePath.split('.');
     if (schema_and_table.length === 2) {
-      [schemaPrefix, tableName] = schema_and_table;
-      schemaPrefix = schemaPrefix + '.';
+      [schema, tableName] = schema_and_table;
     }
 
     const structDef: StructDef = {
@@ -179,9 +200,15 @@ export class SnowflakeConnection
       fields: [],
     };
     // FIXME: only variant is probably shown, cannot infer element types, so how do we deal with variants?
-
     const infoQuery = `
-    SELECT COLUMN_NAME, DATA_TYPE FROM ${schemaPrefix}INFORMATION_SCHEMA.COLUMNS where table_name = UPPER('${tableName}');
+  SELECT
+    LOWER(COLUMN_NAME) AS column_name,
+    LOWER(DATA_TYPE) as data_type
+  FROM
+    INFORMATION_SCHEMA.COLUMNS
+  WHERE
+    table_schema = UPPER('${schema}')
+    AND table_name = UPPER('${tableName}');
     `;
 
     await this.schemaFromQuery(infoQuery, structDef);
@@ -242,13 +269,8 @@ export class SnowflakeConnection
       fields: [],
     };
 
-    const hash = crypto
-      .createHash('md5')
-      .update(sqlRef.selectStr)
-      .digest('hex');
-    const tempTableName = `tt_${hash}`;
-
     // create temp table with same schema as the query
+    const tempTableName = this.getTempTableName(sqlRef.selectStr);
     this.runSQL(
       `
       CREATE OR REPLACE TEMP TABLE ${tempTableName} as SELECT * FROM (
@@ -257,7 +279,15 @@ export class SnowflakeConnection
       `
     );
 
-    const infoQuery = `SELECT COLUMN_NAME, DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS where table_name = UPPER('${tempTableName}');`;
+    const infoQuery = `
+  SELECT
+    LOWER(column_name) as column_name,
+    LOWER(data_type) as data_type
+  FROM
+    INFORMATION_SCHEMA.COLUMNS
+  WHERE
+    table_name = UPPER('${tempTableName}');
+  `;
     await this.schemaFromQuery(infoQuery, structDef);
     return structDef;
   }
@@ -290,10 +320,8 @@ export class SnowflakeConnection
   }
 
   public async manifestTemporaryTable(sqlCommand: string): Promise<string> {
-    const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
-    const tableName = `tt${hash}`;
-
-    const cmd = `CREATE TEMP TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
+    const tableName = this.getTempTableName(sqlCommand);
+    const cmd = `CREATE OR REPLACE TEMP TABLE ${tableName} AS (${sqlCommand});`;
     await this.runSQL(cmd);
     return tableName;
   }

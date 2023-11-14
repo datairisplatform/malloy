@@ -26,13 +26,15 @@ import {SnowflakeConnection} from './snowflake_connection';
 import {fileURLToPath} from 'url';
 import * as util from 'util';
 import * as fs from 'fs';
+import {SnowflakeExecutor} from './snowflake_executor';
 
 describe('db:Snowflake', () => {
   let conn: SnowflakeConnection;
   let runtime: malloy.Runtime;
 
   beforeAll(() => {
-    conn = new SnowflakeConnection('snowflake');
+    const connOptions = SnowflakeExecutor.getConnectionOptions();
+    conn = new SnowflakeConnection('snowflake', connOptions);
     const files = {
       readURL: async (url: URL) => {
         const filePath = fileURLToPath(url);

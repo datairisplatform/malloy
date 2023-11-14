@@ -38,7 +38,7 @@ export interface SnowflakeQueryOptions {
   rowLimit: number;
 }
 
-interface ConnectionConfigFile {
+export interface ConnectionConfigFile {
   // if not supplied "default" connection is used
   connection_name?: string;
   connection_file_path: string;
@@ -46,7 +46,15 @@ interface ConnectionConfigFile {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isConnectionConfig(obj: any): obj is ConnectionOptions {
-  return obj && obj.account && obj.user;
+  return obj && obj.account && obj.username;
+}
+
+function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
+  const ret: QueryDataRow = {};
+  for (const key in row) {
+    ret[key.toLowerCase()] = row[key];
+  }
+  return ret;
 }
 
 export class SnowflakeExecutor {
@@ -62,13 +70,16 @@ export class SnowflakeExecutor {
     connOptions?: ConnectionOptions | ConnectionConfigFile,
     poolOptions?: PoolOptions
   ) {
-    this.pool_ = snowflake.createPool(this.getConnectionOptions(connOptions), {
-      ...this.defaultPoolOptions_,
-      ...(poolOptions ?? {}),
-    });
+    this.pool_ = snowflake.createPool(
+      SnowflakeExecutor.getConnectionOptions(connOptions),
+      {
+        ...this.defaultPoolOptions_,
+        ...(poolOptions ?? {}),
+      }
+    );
   }
 
-  private getConnectionOptions(
+  public static getConnectionOptions(
     options?: ConnectionOptions | ConnectionConfigFile
   ): ConnectionOptions {
     const defaultOptions = {
@@ -101,7 +112,14 @@ export class SnowflakeExecutor {
     const connections = toml.parse(tomlData);
 
     const connection = connections[options?.connection_name ?? 'default'];
-    if (!connection || !connection.account || !connection.user) {
+    // sometimes the connection file uses "user" instead of "username"
+    if (
+      connection['username'] === undefined &&
+      connection['user'] !== undefined
+    ) {
+      connection['username'] = connection['user'];
+    }
+    if (!connection || !connection.account || !connection.username) {
       throw new Error(
         `provided snowflake connection config file: ${options} is not valid`
       );
@@ -139,7 +157,7 @@ export class SnowflakeExecutor {
             if (err) {
               reject(err);
             } else if (rows) {
-              resolve(rows);
+              resolve(rows.map(columnNameToLowerCase));
             }
           },
         });
@@ -170,7 +188,7 @@ export class SnowflakeExecutor {
 
         let index = 0;
         function handleData(this: Readable, row: QueryDataRow) {
-          onData(row);
+          onData(columnNameToLowerCase(row));
           index += 1;
           if (options?.rowLimit !== undefined && index >= options.rowLimit) {
             onEnd();
