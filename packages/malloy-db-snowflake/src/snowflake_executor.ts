@@ -46,7 +46,7 @@ export interface ConnectionConfigFile {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function isConnectionConfig(obj: any): obj is ConnectionOptions {
-  return obj && obj.account && obj.username;
+  return obj && obj.account && (obj.user || obj.username);
 }
 
 function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
@@ -88,7 +88,12 @@ export class SnowflakeExecutor {
     };
 
     if (isConnectionConfig(options)) {
-      return {...defaultOptions, ...options};
+      return {
+        ...defaultOptions,
+        ...options,
+        // python api expects user, while node expects username, let's hand both
+        username: options['user'] ?? options['username'],
+      };
     }
 
     let location: string | undefined = options?.connection_file_path;
