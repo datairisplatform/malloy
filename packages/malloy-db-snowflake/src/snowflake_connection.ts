@@ -41,12 +41,16 @@ import {FetchSchemaOptions} from '@malloydata/malloy/dist/runtime_types';
 import {ConnectionOptions} from 'snowflake-sdk';
 import {Options as PoolOptions} from 'generic-pool';
 
-export interface SnowflakeConnectionOptions extends ConnectionOptions {
+type namespace = {database: string; schema: string};
+
+export interface SnowflakeConnectionOptions {
+  connOptions: ConnectionOptions;
+  poolOptions?: PoolOptions;
+
   // the database and schema where we can perform temporary table operations.
   // for example, if we want to create a temp table for fetching schema of an sql block
   // we could use this database & schema instead of the main database & schema
-  scratchSpace?: {database: string; schema: string};
-  poolOptions?: PoolOptions;
+  scratchSpace?: namespace;
 }
 
 export class SnowflakeConnection
@@ -73,21 +77,20 @@ export class SnowflakeConnection
     | {error: string; structDef?: undefined; timestamp: number}
   >();
 
-  // the database where we do temporary operations like creating a temp table
-  private scratchDatabase?: string;
-  // the schema within scratchDatabase where we do temporary operations like creating a temp table
-  private scratchSchema?: string;
+  // the database & schema where we do temporary operations like creating a temp table
+  private scratchSpace?: namespace;
 
   constructor(
     public readonly name: string,
-    connOptions?: SnowflakeConnectionOptions
+    options?: SnowflakeConnectionOptions
   ) {
-    this.executor = new SnowflakeExecutor(
-      connOptions,
-      connOptions?.poolOptions
-    );
-    this.scratchDatabase = connOptions?.scratchSpace?.database;
-    this.scratchSchema = connOptions?.scratchSpace?.schema;
+    let connOptions = options?.connOptions;
+    if (connOptions === undefined) {
+      // try to get connection options from ~/.snowflake/connections.toml
+      connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
+    }
+    this.executor = new SnowflakeExecutor(connOptions, options?.poolOptions);
+    this.scratchSpace = options?.scratchSpace;
 
     // set some default session parameters
     // this is quite imporant for snowflake because malloy tends to add quotes to all database identifiers
@@ -130,8 +133,8 @@ export class SnowflakeConnection
   private getTempTableName(sqlCommand: string): string {
     const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
     let tableName = `tt${hash}`;
-    if (this.scratchDatabase && this.scratchSchema) {
-      tableName = `${this.scratchDatabase}.${this.scratchSchema}.${tableName}`;
+    if (this.scratchSpace) {
+      tableName = `${this.scratchSpace.database}.${this.scratchSpace.schema}.${tableName}`;
     }
     return tableName;
   }

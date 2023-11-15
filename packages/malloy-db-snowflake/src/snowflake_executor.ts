@@ -41,12 +41,8 @@ export interface SnowflakeQueryOptions {
 export interface ConnectionConfigFile {
   // if not supplied "default" connection is used
   connection_name?: string;
-  connection_file_path: string;
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function isConnectionConfig(obj: any): obj is ConnectionOptions {
-  return obj && obj.account && (obj.user || obj.username);
+  // if not supplied it will look in ~/.snowflake/connections.toml
+  config_file_path?: string;
 }
 
 function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
@@ -58,58 +54,40 @@ function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
 }
 
 export class SnowflakeExecutor {
-  private pool_: Pool<Connection>;
-  private defaultPoolOptions_: PoolOptions = {
+  private static defaultPoolOptions_: PoolOptions = {
     min: 0,
     max: 1,
-    evictionRunIntervalMillis: 60000, // default = 0, off
-    idleTimeoutMillis: 60000, // default = 30000
+    evictionRunIntervalMillis: 60_000, // default = 0, off
+    idleTimeoutMillis: 60_000, // default = 30000
+  };
+  private static defaultConnectionOptions = {
+    clientSessionKeepAlive: true, // default = false
+    clientSessionKeepAliveHeartbeatFrequency: 900, // default = 3600
   };
 
-  constructor(
-    connOptions?: ConnectionOptions | ConnectionConfigFile,
-    poolOptions?: PoolOptions
-  ) {
-    this.pool_ = snowflake.createPool(
-      SnowflakeExecutor.getConnectionOptions(connOptions),
-      {
-        ...this.defaultPoolOptions_,
-        ...(poolOptions ?? {}),
-      }
-    );
+  private pool_: Pool<Connection>;
+  constructor(connOptions: ConnectionOptions, poolOptions?: PoolOptions) {
+    this.pool_ = snowflake.createPool(connOptions, {
+      ...SnowflakeExecutor.defaultPoolOptions_,
+      ...(poolOptions ?? {}),
+    });
   }
 
-  public static getConnectionOptions(
-    options?: ConnectionOptions | ConnectionConfigFile
+  public static getConnectionOptionsFromToml(
+    options: ConnectionConfigFile
   ): ConnectionOptions {
-    const defaultOptions = {
-      clientSessionKeepAlive: true, // default = false
-      clientSessionKeepAliveHeartbeatFrequency: 900, // default = 3600
-    };
-
-    if (isConnectionConfig(options)) {
-      return {
-        ...defaultOptions,
-        ...options,
-        // python api expects user, while node expects username, let's hand both
-        username: options['user'] ?? options['username'],
-      };
-    }
-
-    let location: string | undefined = options?.connection_file_path;
+    let location: string | undefined = options?.config_file_path;
     if (location === undefined) {
       const homeDir = process.env['HOME'] || process.env['USERPROFILE'];
       if (homeDir === undefined) {
-        throw new Error(
-          'must provide either snowflake ConnectionOptions via constructor or path to a connections.toml'
-        );
+        throw new Error('could not find a path to connections.toml');
       }
       location = path.join(homeDir, '.snowflake', 'connections.toml');
     }
 
     if (!fs.existsSync(location)) {
       throw new Error(
-        `provided snowflake connection config file: ${options} does not exist`
+        `provided snowflake connection config file: ${location} does not exist`
       );
     }
 
@@ -118,12 +96,8 @@ export class SnowflakeExecutor {
 
     const connection = connections[options?.connection_name ?? 'default'];
     // sometimes the connection file uses "user" instead of "username"
-    if (
-      connection['username'] === undefined &&
-      connection['user'] !== undefined
-    ) {
-      connection['username'] = connection['user'];
-    }
+    // because the python api expects 'user'
+    connection['username'] = connection['username'] ?? connection['user'];
     if (!connection || !connection.account || !connection.username) {
       throw new Error(
         `provided snowflake connection config file: ${options} is not valid`
@@ -132,13 +106,9 @@ export class SnowflakeExecutor {
 
     return {
       // some basic options we configure by default but can be overriden
-      ...defaultOptions,
+      ...SnowflakeExecutor.defaultConnectionOptions,
       account: connection.account,
-      username: connection.user,
-      password: connection.password,
-      warehouse: connection.warehouse,
-      database: connection.database,
-      schema: connection.schema,
+      username: connection.username,
       ...connection,
     };
   }

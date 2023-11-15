@@ -33,8 +33,8 @@ describe('db:Snowflake', () => {
   let runtime: malloy.Runtime;
 
   beforeAll(() => {
-    const connOptions = SnowflakeExecutor.getConnectionOptions();
-    conn = new SnowflakeConnection('snowflake', connOptions);
+    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
+    conn = new SnowflakeConnection('snowflake', {connOptions: connOptions});
     const files = {
       readURL: async (url: URL) => {
         const filePath = fileURLToPath(url);

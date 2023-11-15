@@ -26,10 +26,7 @@ import {QueryData} from '@malloydata/malloy';
 
 class SnowflakeExecutorTestSetup {
   private executor_: SnowflakeExecutor;
-  constructor(private executor?: SnowflakeExecutor) {
-    if (executor === undefined) {
-      executor = new SnowflakeExecutor();
-    }
+  constructor(private executor: SnowflakeExecutor) {
     this.executor_ = executor;
   }
 
@@ -67,7 +64,9 @@ describe('db:SnowflakeExecutor', () => {
   let query: string;
 
   beforeAll(() => {
-    db = new SnowflakeExecutorTestSetup();
+    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
+    const executor = new SnowflakeExecutor(connOptions);
+    db = new SnowflakeExecutorTestSetup(executor);
     query = `
     select
     *
