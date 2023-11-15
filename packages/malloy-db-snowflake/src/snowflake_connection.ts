@@ -91,14 +91,6 @@ export class SnowflakeConnection
     }
     this.executor = new SnowflakeExecutor(connOptions, options?.poolOptions);
     this.scratchSpace = options?.scratchSpace;
-
-    // set some default session parameters
-    // this is quite imporant for snowflake because malloy tends to add quotes to all database identifiers
-    // and snowflake is case sensitive by with quotes but matches against all caps identifiers without quotes
-    // NOTE: before pooling can be enabled we should have a way to set this on all executors
-    this.executor.batch(
-      'ALTER SESSION SET QUOTED_IDENTIFIERS_IGNORE_CASE = true;'
-    );
   }
 
   get dialectName(): string {

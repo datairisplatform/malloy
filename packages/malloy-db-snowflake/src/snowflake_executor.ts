@@ -55,10 +55,10 @@ function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
 
 export class SnowflakeExecutor {
   private static defaultPoolOptions_: PoolOptions = {
-    min: 0,
+    min: 1,
     max: 1,
-    evictionRunIntervalMillis: 60_000, // default = 0, off
-    idleTimeoutMillis: 60_000, // default = 30000
+    // evictionRunIntervalMillis: 60_000, // default = 0, off
+    // idleTimeoutMillis: 60_000, // default = 30000
   };
   private static defaultConnectionOptions = {
     clientSessionKeepAlive: true, // default = false
@@ -119,24 +119,39 @@ export class SnowflakeExecutor {
     });
   }
 
+  public async _execute(sqlText: string, conn: Connection): Promise<QueryData> {
+    return new Promise((resolve, reject) => {
+      const _statment = conn.execute({
+        sqlText,
+        complete: (
+          err: SnowflakeError | undefined,
+          _stmt: Statement,
+          rows?: QueryData
+        ) => {
+          if (err) {
+            reject(err);
+          } else if (rows) {
+            resolve(rows.map(columnNameToLowerCase));
+          }
+        },
+      });
+    });
+  }
+
+  private async _setSessionParams(conn: Connection) {
+    // set some default session parameters
+    // this is quite imporant for snowflake because malloy tends to add quotes to all database identifiers
+    // and snowflake is case sensitive by with quotes but matches against all caps identifiers without quotes
+    await this._execute(
+      'ALTER SESSION SET QUOTED_IDENTIFIERS_IGNORE_CASE = true;',
+      conn
+    );
+  }
+
   public async batch(sqlText: string): Promise<QueryData> {
     return await this.pool_.use(async (conn: Connection) => {
-      return new Promise((resolve, reject) => {
-        const _statment = conn.execute({
-          sqlText,
-          complete: (
-            err: SnowflakeError | undefined,
-            _stmt: Statement,
-            rows?: QueryData
-          ) => {
-            if (err) {
-              reject(err);
-            } else if (rows) {
-              resolve(rows.map(columnNameToLowerCase));
-            }
-          },
-        });
-      });
+      await this._setSessionParams(conn);
+      return await this._execute(sqlText, conn);
     });
   }
 
@@ -146,6 +161,7 @@ export class SnowflakeExecutor {
   ): Promise<AsyncIterableIterator<QueryDataRow>> {
     const pool: Pool<Connection> = this.pool_;
     return await pool.acquire().then(async (conn: Connection) => {
+      await this._setSessionParams(conn);
       const stmt: Statement = conn.execute({
         sqlText,
         streamResult: true,
