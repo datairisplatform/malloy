@@ -36,30 +36,37 @@ import {
   SnowflakeDialect,
   NamedStructDefs,
 } from '@malloydata/malloy';
-import {SnowflakeExecutor, SnowflakeQueryOptions} from './snowflake_executor';
-import {FetchSchemaOptions} from '@malloydata/malloy/dist/runtime_types';
+import {SnowflakeExecutor} from './snowflake_executor';
+import {
+  FetchSchemaOptions,
+  TestableConnection,
+} from '@malloydata/malloy/dist/runtime_types';
 import {ConnectionOptions} from 'snowflake-sdk';
 import {Options as PoolOptions} from 'generic-pool';
 
 type namespace = {database: string; schema: string};
 
 export interface SnowflakeConnectionOptions {
+  // snowflake sdk connection options
   connOptions: ConnectionOptions;
+  // generic pool options to help maintain a pool of connections to snowflake
   poolOptions?: PoolOptions;
 
   // the database and schema where we can perform temporary table operations.
   // for example, if we want to create a temp table for fetching schema of an sql block
   // we could use this database & schema instead of the main database & schema
   scratchSpace?: namespace;
+
+  queryOptions?: RunSQLOptions;
 }
 
 export class SnowflakeConnection
-  implements Connection, PersistSQLResults, StreamingConnection
+  implements
+    Connection,
+    PersistSQLResults,
+    StreamingConnection,
+    TestableConnection
 {
-  static DEFAULT_QUERY_OPTIONS: SnowflakeQueryOptions = {
-    rowLimit: 10,
-  };
-
   private readonly dialect = new SnowflakeDialect();
   private executor: SnowflakeExecutor;
   private schemaCache = new Map<
@@ -79,6 +86,7 @@ export class SnowflakeConnection
 
   // the database & schema where we do temporary operations like creating a temp table
   private scratchSpace?: namespace;
+  private queryOptions: RunSQLOptions;
 
   constructor(
     public readonly name: string,
@@ -87,10 +95,11 @@ export class SnowflakeConnection
     let connOptions = options?.connOptions;
     if (connOptions === undefined) {
       // try to get connection options from ~/.snowflake/connections.toml
-      connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
+      connOptions = SnowflakeExecutor.getConnectionOptionsFromToml();
     }
     this.executor = new SnowflakeExecutor(connOptions, options?.poolOptions);
     this.scratchSpace = options?.scratchSpace;
+    this.queryOptions = options?.queryOptions ?? {};
   }
 
   get dialectName(): string {
@@ -133,19 +142,35 @@ export class SnowflakeConnection
 
   public async runSQL(
     sql: string,
-    _options?: RunSQLOptions
+    options?: RunSQLOptions
   ): Promise<MalloyQueryData> {
-    const rows = await this.executor.batch(sql);
+    const rowLimit = options?.rowLimit ?? this.queryOptions?.rowLimit;
+    let rows = await this.executor.batch(sql);
+    if (rowLimit !== undefined && rows.length > rowLimit) {
+      rows = rows.slice(0, rowLimit);
+    }
     return {rows, totalRows: rows.length};
   }
 
   public async *runSQLStream(
     sqlCommand: string,
-    options?: SnowflakeQueryOptions
+    options: RunSQLOptions = {}
   ): AsyncIterableIterator<QueryDataRow> {
-    for await (const row of await this.executor.stream(sqlCommand, options)) {
+    const streamQueryOptions = {
+      ...this.queryOptions,
+      ...options,
+    };
+
+    for await (const row of await this.executor.stream(
+      sqlCommand,
+      streamQueryOptions
+    )) {
       yield row;
     }
+  }
+
+  public async test(): Promise<void> {
+    await this.executor.batch('SELECT 1');
   }
 
   private async schemaFromQuery(

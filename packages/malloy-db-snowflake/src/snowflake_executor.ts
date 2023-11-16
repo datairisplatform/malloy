@@ -32,17 +32,20 @@ import * as toml from 'toml';
 import * as fs from 'fs';
 import * as path from 'path';
 import {Readable} from 'stream';
-import {toAsyncGenerator, QueryData, QueryDataRow} from '@malloydata/malloy';
-
-export interface SnowflakeQueryOptions {
-  rowLimit: number;
-}
+import {
+  toAsyncGenerator,
+  QueryData,
+  QueryDataRow,
+  RunSQLOptions,
+} from '@malloydata/malloy';
 
 export interface ConnectionConfigFile {
-  // if not supplied "default" connection is used
-  connection_name?: string;
-  // if not supplied it will look in ~/.snowflake/connections.toml
+  // a toml file with snowflake connection settings
+  // if not provided, we will try to read ~/.snowflake/config
   config_file_path?: string;
+  // the name of connection in the config file
+  // if not provided, we will try to use the "default" connection
+  connection_name?: string;
 }
 
 function columnNameToLowerCase(row: QueryDataRow): QueryDataRow {
@@ -74,7 +77,7 @@ export class SnowflakeExecutor {
   }
 
   public static getConnectionOptionsFromToml(
-    options: ConnectionConfigFile
+    options?: ConnectionConfigFile
   ): ConnectionOptions {
     let location: string | undefined = options?.config_file_path;
     if (location === undefined) {
@@ -93,14 +96,20 @@ export class SnowflakeExecutor {
 
     const tomlData = fs.readFileSync(location, 'utf-8');
     const connections = toml.parse(tomlData);
+    const tomlConnectionName = options?.connection_name ?? 'default';
+    const connection = connections[tomlConnectionName];
+    if (connection === undefined) {
+      throw new Error(
+        `provided snowflake connection name: ${tomlConnectionName} does not exist at ${location}`
+      );
+    }
 
-    const connection = connections[options?.connection_name ?? 'default'];
     // sometimes the connection file uses "user" instead of "username"
     // because the python api expects 'user'
     connection['username'] = connection['username'] ?? connection['user'];
     if (!connection || !connection.account || !connection.username) {
       throw new Error(
-        `provided snowflake connection config file: ${options} is not valid`
+        `provided snowflake connection config file at ${location} is not valid`
       );
     }
 
@@ -157,7 +166,7 @@ export class SnowflakeExecutor {
 
   public async stream(
     sqlText: string,
-    options?: SnowflakeQueryOptions
+    options?: RunSQLOptions
   ): Promise<AsyncIterableIterator<QueryDataRow>> {
     const pool: Pool<Connection> = this.pool_;
     return await pool.acquire().then(async (conn: Connection) => {

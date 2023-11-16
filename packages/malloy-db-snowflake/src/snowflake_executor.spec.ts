@@ -21,8 +21,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {SnowflakeExecutor, SnowflakeQueryOptions} from './snowflake_executor';
-import {QueryData} from '@malloydata/malloy';
+import {SnowflakeExecutor} from './snowflake_executor';
+import {QueryData, RunSQLOptions} from '@malloydata/malloy';
 
 class SnowflakeExecutorTestSetup {
   private executor_: SnowflakeExecutor;
@@ -41,7 +41,7 @@ class SnowflakeExecutorTestSetup {
     return ret;
   }
 
-  async runStreaming(sqlText: string, queryOptions?: SnowflakeQueryOptions) {
+  async runStreaming(sqlText: string, queryOptions?: RunSQLOptions) {
     const rows: QueryData = [];
     await (async () => {
       for await (const row of await this.executor_.stream(
@@ -64,7 +64,7 @@ describe('db:SnowflakeExecutor', () => {
   let query: string;
 
   beforeAll(() => {
-    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
+    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml();
     const executor = new SnowflakeExecutor(connOptions);
     db = new SnowflakeExecutorTestSetup(executor);
     query = `

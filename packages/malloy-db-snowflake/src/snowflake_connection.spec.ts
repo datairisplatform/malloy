@@ -33,8 +33,11 @@ describe('db:Snowflake', () => {
   let runtime: malloy.Runtime;
 
   beforeAll(() => {
-    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml({});
-    conn = new SnowflakeConnection('snowflake', {connOptions: connOptions});
+    const connOptions = SnowflakeExecutor.getConnectionOptionsFromToml();
+    conn = new SnowflakeConnection('snowflake', {
+      connOptions: connOptions,
+      queryOptions: {rowLimit: 1000},
+    });
     const files = {
       readURL: async (url: URL) => {
         const filePath = fileURLToPath(url);
@@ -70,6 +73,10 @@ describe('db:Snowflake', () => {
       total += +(row['cnt'] ?? 0);
     }
     expect(total).toBe(3540);
+
+    // if we request for a smaller rowLimit we should get fewer rows
+    const res_limited = await conn.runSQL(sql, {rowLimit: 10});
+    expect(res_limited.totalRows).toBe(10);
   });
 
   it('runs a Malloy query on an sql source', async () => {
