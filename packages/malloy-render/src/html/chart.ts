@@ -23,7 +23,7 @@
 
 import * as lite from 'vega-lite';
 import * as vega from 'vega';
-import {DataArray, DataColumn, Field} from '@malloydata/malloy';
+import {DataArray, DataColumn, Field} from '@datairis/malloy';
 import {Renderer} from '../renderer';
 import {RendererOptions} from '../renderer_types';
 import {ChartRenderOptions, StyleDefaults} from '../data_styles';

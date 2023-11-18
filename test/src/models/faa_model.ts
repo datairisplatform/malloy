@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {ModelDef, StructDef, StructRelationship} from '@malloydata/malloy';
+import {ModelDef, StructDef, StructRelationship} from '@datairis/malloy';
 
 import {fStringEq, fYearEq} from '../util';
 

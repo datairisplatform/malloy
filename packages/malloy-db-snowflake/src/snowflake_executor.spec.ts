@@ -22,7 +22,7 @@
  */
 
 import {SnowflakeExecutor} from './snowflake_executor';
-import {QueryData, RunSQLOptions} from '@malloydata/malloy';
+import {QueryData, RunSQLOptions} from '@datairis/malloy';
 
 class SnowflakeExecutorTestSetup {
   private executor_: SnowflakeExecutor;

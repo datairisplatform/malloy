@@ -19,7 +19,7 @@
     "no-restricted-imports": [
       "error",
       {
-        "patterns": ["@malloydata/malloy/src/*"],
+        "patterns": ["@datairis/malloy/src/*"],
         "paths": [
           {
             "name": "lodash",

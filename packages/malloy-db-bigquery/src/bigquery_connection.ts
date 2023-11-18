@@ -51,7 +51,7 @@ import {
   StreamingConnection,
   StructDef,
   toAsyncGenerator,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {FetchSchemaOptions} from '@malloydata/malloy-interfaces';
 
 export interface BigQueryManagerOptions {

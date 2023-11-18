@@ -27,7 +27,7 @@ import {
   QueryMaterializer,
   Result,
   Runtime,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 export function fStringEq(field: string, value: string): FilterExpression {
   return {

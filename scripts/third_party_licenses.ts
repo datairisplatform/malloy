@@ -55,7 +55,7 @@ axios.defaults.timeout = 500000;
 axios.defaults.httpsAgent = new https.Agent({keepAlive: true});
 
 const malloyPackages = [
-  '@malloydata/malloy',
+  '@datairis/malloy',
   '@malloydata/render',
   'test',
   '@malloydata/db-bigquery',

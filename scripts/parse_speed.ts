@@ -22,7 +22,7 @@
  */
 
 /* eslint-disable no-console */
-import {Connection, Malloy} from '@malloydata/malloy';
+import {Connection, Malloy} from '@datairis/malloy';
 import {DuckDBConnection} from '../packages/malloy-db-duckdb';
 import {readFile} from 'fs/promises';
 import {readFileSync} from 'fs';

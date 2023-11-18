@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import * as malloy from '@malloydata/malloy';
+import * as malloy from '@datairis/malloy';
 import {BigQueryConnection} from './bigquery_connection';
 import {BigQuery as BigQuerySDK, TableMetadata} from '@google-cloud/bigquery';
 import * as util from 'util';

@@ -35,7 +35,7 @@ import {
   StructDef,
   TestableConnection,
   DuckDBDialect,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {FetchSchemaOptions} from '@malloydata/malloy-interfaces';
 
 export interface DuckDBQueryOptions {
@@ -175,7 +175,7 @@ export abstract class DuckDBCommon
    * to be fed back into fillStructDefFromTypeMap(). Handles commas
    * within nested STRUCT() declarations.
    *
-   * (https://github.com/malloydata/malloy/issues/635)
+   * (https://github.com/datairis/malloy/issues/635)
    *
    * @param s struct's column declaration
    * @return Array of column type declarations

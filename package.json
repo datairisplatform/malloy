@@ -47,7 +47,7 @@
     "@babel/preset-env": "^7.23.2",
     "@jest/globals": "^26.6.2",
     "@malloydata/db-bigquery": "*",
-    "@malloydata/malloy": "*",
+    "@datairis/malloy": "*",
     "@malloydata/render": "*",
     "@types/fs-extra": "^9.0.13",
     "@types/jest-expect-message": "^1.0.3",

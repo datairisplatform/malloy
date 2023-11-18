@@ -29,7 +29,7 @@ import {
   Result,
   RunSQLOptions,
   SingleConnectionRuntime,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {BigQueryConnection} from '@malloydata/db-bigquery';
 import {DuckDBConnection} from '@malloydata/db-duckdb';
 import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';

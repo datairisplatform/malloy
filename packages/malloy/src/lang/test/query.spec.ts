@@ -205,7 +205,7 @@ describe('query:', () => {
     `).toTranslate();
     });
     test('exclude output checking survives refinement', () => {
-      // This was https://github.com/malloydata/malloy/issues/1474
+      // This was https://github.com/datairis/malloy/issues/1474
       const nestExclude = model`
         source: flights is a extend {
           dimension: carrier is astr, destination is astr

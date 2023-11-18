@@ -1,16 +1,16 @@
 {
-  "name": "@malloydata/malloy-interfaces",
+  "name": "@datairis/malloy-interfaces",
   "version": "0.0.104",
   "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
-  "homepage": "https://github.com/malloydata/malloy#readme",
+  "homepage": "https://github.com/datairis/malloy#readme",
   "engines": {
     "node": ">=16"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/malloydata/malloy"
+    "url": "https://github.com/datairis/malloy"
   },
   "scripts": {
     "test": "jest --config=../../jest.config.js",

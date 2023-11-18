@@ -42,7 +42,7 @@ import {
   SQLBlock,
   StreamingConnection,
   StructDef,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {Client, Pool} from 'pg';
 import QueryStream from 'pg-query-stream';
 import {randomUUID} from 'crypto';

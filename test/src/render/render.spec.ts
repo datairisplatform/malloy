@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {ModelMaterializer} from '@malloydata/malloy';
+import {ModelMaterializer} from '@datairis/malloy';
 import {RuntimeList, runtimeFor} from '../runtimes';
 import {describeIfDatabaseAvailable} from '../util';
 import {HTMLView} from '@malloydata/render';

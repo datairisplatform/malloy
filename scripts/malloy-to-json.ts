@@ -24,7 +24,7 @@
 /* eslint-disable no-console */
 import * as readline from 'readline';
 import {inspect} from 'util';
-import {Connection, Malloy} from '@malloydata/malloy';
+import {Connection, Malloy} from '@datairis/malloy';
 import {BigQueryConnection} from '@malloydata/db-bigquery';
 import {readFile} from 'fs/promises';
 import {readFileSync} from 'fs';

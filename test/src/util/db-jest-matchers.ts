@@ -30,7 +30,7 @@ import {
   MalloyError,
   LogMessage,
   SingleConnectionRuntime,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 type ExpectedResultRow = Record<string, unknown>;
 type ExpectedResult = ExpectedResultRow | ExpectedResultRow[];

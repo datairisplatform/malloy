@@ -1,6 +1,6 @@
 import {LoaderFunction, Args} from '@storybook/types';
 import {HtmlRenderer} from '@storybook/html';
-import {SingleConnectionRuntime} from '@malloydata/malloy';
+import {SingleConnectionRuntime} from '@datairis/malloy';
 import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
 
 export type QueryOptions = {

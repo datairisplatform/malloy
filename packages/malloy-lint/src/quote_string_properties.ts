@@ -30,7 +30,7 @@ import {
 import ts from 'typescript';
 
 const createRule = ESLintUtils.RuleCreator(
-  () => 'https://github.com/malloydata/malloy/main/package/malloy-lint'
+  () => 'https://github.com/datairis/malloy/main/package/malloy-lint'
 );
 
 const rule: ReturnType<typeof createRule> = createRule({
