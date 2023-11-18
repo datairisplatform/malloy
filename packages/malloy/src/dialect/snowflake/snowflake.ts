@@ -39,7 +39,7 @@ import {
 } from '../../model/malloy_types';
 import {SNOWFLAKE_FUNCTIONS} from './functions';
 import {DialectFunctionOverloadDef} from '../functions';
-import {Dialect, DialectFieldList, QueryInfo, inDays, qtz} from '../dialect';
+import {Dialect, DialectFieldList, QueryInfo, qtz} from '../dialect';
 
 const extractionMap: Record<string, string> = {
   'day_of_week': 'dayofweek',
@@ -81,12 +81,10 @@ const snowflakeToMalloyTypes: {[key: string]: FieldAtomicTypeDef} = {
   'timestampntz': {type: 'timestamp'},
   'timestamp_ntz': {type: 'timestamp'},
   'timestamp without time zone': {type: 'timestamp'},
-  'timestampltz': {type: 'timestamp'}, // maybe not
-  'timestamp_ltz': {type: 'timestamp'}, // maybe not
-  'timestamp with local time zone': {type: 'timestamp'}, // maybe not
-  'timestamp_tz': {type: 'timestamp'},
   'timestamptz': {type: 'timestamp'},
+  'timestamp_tz': {type: 'timestamp'},
   'timestamp with time zone': {type: 'timestamp'},
+  /* timestamp_ltz is not supported in malloy snowflake dialect */
 };
 
 export class SnowflakeDialect extends Dialect {
@@ -283,46 +281,25 @@ ${indent(sql)}
 `;
   }
 
-  sqlNow(): Expr {
-    return mkExpr`CURRENT_TIMESTAMP()`;
-  }
-
-  // FIXME: does not work with timezone
   sqlTrunc(qi: QueryInfo, sqlTime: TimeValue, units: TimestampUnit): Expr {
-    // adjusting for monday/sunday weeks
-    const week = units === 'week';
-    const truncThis = week
-      ? mkExpr`${sqlTime.value} + INTERVAL '1 DAY'`
-      : sqlTime.value;
-    if (sqlTime.valueType === 'timestamp') {
-      const tz = qtz(qi);
-      if (tz) {
-        const civilSource = mkExpr`CONVERT_TIMEZONE('${tz}', ${truncThis})`;
-        let civilTrunc = mkExpr`DATE_TRUNC('${units}', ${civilSource})`;
-        // MTOY todo ... only need to do this if this is a date ...
-        civilTrunc = mkExpr`${civilTrunc}::TIMESTAMP`;
-        const truncTsTz = mkExpr`CONVERT_TIMEZONE('${tz}', ${civilTrunc})`;
-        return mkExpr`(${truncTsTz})`;
-      }
+    const tz = qtz(qi);
+    let truncThis = sqlTime.value;
+    if (tz && sqlTime.valueType === 'timestamp') {
+      truncThis = mkExpr`CONVERT_TIMEZONE('${tz}', ${truncThis})`;
     }
-    let result = mkExpr`DATE_TRUNC('${units}', ${truncThis})`;
-    if (week) {
-      result = mkExpr`(${result} - INTERVAL '1 DAY')`;
-    }
-    return result;
+    return mkExpr`DATE_TRUNC('${units}', ${truncThis})`;
   }
 
   sqlExtract(qi: QueryInfo, from: TimeValue, units: ExtractUnit): Expr {
-    const sflUnits = extractionMap[units] || units;
+    const extractUnits = extractionMap[units] || units;
     let extractFrom = from.value;
-    if (from.valueType === 'timestamp') {
-      const tz = qtz(qi);
-      if (tz) {
-        extractFrom = mkExpr`CONVERT_TIMEZONE('${tz}', ${extractFrom})`;
-      }
+    const tz = qtz(qi);
+
+    if (tz && from.valueType === 'timestamp') {
+      extractFrom = mkExpr`CONVERT_TIMEZONE('${tz}', ${extractFrom})`;
     }
-    const extracted = mkExpr`EXTRACT(${sflUnits} FROM ${extractFrom})`;
-    return units === 'day_of_week' ? mkExpr`(${extracted}+1)` : extracted;
+    const extracted = mkExpr`EXTRACT(${extractUnits} FROM ${extractFrom})`;
+    return extracted;
   }
 
   sqlAlterTime(
@@ -335,30 +312,50 @@ ${indent(sql)}
     return mkExpr`((${expr.value})${op}${interval})`;
   }
 
-  sqlCast(qi: QueryInfo, cast: TypecastFragment): Expr {
-    const op = `${cast.srcType}::${cast.dstType}`;
-    const tz = qtz(qi);
-    if (op === 'timestamp::date' && tz) {
-      return mkExpr`TO_DATE(CONVERT_TIMEZONE('${tz}', ${cast.expr}::TIMESTAMP))`;
-    } else if (op === 'date::timestamp' && tz) {
-      return mkExpr`CONVERT_TIMEZONE('${tz}', ${cast.expr}::TIMESTAMP)`;
+  private atTz(expr: Expr, tz: string | undefined): Expr {
+    if (tz !== undefined) {
+      return mkExpr`(
+      TO_CHAR(${expr}::TIMESTAMP_NTZ, 'YYYY-MM-DD HH24:MI:SS.FF9') ||
+      TO_CHAR(CONVERT_TIMEZONE('${tz}', '1970-01-01 00:00:00'), 'TZHTZM')
+    )::TIMESTAMP_TZ`;
     }
-    if (cast.srcType !== cast.dstType) {
-      const dstType =
-        typeof cast.dstType === 'string'
-          ? this.malloyTypeToSQLType({type: cast.dstType})
-          : cast.dstType.raw;
-      if (cast.safe) {
-        throw new Error("Snowflake dialect doesn't support Safe Cast");
-      }
-      const castFunc = 'CAST';
-      return mkExpr`${castFunc}(${cast.expr} AS ${dstType})`;
-    }
-    return cast.expr;
+    return mkExpr`${expr}::TIMESTAMP_NTZ`;
   }
 
-  sqlRegexpMatch(expr: Expr, regexp: Expr): Expr {
-    return mkExpr`REGEXP_LIKE(${expr}, ${regexp})`;
+  sqlNow(): Expr {
+    return mkExpr`CURRENT_TIMESTAMP()`;
+  }
+
+  sqlCast(qi: QueryInfo, cast: TypecastFragment): Expr {
+    if (cast.srcType === cast.dstType) {
+      return cast.expr;
+    }
+    if (cast.safe) {
+      // safe cast is only supported for a few combinations of src -> dst types
+      // so we will not support it in the general case
+      throw new Error(
+        "Snowflake dialect doesn't support safe cast for a few types"
+      );
+    }
+
+    const tz = qtz(qi);
+    // casting timestamps and dates
+    if (cast.dstType === 'date' && cast.srcType === 'timestamp') {
+      let castExpr = cast.expr;
+      if (tz) {
+        castExpr = mkExpr`CONVERT_TIMEZONE('${tz}', ${castExpr})`;
+      }
+      return mkExpr`TO_DATE(${castExpr})`;
+    } else if (cast.dstType === 'timestamp' && cast.srcType === 'date') {
+      const retExpr = mkExpr`TO_TIMESTAMP(${cast.expr})`;
+      return this.atTz(retExpr, tz);
+    }
+
+    const dstType =
+      typeof cast.dstType === 'string'
+        ? this.malloyTypeToSQLType({type: cast.dstType})
+        : cast.dstType.raw;
+    return mkExpr`CAST(${cast.expr} AS ${dstType})`;
   }
 
   sqlLiteralTime(
@@ -367,31 +364,46 @@ ${indent(sql)}
     type: TimeFieldType,
     timezone: string | undefined
   ): string {
-    if (type === 'date') {
-      return `TO_DATE('${timeString}')`;
-    } else if (type === 'timestamp') {
-      const tz = timezone || qtz(qi);
-      if (tz) {
-        return `CONVERT_TIMEZONE('${tz}', TO_TIMESTAMP_NTZ('${timeString}'))`;
-      }
-      return `TO_TIMESTAMP('${timeString}')`;
+    const tz = qtz(qi);
+    // just making it explicit that timestring does not have timezone info
+    let ret = `'${timeString}'::TIMESTAMP_NTZ`;
+    // now do the hack to add timezone to a timestamp ntz
+    const targetTimeZone = timezone ?? tz;
+    if (targetTimeZone) {
+      const targetTimeZoneSuffix = `TO_CHAR(CONVERT_TIMEZONE('${targetTimeZone}', '1970-01-01 00:00:00'), 'TZHTZM')`;
+      const retTimeString = `TO_CHAR(${ret}, 'YYYY-MM-DD HH24:MI:SS.FF9')`;
+      ret = `${retTimeString} || ${targetTimeZoneSuffix}`;
+      ret = `(${ret})::TIMESTAMP_TZ`;
     }
-    throw new Error(`Unsupported literal time format: ${type}`);
+
+    switch (type) {
+      case 'date':
+        return `TO_DATE(${ret})`;
+      case 'timestamp': {
+        return ret;
+      }
+    }
   }
 
   sqlMeasureTime(from: TimeValue, to: TimeValue, units: string): Expr {
-    let lVal = from.value;
-    let rVal = to.value;
-    if (!inDays(units)) {
-      throw new Error(`Unknown or unhandled snowflake time unit: ${units}`);
+    let extractUnits = 'nanoseconds';
+    if (from.valueType === 'date' || to.valueType === 'date') {
+      extractUnits = 'seconds';
     }
-    if (from.valueType === 'date') {
-      lVal = mkExpr`(${lVal})::TIMESTAMP`;
-    }
-    if (to.valueType === 'date') {
-      rVal = mkExpr`(${rVal})::TIMESTAMP`;
-    }
-    return mkExpr`TIMESTAMPDIFF('${units}',${lVal},${rVal})`;
+
+    return mkExpr`TIMESTAMPDIFF(
+      '${units}',
+      '1970-01-01 00:00:00'::TIMESTAMP_NTZ,
+      TIMESTAMPADD(
+        '${extractUnits}',
+        EXTRACT('epoch_${extractUnits}', ${to.value}) - EXTRACT('epoch_${extractUnits}', ${from.value}),
+        '1970-01-01 00:00:00'::TIMESTAMP_NTZ
+      )
+    )`;
+  }
+
+  sqlRegexpMatch(expr: Expr, regexp: Expr): Expr {
+    return mkExpr`REGEXP_LIKE(${expr}, ${regexp})`;
   }
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {

@@ -155,6 +155,10 @@ export class SnowflakeExecutor {
       'ALTER SESSION SET QUOTED_IDENTIFIERS_IGNORE_CASE = true;',
       conn
     );
+    // set utc as the default timezone which is the malloy convention
+    await this._execute("ALTER SESSION SET TIMEZONE = 'UTC';", conn);
+    // ensure week starts on Sunday which is the malloy convention
+    await this._execute('ALTER SESSION SET WEEK_START = 7;', conn);
   }
 
   public async batch(sqlText: string): Promise<QueryData> {
