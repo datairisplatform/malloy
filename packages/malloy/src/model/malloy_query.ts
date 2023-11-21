@@ -757,15 +757,15 @@ class QueryField extends QueryNode {
       expr.structPath
     );
     if (distinctKeySQL) {
-      func = 'COUNT(DISTINCT';
+      func = 'COUNT(DISTINCT ';
       thing = distinctKeySQL;
     }
 
     // find the structDef and return the path to the field...
     if (state.whereSQL) {
-      return `${func} CASE WHEN ${state.whereSQL} THEN ${thing} END)`;
+      return `${func}CASE WHEN ${state.whereSQL} THEN ${thing} END)`;
     } else {
-      return `${func} ${thing})`;
+      return `${func}${thing})`;
     }
   }
 
