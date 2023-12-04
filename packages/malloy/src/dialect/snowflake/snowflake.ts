@@ -78,12 +78,15 @@ const snowflakeToMalloyTypes: {[key: string]: FieldAtomicTypeDef} = {
   // time and date
   'date': {type: 'date'},
   'timestamp': {type: 'timestamp'},
-  'timestampltz': {type: 'timestamp'}, // maybe not
-  'timestamp_ltz': {type: 'timestamp'}, // maybe not
-  'timestamp with local time zone': {type: 'timestamp'}, // maybe not
   'timestampntz': {type: 'timestamp'},
   'timestamp_ntz': {type: 'timestamp'},
   'timestamp without time zone': {type: 'timestamp'},
+  'timestampltz': {type: 'timestamp'}, // maybe not
+  'timestamp_ltz': {type: 'timestamp'}, // maybe not
+  'timestamp with local time zone': {type: 'timestamp'}, // maybe not
+  'timestamp_tz': {type: 'timestamp'},
+  'timestamptz': {type: 'timestamp'},
+  'timestamp with time zone': {type: 'timestamp'},
 };
 
 export class SnowflakeDialect extends Dialect {

@@ -26,6 +26,7 @@ export {
   StandardSQLDialect,
   PostgresDialect,
   SnowflakeDialect,
+  registerDialect,
 } from './dialect';
 // TODO tighten up exports
 export type {
