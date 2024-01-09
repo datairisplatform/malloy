@@ -59,7 +59,6 @@ import {
   StructDef,
   TurtleDef,
   expressionIsCalculation,
-  flattenQuery,
   isSQLBlockStruct,
   isSQLFragment,
   FieldUnsupportedDef,
@@ -371,7 +370,7 @@ export class Malloy {
     }
   }
 
-  private static compileSQLBlock(
+  static compileSQLBlock(
     partialModel: ModelDef | undefined,
     toCompile: SQLBlockSource
   ): SQLBlock {
@@ -902,24 +901,10 @@ export class PreparedQuery implements Taggable {
 
   /**
    * Get the flattened version of a query -- one that does not have a `pipeHead`.
+   * @deprecated Because queries can no longer have `pipeHead`s.
    */
-  public getFlattenedQuery(defaultName: string): PreparedQuery {
-    let structRef = this._query.structRef;
-    if (typeof structRef !== 'string') {
-      structRef = structRef.as || structRef.name;
-    }
-    const turtleDef = flattenQuery(this._modelDef, {
-      ...this._query,
-      type: 'query',
-      name:
-        'as' in this._query ? this._query.as || this._query.name : defaultName,
-    });
-    return new PreparedQuery(
-      {...turtleDef, structRef, type: 'query'},
-      this._modelDef,
-      this.problems,
-      this.name || turtleDef.as || turtleDef.name
-    );
+  public getFlattenedQuery(_defaultName: string): PreparedQuery {
+    return this;
   }
 }
 
@@ -1415,6 +1400,16 @@ abstract class Entity {
     return sourceClasses;
   }
 
+  public get fieldPath(): string[] {
+    const path: string[] = [this.name];
+    let f: Entity | undefined = this._parent;
+    while (f) {
+      path.unshift(f.name);
+      f = f._parent;
+    }
+    return path;
+  }
+
   public hasParentExplore(): this is Field {
     return this._parent !== undefined;
   }
@@ -1441,7 +1436,7 @@ export type SerializedExplore = {
 
 export type SortableField = {field: Field; dir: 'asc' | 'desc' | undefined};
 
-export class Explore extends Entity {
+export class Explore extends Entity implements Taggable {
   protected readonly _structDef: StructDef;
   protected readonly _parentExplore?: Explore;
   private _fieldMap: Map<string, Field> | undefined;
@@ -1465,6 +1460,14 @@ export class Explore extends Entity {
 
   public isExploreField(): this is ExploreField {
     return false;
+  }
+
+  tagParse(spec?: TagParseSpec): TagParse {
+    return Tag.annotationToTag(this._structDef.annotation, spec);
+  }
+
+  getTaglines(prefix?: RegExp): string[] {
+    return Tag.annotationToTaglines(this._structDef.annotation, prefix);
   }
 
   private parsedModelTag?: Tag;
@@ -2072,7 +2075,7 @@ export enum JoinRelationship {
   ManyToOne = 'many_to_one',
 }
 
-export class ExploreField extends Explore implements Taggable {
+export class ExploreField extends Explore {
   protected _parentExplore: Explore;
 
   constructor(structDef: StructDef, parentExplore: Explore, source?: Explore) {
@@ -2104,13 +2107,9 @@ export class ExploreField extends Explore implements Taggable {
     return this.joinRelationship !== JoinRelationship.OneToOne;
   }
 
-  tagParse(spec?: TagParseSpec) {
+  override tagParse(spec?: TagParseSpec) {
     spec = Tag.addModelScope(spec, this._parentExplore.modelTag);
     return Tag.annotationToTag(this._structDef.annotation, spec);
-  }
-
-  getTaglines(prefix?: RegExp) {
-    return Tag.annotationToTaglines(this._structDef.annotation, prefix);
   }
 
   public isQueryField(): this is QueryField {
@@ -2842,9 +2841,7 @@ export class QueryMaterializer extends FluentState<PreparedQuery> {
     return Malloy.run({connections, preparedResult, options: finalOptions});
   }
 
-  async *runStream(options?: {
-    rowLimit?: number;
-  }): AsyncIterableIterator<DataRecord> {
+  async *runStream(options?: RunSQLOptions): AsyncIterableIterator<DataRecord> {
     const preparedResult = await this.getPreparedResult();
     const connections = this.runtime.connections;
     const finalOptions = runSQLOptionsWithAnnotations(preparedResult, options);

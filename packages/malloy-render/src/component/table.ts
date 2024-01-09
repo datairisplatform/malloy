@@ -21,117 +21,37 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {DataArray, DataRecord, Field} from '@malloydata/malloy';
-import {LitElement, TemplateResult, css, html, nothing} from 'lit';
+import {AtomicField, DataArray, DataRecord, Field} from '@malloydata/malloy';
+import {
+  LitElement,
+  PropertyValues,
+  TemplateResult,
+  css,
+  html,
+  nothing,
+} from 'lit';
 import {customElement, eventOptions, property, state} from 'lit/decorators.js';
 import {classMap} from 'lit/directives/class-map.js';
 import {createContext, provide, consume} from '@lit/context';
-import {isFirstChild, isLastChild} from './util';
+import {
+  getFieldKey,
+  isFirstChild,
+  isLastChild,
+  shouldRenderAs,
+  valueIsNumber,
+  valueIsString,
+} from './util';
 import {renderNumericField} from './render-numeric-field';
+import {resultContext} from './result-context';
+import {RenderResultMetadata} from './render-result-metadata';
+import {TableLayout, getTableLayout} from './table-layout';
 
 type TableContext = {
   root: boolean;
+  layout: TableLayout;
 };
 
 const tableContext = createContext<TableContext | undefined>('table');
-
-type RenderOptions = {
-  pinnedHeader?: boolean;
-};
-
-// TODO: replace with an estimator per column
-function getColumnWidth() {
-  return 130;
-}
-
-const getContentStyle = (f: Field) => {
-  if (f.isAtomicField()) {
-    const width = getColumnWidth();
-    return `width: ${width}px; min-width: ${width}px; max-width: ${width}px;`;
-  }
-  return '';
-};
-
-const renderCell = (
-  f: Field,
-  value: unknown,
-  options: {
-    hideStartGutter: boolean;
-    hideEndGutter: boolean;
-  }
-) => {
-  return html`<div class="cell-wrapper">
-    <div
-      class=${classMap({
-        'cell-gutter': true,
-        'hide-gutter-border': options.hideStartGutter,
-      })}
-    ></div>
-    <div class="cell-content" style="${getContentStyle(f)}">${value}</div>
-    <div
-      class=${classMap({
-        'cell-gutter': true,
-        'hide-gutter-border': options.hideEndGutter,
-      })}
-    ></div>
-  </div>`;
-};
-
-const renderFieldContent = (
-  row: DataRecord,
-  f: Field,
-  options: RenderOptions
-) => {
-  if (f.isExploreField()) {
-    return html`<malloy-table
-      .data=${row.cell(f) as DataArray}
-      .pinnedHeader=${options.pinnedHeader ?? false}
-      .rowLimit=${options.pinnedHeader ? 1 : Infinity}
-    ></malloy-table>`;
-  }
-  let value: number | string = row.cell(f).value as number;
-  if (options.pinnedHeader) value = '';
-  else if (f.isAtomicField() && f.isNumber()) {
-    value = renderNumericField(f, value);
-  }
-
-  return renderCell(f, value, {
-    hideStartGutter: isFirstChild(f),
-    hideEndGutter: isLastChild(f),
-  });
-};
-
-const renderField = (row: DataRecord, f: Field, options: RenderOptions) => {
-  return html`<td
-    class="column-cell ${classMap({
-      numeric: f.isAtomicField() && f.isNumber(),
-    })}"
-  >
-    ${renderFieldContent(row, f, options)}
-  </td>`;
-};
-
-const renderHeader = (f: Field) => {
-  const isFirst = isFirstChild(f);
-  const isParentFirst = isFirstChild(f.parentExplore);
-  const isParentNotAField = !f.parentExplore.isExploreField();
-  const hideStartGutter = isFirst && (isParentFirst || isParentNotAField);
-
-  const isLast = isLastChild(f);
-  const isParentLast = isLastChild(f.parentExplore);
-  const hideEndGutter = isLast && (isParentLast || isParentNotAField);
-
-  return html`<th
-    class="column-cell ${classMap({
-      numeric: f.isAtomicField() && f.isNumber(),
-    })}"
-  >
-    ${renderCell(f, f.name, {
-      hideStartGutter,
-      hideEndGutter,
-    })}
-  </th>`;
-};
 
 @customElement('malloy-table')
 export class Table extends LitElement {
@@ -199,15 +119,15 @@ export class Table extends LitElement {
     }
 
     .cell-wrapper {
-      height: var(--malloy-render--table-row-height);
+      // height: var(--malloy-render--table-row-height);
       display: flex;
-      align-items: center;
+      align-items: start;
       overflow: hidden;
     }
 
     .cell-content {
       border-top: var(--malloy-render--table-border);
-      height: var(--malloy-render--table-row-height);
+      height: 100%;
       line-height: var(--malloy-render--table-row-height);
       flex: 1;
       overflow: hidden;
@@ -264,13 +184,23 @@ export class Table extends LitElement {
   public parentCtx: TableContext | undefined;
 
   @provide({context: tableContext})
-  ctx = {root: false};
+  ctx!: TableContext;
+
+  @consume({context: resultContext})
+  @property({attribute: false})
+  metadata!: RenderResultMetadata;
 
   override connectedCallback() {
     super.connectedCallback();
     if (typeof this.parentCtx === 'undefined') {
       this.ctx = {
         root: true,
+        layout: {},
+      };
+    } else {
+      this.ctx = {
+        root: false,
+        layout: this.parentCtx.layout,
       };
     }
   }
@@ -287,14 +217,135 @@ export class Table extends LitElement {
     return super.createRenderRoot();
   }
 
+  private renderHeader(f: Field) {
+    const isFirst = isFirstChild(f);
+    const isParentFirst = isFirstChild(f.parentExplore);
+    const isParentNotAField = !f.parentExplore.isExploreField();
+    const hideStartGutter = isFirst && (isParentFirst || isParentNotAField);
+
+    const isLast = isLastChild(f);
+    const isParentLast = isLastChild(f.parentExplore);
+    const hideEndGutter = isLast && (isParentLast || isParentNotAField);
+
+    return html`<th
+      class="column-cell ${classMap({
+        numeric: f.isAtomicField() && f.isNumber(),
+      })}"
+    >
+      ${this.renderCell(f, f.name, {
+        hideStartGutter,
+        hideEndGutter,
+        isHeader: true,
+      })}
+    </th>`;
+  }
+
+  private renderField(row: DataRecord, f: Field) {
+    return html`<td
+      class="column-cell ${classMap({
+        numeric: f.isAtomicField() && f.isNumber(),
+      })}"
+    >
+      ${this.renderFieldContent(row, f)}
+    </td>`;
+  }
+
+  private getColumnWidth(f: Field) {
+    const key = getFieldKey(f);
+    return this.ctx.layout[key].width;
+  }
+
+  private getContentStyle(f: Field, isHeader = false) {
+    const width = this.getColumnWidth(f);
+    let style = '';
+    if (isHeader) return style;
+
+    if (typeof width !== 'undefined') {
+      style += `width: ${width}px; min-width: ${width}px; max-width: ${width}px;`;
+    }
+
+    const height = this.ctx.layout[getFieldKey(f)].height;
+    if (typeof height === 'number') {
+      style += `height: ${height}px;`;
+    }
+
+    return style;
+  }
+
+  private renderCell(
+    f: Field,
+    value: string | number | TemplateResult,
+    options: {
+      hideStartGutter: boolean;
+      hideEndGutter: boolean;
+      isHeader: boolean;
+    }
+  ) {
+    return html`<div class="cell-wrapper">
+      <div
+        class=${classMap({
+          'cell-gutter': true,
+          'hide-gutter-border': options.hideStartGutter,
+        })}
+      ></div>
+      <div
+        class="cell-content"
+        style="${this.getContentStyle(f, options.isHeader)}"
+        title="${value}"
+      >
+        ${value}
+      </div>
+      <div
+        class=${classMap({
+          'cell-gutter': true,
+          'hide-gutter-border': options.hideEndGutter,
+        })}
+      ></div>
+    </div>`;
+  }
+
+  private renderFieldContent(row: DataRecord, f: Field) {
+    const renderAs = shouldRenderAs(f);
+    // Render nested tables without gutters
+    if (renderAs === 'table') {
+      return html`<malloy-table
+        .data=${row.cell(f) as DataArray}
+        .pinnedHeader=${this.pinnedHeader ?? false}
+        .rowLimit=${this.pinnedHeader ? 1 : Infinity}
+      ></malloy-table>`;
+    }
+    const resultCellValue = row.cell(f).value;
+    let renderValue: string | number | TemplateResult = '';
+    if (this.pinnedHeader) renderValue = '';
+    else if (renderAs === 'bar-chart') {
+      renderValue = html`<malloy-bar-chart
+        .data=${row.cell(f) as DataArray}
+      ></malloy-bar-chart>`;
+    } else if (valueIsNumber(f, resultCellValue)) {
+      // TS doesn't support typeguards for multiple parameters, so unfortunately have to assert AtomicField here. https://github.com/microsoft/TypeScript/issues/26916
+      renderValue = renderNumericField(f as AtomicField, resultCellValue);
+    } else if (resultCellValue === null) {
+      renderValue = '∅';
+    } else if (valueIsString(f, resultCellValue)) {
+      renderValue = resultCellValue;
+    }
+
+    return this.renderCell(f, renderValue, {
+      hideStartGutter: isFirstChild(f),
+      hideEndGutter: isLastChild(f),
+      isHeader: false,
+    });
+  }
+
+  willUpdate(changedProperties: PropertyValues<this>) {
+    if (this.ctx.root && changedProperties.has('data')) {
+      this.ctx.layout = getTableLayout(this.metadata);
+    }
+  }
+
   override render() {
     const fields = this.data.field.allFields;
-
-    const headers = fields.map(f => renderHeader(f));
-
-    const renderOptions: RenderOptions = {
-      pinnedHeader: this.pinnedHeader,
-    };
+    const headers = fields.map(f => this.renderHeader(f));
 
     const rows: TemplateResult[] = [];
     let i = 0;
@@ -302,7 +353,7 @@ export class Table extends LitElement {
       if (i >= this.rowLimit) break;
       rows.push(
         html`<tr>
-          ${fields.map(f => renderField(row, f, renderOptions))}
+          ${fields.map(f => this.renderField(row, f))}
         </tr>`
       );
       i++;

@@ -46,6 +46,7 @@ describe('BigQuery hand-built expression test', () => {
   function withJoin(leftKey: string, rightKey: string): StructRelationship {
     return {
       type: 'one',
+      matrixOperation: 'left',
       onExpression: [
         {type: 'field', path: `${leftKey}`},
         '=',
@@ -357,8 +358,8 @@ describe('BigQuery hand-built expression test', () => {
     const result = await handModel
       ._loadQueryFromQueryDef({
         structRef: 'aircraft',
-        pipeHead: {name: 'hand_turtle'},
-        pipeline: [],
+        name: 'hand_turtle',
+        pipeline: [{type: 'reduce', fields: ['aircraft_count']}],
       })
       .run();
     expect(result.data.value[0]['aircraft_count']).toBe(3599);
@@ -520,8 +521,11 @@ describe('BigQuery hand-built expression test', () => {
   it(`hand: declared pipeline as main query - ${databaseName}`, async () => {
     const sql = await compileHandQueryToSQL(handModel, {
       structRef: 'aircraft',
-      pipeHead: {name: 'hand_turtle_pipeline'},
-      pipeline: [],
+      name: 'hand_turtle_pipeline',
+      pipeline: [
+        {type: 'reduce', fields: ['aircraft_count']},
+        {type: 'reduce', fields: ['aircraft_count']},
+      ],
     });
     // console.log(result.sql);
     await validateCompilation(databaseName, sql);
@@ -719,6 +723,7 @@ describe('BigQuery hand-built expression test', () => {
         ...aircraftHandBase,
         structRelationship: {
           type: 'many',
+          matrixOperation: 'left',
           onExpression: [
             {type: 'field', path: 'aircraft_model_code'},
             '=',

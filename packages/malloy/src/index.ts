@@ -20,13 +20,31 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-
 export {
   DuckDBDialect,
   StandardSQLDialect,
   PostgresDialect,
   SnowflakeDialect,
   registerDialect,
+  arg,
+  qtz,
+  overload,
+  minScalar,
+  anyExprType,
+  minAggregate,
+  maxScalar,
+  sql,
+  makeParam,
+  sqlFragment,
+  param,
+  spread,
+  Dialect,
+  FUNCTIONS,
+} from './dialect';
+export type {
+  DialectFieldList,
+  DialectFunctionOverloadDef,
+  QueryInfo,
 } from './dialect';
 // TODO tighten up exports
 export type {
@@ -79,14 +97,22 @@ export type {
   DocumentLocation,
   DocumentRange,
   DocumentPosition,
+  Sampling,
+  TypecastFragment,
   Annotation,
+  FieldAtomicTypeDef,
+  SQLBlockStructDef,
 } from './model';
 export {
   // Used in Composer Demo
   Segment,
   isFilteredAliasedName,
-  flattenQuery,
+  isSamplingEnable,
+  isSamplingPercent,
+  isSamplingRows,
+  mkExpr,
   expressionIsCalculation,
+  indent,
 } from './model';
 export {
   // Neede for VSCode extension
@@ -153,6 +179,7 @@ export type {
   LookupConnection,
   ModelString,
   ModelURL,
+  FetchSchemaOptions,
   PersistSQLResults,
   PooledConnection,
   QueryString,

@@ -752,12 +752,12 @@ export interface TurtleSegment extends Filtered {
   name: string;
 }
 export interface Pipeline {
-  pipeHead?: TurtleSegment;
   pipeline: PipeSegment[];
 }
 
 export interface Query extends Pipeline, Filtered, HasLocation {
   type?: 'query';
+  name?: string;
   structRef: StructRef;
   annotation?: Annotation;
   modelAnnotation?: Annotation;
@@ -765,7 +765,7 @@ export interface Query extends Pipeline, Filtered, HasLocation {
 
 export type NamedQuery = Query & NamedObject;
 
-export type PipeSegment = QuerySegment | IndexSegment;
+export type PipeSegment = QuerySegment | IndexSegment | RawSegment;
 
 export interface ReduceSegment extends QuerySegment {
   type: 'reduce';
@@ -818,6 +818,14 @@ export function isSamplingEnable(s: Sampling): s is SamplingEnable {
   return (s as SamplingEnable).enable !== undefined;
 }
 
+export interface RawSegment extends Filtered {
+  type: 'raw';
+  fields: never[];
+}
+export function isRawSegment(pe: PipeSegment): pe is RawSegment {
+  return (pe as RawSegment).type === 'raw';
+}
+
 export interface IndexSegment extends Filtered {
   type: 'index';
   fields: string[];
@@ -850,8 +858,15 @@ export type JoinRelationship =
   | 'many_to_one'
   | 'many_to_many';
 
+export type MatrixOperation = 'left' | 'right' | 'full' | 'inner';
+
+export function isMatrixOperation(x: string): x is MatrixOperation {
+  return ['left', 'right', 'full', 'inner'].includes(x);
+}
+
 export interface JoinOn {
   type: 'one' | 'many' | 'cross';
+  matrixOperation: MatrixOperation;
   onExpression?: Expr;
 }
 

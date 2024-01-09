@@ -30,6 +30,7 @@ import {medicareModel, medicareStateFacts} from './medicare_model';
 function withJoin(leftKey: string, rightKey: string): StructRelationship {
   return {
     type: 'one',
+    matrixOperation: 'left',
     onExpression: [
       {type: 'field', path: `${leftKey}`},
       '=',
@@ -98,6 +99,7 @@ export const FLIGHTS_EXPLORE: StructDef = {
       },
       structRelationship: {
         type: 'one',
+        matrixOperation: 'left',
         onExpression: [
           {type: 'field', path: 'carrier'},
           '=',
@@ -341,8 +343,27 @@ export const FLIGHTS_EXPLORE: StructDef = {
         query: {
           type: 'query',
           structRef: 'flights',
-          pipeHead: {name: 'aircraft_facts_query'},
-          pipeline: [],
+          name: 'aircraft_facts_query',
+          pipeline: [
+            {
+              type: 'reduce',
+              fields: [
+                'tail_num',
+                {
+                  type: 'number',
+                  name: 'lifetime_distance',
+                  expressionType: 'aggregate',
+                  e: [
+                    {
+                      type: 'aggregate',
+                      function: 'sum',
+                      e: [{type: 'field', path: 'distance'}],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
       },
       structRelationship: withJoin('tail_num', 'aircraft_facts.tail_num'),

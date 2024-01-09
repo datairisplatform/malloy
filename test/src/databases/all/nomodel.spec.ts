@@ -278,6 +278,156 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
     expect(result.resultExplore.limit).toBe(3);
   });
 
+  const matrixModel = `
+      ##! experimental.join_types
+      source: am_states is ${databaseName}.table('malloytest.state_facts') -> {
+        select: *
+        where: state ~ r'^(A|M)'
+      } extend {
+        measure:
+          am_count is count()
+          am_sum is airport_count.sum()
+      }
+
+      query: ac_states_base is ${databaseName}.table('malloytest.state_facts') -> {
+        select: *
+        where: state ~ r'^(A|C)'
+      }
+
+      // mulitply the number of rows in ac_states so we have a many to one join
+      source: ac_states is ac_states_base -> {
+        extend: {
+          join_cross: b is ac_states_base
+        }
+        select:
+          b.state
+          b.airport_count
+      } extend {
+        measure:
+          ac_count is count()
+          ac_sum is airport_count.sum()
+      }
+  `;
+
+  it(`join inner- ${databaseName}`, async () => {
+    // a cross join produces a Many to Many result.
+    // symmetric aggregate are needed on both sides of the join
+    // Check the row count and that sums on each side work properly.
+    await expect(`
+      ${matrixModel}
+      run: ac_states -> {
+        extend: {
+          join_one: am_states inner on state = am_states.state
+        }
+        aggregate:
+          ac_count
+          ac_sum
+          am_states.am_sum
+          am_states.am_count
+
+      }
+      `).malloyResultMatches(runtime, {
+      ac_count: 28,
+      ac_sum: 10402,
+      am_count: 4,
+      am_sum: 1486,
+      //show_sql_fail: 1,
+    });
+  });
+
+  it(`join left - ${databaseName}`, async () => {
+    // a cross join produces a Many to Many result.
+    // symmetric aggregate are needed on both sides of the join
+    // Check the row count and that sums on each side work properly.
+    await expect(`
+      ${matrixModel}
+      run: ac_states -> {
+        extend: {
+          join_one: am_states left on state = am_states.state
+        }
+        aggregate:
+          ac_count
+          ac_sum
+          am_states.am_sum
+          am_states.am_count
+
+      }
+      `).malloyResultMatches(runtime, {
+      ac_count: 49,
+      ac_sum: 21336,
+      am_count: 4,
+      am_sum: 1486,
+      //show_sql_fail: 1,
+    });
+  });
+
+  it(`join right - ${databaseName}`, async () => {
+    // a cross join produces a Many to Many result.
+    // symmetric aggregate are needed on both sides of the join
+    // Check the row count and that sums on each side work properly.
+    await expect(`
+      ${matrixModel}
+      run: ac_states -> {
+        extend: {
+          join_one: am_states right on state = am_states.state
+        }
+        aggregate:
+          ac_count
+          ac_sum
+          am_states.am_sum
+          am_states.am_count
+
+      }
+      `).malloyResultMatches(runtime, {
+      ac_count: 28,
+      ac_sum: 10402,
+      am_count: 12,
+      am_sum: 4139,
+      //show_sql_fail: 1,
+    });
+  });
+
+  it(`join full - ${databaseName}`, async () => {
+    // a cross join produces a Many to Many result.
+    // symmetric aggregate are needed on both sides of the join
+    // Check the row count and that sums on each side work properly.
+    await expect(`
+      ${matrixModel}
+      run: ac_states -> {
+        extend: {
+          join_one: am_states full on state = am_states.state
+        }
+        aggregate:
+          ac_count
+          ac_sum
+          am_states.am_sum
+          am_states.am_count
+
+      }
+      `).malloyResultMatches(runtime, {
+      ac_count: 49,
+      ac_sum: 21336,
+      am_count: 12,
+      am_sum: 4139,
+    });
+  });
+
+  it(`basic index - ${databaseName}`, async () => {
+    // Make sure basic indexing works.
+    await expect(`
+      run: ${databaseName}.table('malloytest.flights') -> {
+        index: *
+      }
+      -> {
+        select: *
+        order_by: fieldValue
+        where: fieldName = 'carrier'
+      }
+      `).malloyResultMatches(runtime, {
+      fieldValue: 'AA',
+    });
+  });
+
   testIf(runtime.supportsNesting)(
     `number as null- ${databaseName}`,
     async () => {
@@ -511,6 +661,46 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
       .loadQuery('run: conn.sql("select 1 as one")')
       .run();
     expect(result.data.value[0]['one']).toBe(1);
+  });
+
+  it(`simple sql is exactly as written - ${databaseName}`, async () => {
+    const result = await runtime
+      .loadQuery('run: conn.sql("select 1 as one")')
+      .run();
+    if (databaseName === 'postgres') {
+      expect(result.sql).toBe(`WITH __stage0 AS (
+  select 1 as one)
+SELECT row_to_json(finalStage) as row FROM __stage0 AS finalStage`);
+    } else {
+      expect(result.sql).toBe('select 1 as one');
+    }
+    expect(result.resultExplore).not.toBeUndefined();
+  });
+
+  it(`source from query defined as sql query - ${databaseName}`, async () => {
+    const result = await runtime
+      .loadQuery(
+        `
+        query: q is conn.sql("select 1 as one")
+        source: s is q
+        run: s -> { select: * }
+      `
+      )
+      .run();
+    expect(result.data.path(0, 'one').number.value).toBe(1);
+  });
+
+  it(`source from query defined as other query - ${databaseName}`, async () => {
+    const result = await runtime
+      .loadQuery(
+        `
+        query: q is conn.table('malloytest.flights') -> { group_by: carrier }
+        source: s is q
+        run: s -> { select: *; order_by: carrier }
+      `
+      )
+      .run();
+    expect(result.data.path(0, 'carrier').string.value).toBe('AA');
   });
 
   it(`all with parameters - basic  - ${databaseName}`, async () => {

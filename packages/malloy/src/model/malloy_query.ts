@@ -21,7 +21,6 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import cloneDeep from 'lodash/cloneDeep';
 import {Dialect, DialectFieldList, getDialect} from '../dialect';
 import {StandardSQLDialect} from '../dialect/standardsql/standardsql';
 import {
@@ -64,13 +63,13 @@ import {
   isParameterFragment,
   isPhysical,
   isQuerySegment,
+  isRawSegment,
   isSpreadFragment,
   isSQLExpressionFragment,
   isUngroupFragment,
   isValueParameter,
   JoinRelationship,
   ModelDef,
-  NamedQuery,
   OrderBy,
   OutputFieldFragment,
   Parameter,
@@ -1089,6 +1088,7 @@ class QueryFieldStruct extends QueryAtomicField {
       ...this.parent.fieldDef,
       structRelationship: {
         type: 'one',
+        matrixOperation: 'left',
         onExpression: [
           {
             type: 'field',
@@ -1281,7 +1281,10 @@ class FieldInstanceResult implements FieldInstance {
   }
 
   getQueryInfo(): QueryInfo {
-    if (!isIndexSegment(this.firstSegment)) {
+    if (
+      !isIndexSegment(this.firstSegment) &&
+      !isRawSegment(this.firstSegment)
+    ) {
       const {queryTimezone} = this.firstSegment;
       if (queryTimezone) {
         return {queryTimezone};
@@ -1668,7 +1671,10 @@ class FieldInstanceResultRoot extends FieldInstanceResult {
     for (const [name, join] of this.joins) {
       // first join is by default the
       const relationship = join.parentRelationship();
-      if (relationship === 'many_to_many') {
+      if (
+        relationship === 'many_to_many' ||
+        join.forceAllSymmetricCalculations()
+      ) {
         // everything must be calculated with symmetric aggregates
         leafiest = '0never';
       } else if (leafiest === undefined) {
@@ -1769,6 +1775,21 @@ class JoinInstance {
     }
   }
 
+  // For now, we force all symmetric calculations for full and right joins
+  //  because we need distinct keys for COUNT(xx) operations.  Don't really need
+  //  this for sums.  This will produce correct results and we can optimize this
+  //  at some point..
+  forceAllSymmetricCalculations(): boolean {
+    const sr = this.queryStruct.fieldDef.structRelationship;
+    if (this.queryStruct.parent === undefined || !isJoinOn(sr)) {
+      return false;
+    }
+    if (sr.matrixOperation === 'right' || sr.matrixOperation === 'full') {
+      return true;
+    }
+    return false;
+  }
+
   // postgres unnest needs to know the names of the physical fields.
   getDialectFieldList(): DialectFieldList {
     const dialectFieldList: DialectFieldList = [];
@@ -1857,10 +1878,11 @@ class QueryQuery extends QueryField {
     stageWriter: StageWriter | undefined = undefined,
     isJoinedSubquery: boolean
   ): QueryQuery {
-    let flatTurtleDef = parentStruct.flattenTurtleDef(fieldDef);
     let parent = parentStruct;
 
-    const firstStage = flatTurtleDef.pipeline[0];
+    let turtleWithFilters =
+      parentStruct.applyStructFiltersToTurtleDef(fieldDef);
+    const firstStage = turtleWithFilters.pipeline[0];
     const sourceDef = parentStruct.fieldDef;
 
     // if we are generating code
@@ -1879,14 +1901,14 @@ class QueryQuery extends QueryField {
         },
         parent.parent ? {struct: parent} : {model: parent.model}
       );
-      flatTurtleDef = {
-        ...flatTurtleDef,
+      turtleWithFilters = {
+        ...turtleWithFilters,
         pipeline: [
           {
             ...firstStage,
             extendSource: undefined,
           },
-          ...flatTurtleDef.pipeline.slice(1),
+          ...turtleWithFilters.pipeline.slice(1),
         ],
       };
     }
@@ -1902,21 +1924,28 @@ class QueryQuery extends QueryField {
     switch (firstStage.type) {
       case 'reduce':
         return new QueryQueryReduce(
-          flatTurtleDef,
+          turtleWithFilters,
           parent,
           stageWriter,
           isJoinedSubquery
         );
       case 'project':
         return new QueryQueryProject(
-          flatTurtleDef,
+          turtleWithFilters,
           parent,
           stageWriter,
           isJoinedSubquery
         );
       case 'index':
         return new QueryQueryIndex(
-          flatTurtleDef,
+          turtleWithFilters,
+          parent,
+          stageWriter,
+          isJoinedSubquery
+        );
+      case 'raw':
+        return new QueryQueryRaw(
+          turtleWithFilters,
           parent,
           stageWriter,
           isJoinedSubquery
@@ -1979,7 +2008,7 @@ class QueryQuery extends QueryField {
 
       // let e: Expr;
       if (field instanceof QueryQuery) {
-        const newFieldDef: TurtleDefPlus = cloneDeep(field.fieldDef);
+        const newFieldDef: TurtleDefPlus = structuredClone(field.fieldDef);
         newFieldDef.as = f.name;
         newFieldDef.filterList = f.filterList;
         field = QueryQuery.makeQuery(
@@ -2429,7 +2458,7 @@ class QueryQuery extends QueryField {
 
       const lastSegment =
         fi.turtleDef.pipeline[fi.turtleDef.pipeline.length - 1];
-      const limit = lastSegment.limit;
+      const limit = isRawSegment(lastSegment) ? undefined : lastSegment.limit;
       let orderBy: OrderBy[] | undefined = undefined;
       if (isQuerySegment(lastSegment)) {
         orderBy = lastSegment.orderBy;
@@ -2595,6 +2624,7 @@ class QueryQuery extends QueryField {
     const structRelationship = qs.fieldDef.structRelationship;
     let structSQL = qs.structSourceSQL(stageWriter);
     if (isJoinOn(structRelationship)) {
+      const matrixOperation = structRelationship.matrixOperation.toUpperCase();
       if (ji.makeUniqueKey) {
         const passKeys = this.generateSQLPassthroughKeys(qs);
         structSQL = `(SELECT ${qs.dialect.sqlGenerateUUID()} as __distinct_key, x.* ${passKeys} FROM ${structSQL} as x)`;
@@ -2626,7 +2656,7 @@ class QueryQuery extends QueryField {
         if (conditions !== undefined && conditions.length >= 1) {
           filters = ` AND (${conditions.join(' AND ')})`;
         }
-        s += `LEFT JOIN ${structSQL} AS ${ji.alias}\n  ON ${onCondition}${filters}\n`;
+        s += ` ${matrixOperation} JOIN ${structSQL} AS ${ji.alias}\n  ON ${onCondition}${filters}\n`;
       } else {
         let select = `SELECT ${ji.alias}.*`;
         let joins = '';
@@ -2645,7 +2675,7 @@ class QueryQuery extends QueryField {
         select += `\nFROM ${structSQL} AS ${
           ji.alias
         }\n${joins}\nWHERE ${conditions?.join(' AND ')}\n`;
-        s += `LEFT JOIN (\n${indent(select)}) AS ${
+        s += `${matrixOperation} JOIN (\n${indent(select)}) AS ${
           ji.alias
         }\n  ON ${onCondition}\n`;
         return s;
@@ -2835,7 +2865,7 @@ class QueryQuery extends QueryField {
     );
 
     // limit
-    if (this.firstSegment.limit) {
+    if (!isRawSegment(this.firstSegment) && this.firstSegment.limit) {
       s += `LIMIT ${this.firstSegment.limit}\n`;
     }
     this.resultStage = stageWriter.addStage(s);
@@ -3258,7 +3288,7 @@ class QueryQuery extends QueryField {
     );
 
     // limit
-    if (this.firstSegment.limit) {
+    if (!isRawSegment(this.firstSegment) && this.firstSegment.limit) {
       s += `LIMIT ${this.firstSegment.limit}\n`;
     }
 
@@ -3281,7 +3311,9 @@ class QueryQuery extends QueryField {
     // let fieldsSQL: string[] = [];
     const dialectFieldList: DialectFieldList = [];
     let orderBy = '';
-    const limit: number | undefined = resultStruct.firstSegment.limit;
+    const limit = isRawSegment(resultStruct.firstSegment)
+      ? undefined
+      : resultStruct.firstSegment.limit;
 
     // calculate the ordering.
     const obSQL: string[] = [];
@@ -3637,7 +3669,7 @@ class QueryQueryIndexStage extends QueryQuery {
       }
       if (fields[i].type === 'timestamp' || fields[i].type === 'date') {
         s += `    WHEN ${i} THEN ${dialect.concat(
-          `MIN(${dialect.sqlDateToString(fields[i].expression)}`,
+          `MIN(${dialect.sqlDateToString(fields[i].expression)})`,
           "' to '",
           `MAX(${dialect.sqlDateToString(fields[i].expression)})`
         )}\n`;
@@ -3662,7 +3694,7 @@ class QueryQueryIndexStage extends QueryQuery {
     s += 'GROUP BY 1,2,3,4\n';
 
     // limit
-    if (this.firstSegment.limit) {
+    if (!isRawSegment(this.firstSegment) && this.firstSegment.limit) {
       s += `LIMIT ${this.firstSegment.limit}\n`;
     }
     // console.log(s);
@@ -3676,6 +3708,33 @@ class QueryQueryIndexStage extends QueryQuery {
 FROM ${resultStage}\n`
     );
     return this.resultStage;
+  }
+}
+
+class QueryQueryRaw extends QueryQuery {
+  generateSQL(stageWriter: StageWriter): string {
+    const ssrc = this.parent.fieldDef.structSource;
+    if (ssrc.type !== 'sql' || ssrc.method !== 'subquery') {
+      throw new Error(
+        'Invalid struct for QueryQueryRaw, currently only supports SQL'
+      );
+    }
+    const s = ssrc.sqlBlock.selectStr;
+    return stageWriter.addStage(s);
+  }
+
+  prepare() {
+    // Do nothing!
+  }
+
+  getResultStructDef(): StructDef {
+    return this.parent.fieldDef;
+  }
+
+  getResultMetadata(
+    _fi: FieldInstance
+  ): ResultStructMetadataDef | ResultMetadataDef | undefined {
+    return undefined;
   }
 }
 
@@ -4316,25 +4375,14 @@ class QueryStruct extends QueryNode {
     }
   }
 
-  // take a TurtleDef that might have names and make it so it doesn't.
-  flattenTurtleDef(turtleDef: TurtleDef | TurtleDefPlus): TurtleDef {
+  applyStructFiltersToTurtleDef(
+    turtleDef: TurtleDef | TurtleDefPlus
+  ): TurtleDef {
     let pipeline = turtleDef.pipeline;
-    let pipeHead = turtleDef.pipeHead;
     const annotation = turtleDef.annotation;
-    while (pipeHead) {
-      const field = this.getFieldByName(pipeHead.name);
-      if (field instanceof QueryQuery) {
-        pipeHead = field.fieldDef.pipeHead;
-        pipeline = field.fieldDef.pipeline.concat(pipeline);
-      } else {
-        throw new Error(
-          `Only Turtles can be used in a pipeline ${pipeHead.name}`
-        );
-      }
-    }
 
     const addedFilters = (turtleDef as TurtleDefPlus).filterList || [];
-    pipeline = cloneDeep(pipeline);
+    pipeline = structuredClone(pipeline);
     pipeline[0].filterList = addedFilters.concat(
       pipeline[0].filterList || [],
       this.fieldDef.filterList || []
@@ -4349,46 +4397,6 @@ class QueryStruct extends QueryNode {
     };
     return flatTurtleDef;
   }
-
-  // /** returns a query object for the given name */
-  // getQueryByName(name: string, stageWriter: StageWriter): QueryQuery {
-  //   const query = this.getFieldByName(name);
-  //   // make a new one
-  //   if (query instanceof QueryQuery || query instanceof QueryTurtle) {
-  //     // return QueryQuery.makeQuery((query as QueryTurtle).fieldDef, query.parent, stageWriter);
-  //     throw new Error("something broken here.");
-  //   } else {
-  //     throw new Error(`${name} is not of type 'reduce', 'project' or 'index'`);
-  //   }
-  // }
-
-  //   // Check to see if we need to convert a local reference to a global one on the
-  //   // model.
-  //   getQueryFromQueryRef(
-  //     queryRef: QueryRef,
-  //     filterList: FilterCondition[] | undefined,
-  //     stageWriter: StageWriter
-  //   ): QueryQuery {
-  //     if (typeof queryRef === "string") {
-  //       const query = this.getQueryByName(queryRef, stageWriter);
-  //       if (filterList === undefined) {
-  //         return query;
-  //       }
-  //       queryRef = query.fieldDef;
-  //     }
-
-  //     // setup the source if it doesn't exist, merge filter lists.
-  //     // queryRef = { ...queryRef };
-  //     // if (!queryRef.from) {
-  //     //   queryRef.from = this.getOutputName();
-  //     // }
-  //     if (filterList) {
-  //       queryRef = cloneDeep(queryRef);
-  //       // maybe the order is backward...
-  //       queryRef.filterList = filterList.concat(queryRef.filterList || []);
-  //     }
-  //     return this.model.getQueryFromDef(queryRef, this);
-  //   }
 }
 
 /** the resulting SQL and the shape of the data at each stage of the pipeline */
@@ -4481,7 +4489,6 @@ export class QueryModel {
     const turtleDef: TurtleDefPlus = {
       type: 'turtle',
       name: 'ignoreme',
-      pipeHead: query.pipeHead,
       pipeline: query.pipeline,
       filterList: query.filterList,
     };
@@ -4541,10 +4548,7 @@ export class QueryModel {
       structs: ret.structs,
       sourceExplore,
       sourceFilters: query.filterList,
-      queryName:
-        query.pipeHead && query.pipeline.length === 0
-          ? query.pipeHead.name
-          : undefined,
+      queryName: query.name,
       connectionName: ret.connectionName,
       annotation: query.annotation,
     };
@@ -4564,26 +4568,16 @@ export class QueryModel {
     }
     // make a search index if one isn't modelled.
     const struct = this.getStructByName(explore);
-    let indexQuery: Query;
-
-    if (!struct.nameMap.get('search_index')) {
-      indexQuery = {
-        structRef: explore,
-        pipeline: [
-          {
-            type: 'index',
-            fields: ['*'],
-            sample: struct.dialect.defaultSampling,
-          },
-        ],
-      };
-    } else {
-      indexQuery = {
-        structRef: explore,
-        pipeHead: {name: 'search_index'},
-        pipeline: [],
-      };
-    }
+    const indexQuery: Query = {
+      structRef: explore,
+      pipeline: [
+        {
+          type: 'index',
+          fields: ['*'],
+          sample: struct.dialect.defaultSampling,
+        },
+      ],
+    };
     const fieldNameColumn = struct.dialect.sqlMaybeQuoteIdentifier('fieldName');
     const fieldValueColumn =
       struct.dialect.sqlMaybeQuoteIdentifier('fieldValue');
@@ -4592,7 +4586,7 @@ export class QueryModel {
     // if we've compiled the SQL before use it otherwise
     let sqlPDT = this.exploreSearchSQLMap.get(explore);
     if (sqlPDT === undefined) {
-      sqlPDT = (await this.compileQuery(indexQuery, false)).sql;
+      sqlPDT = this.compileQuery(indexQuery, false).sql;
       this.exploreSearchSQLMap.set(explore, sqlPDT);
     }
 
@@ -4634,18 +4628,4 @@ export class QueryModel {
     });
     return result.rows as unknown as SearchIndexResult[];
   }
-}
-
-export function flattenQuery(model: ModelDef, query: NamedQuery): TurtleDef {
-  let structRef = query.structRef;
-  if (typeof structRef !== 'string') {
-    structRef = structRef.as || structRef.name;
-  }
-  const queryModel = new QueryModel(model);
-  const queryStruct = queryModel.getStructByName(structRef);
-  const turtleDef = queryStruct.flattenTurtleDef({
-    ...query,
-    type: 'turtle',
-  });
-  return turtleDef;
 }
