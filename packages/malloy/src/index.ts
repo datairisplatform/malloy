@@ -81,6 +81,7 @@ export type {
   SearchIndexResult,
   ModelDef,
   Query,
+  QueryResult,
   QueryRunStats,
   NamedQuery,
   NamedModelObject,
