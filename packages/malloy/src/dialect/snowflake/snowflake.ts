@@ -403,7 +403,8 @@ ${indent(sql)}
   }
 
   sqlRegexpMatch(expr: Expr, regexp: Expr): Expr {
-    return mkExpr`REGEXP_LIKE(${expr}, ${regexp})`;
+    // regexp_match captures any partial match
+    return mkExpr`(REGEXP_INSTR(${expr}, ${regexp}) != 0)`;
   }
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {
