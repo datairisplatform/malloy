@@ -60,8 +60,9 @@ export class SnowflakeExecutor {
   private static defaultPoolOptions_: PoolOptions = {
     min: 1,
     max: 1,
-    // evictionRunIntervalMillis: 60_000, // default = 0, off
-    // idleTimeoutMillis: 60_000, // default = 30000
+    // ensure we validate a connection before giving it to a client
+    testOnBorrow: true,
+    testOnReturn: true,
   };
   private static defaultConnectionOptions = {
     clientSessionKeepAlive: true, // default = false
