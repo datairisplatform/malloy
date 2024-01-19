@@ -52,7 +52,7 @@ import {
   StreamingConnection,
   StructDef,
   toAsyncGenerator,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 export interface BigQueryManagerOptions {
   credentials?: {

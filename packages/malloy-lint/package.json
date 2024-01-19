@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/eslint-plugin-lint",
+  "name": "@datairis/eslint-plugin-lint",
   "version": "0.0.119",
   "license": "MIT",
   "main": "dist/index.js",

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {ExploreField, Field} from '@malloydata/malloy';
+import {ExploreField, Field} from '@datairis/malloy';
 import {scale, locale} from 'vega';
 import {getFieldKey, getTextWidth} from './util';
 import {RenderResultMetadata} from './render-result-metadata';

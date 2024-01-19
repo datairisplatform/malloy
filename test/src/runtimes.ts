@@ -29,12 +29,12 @@ import {
   Result,
   RunSQLOptions,
   SingleConnectionRuntime,
-} from '@malloydata/malloy';
-import {BigQueryConnection} from '@malloydata/db-bigquery';
-import {DuckDBConnection} from '@malloydata/db-duckdb';
-import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
-import {SnowflakeConnection} from '@malloydata/db-snowflake';
-import {PooledPostgresConnection} from '@malloydata/db-postgres';
+} from '@datairis/malloy';
+import {BigQueryConnection} from '@datairis/db-bigquery';
+import {DuckDBConnection} from '@datairis/db-duckdb';
+import {DuckDBWASMConnection} from '@datairis/db-duckdb/wasm';
+import {SnowflakeConnection} from '@datairis/db-snowflake';
+import {PooledPostgresConnection} from '@datairis/db-postgres';
 
 export class SnowflakeTestConnection extends SnowflakeConnection {
   public async runSQL(

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Field} from '@malloydata/malloy';
+import {Field} from '@datairis/malloy';
 import {
   FieldRenderMetadata,
   RenderResultMetadata,

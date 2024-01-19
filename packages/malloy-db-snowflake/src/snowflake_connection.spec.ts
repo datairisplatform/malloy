@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import * as malloy from '@malloydata/malloy';
+import * as malloy from '@datairis/malloy';
 import {SnowflakeConnection} from './snowflake_connection';
 import {fileURLToPath} from 'url';
 import * as util from 'util';

@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/malloy-sql",
+  "name": "@datairis/malloy-sql",
   "version": "0.0.119",
   "license": "MIT",
   "main": "dist/index.js",
@@ -24,7 +24,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@malloydata/malloy": "^0.0.119"
+    "@datairis/malloy": "^0.0.119"
   },
   "devDependencies": {
     "peggy": "^3.0.2"

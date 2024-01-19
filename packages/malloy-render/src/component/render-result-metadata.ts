@@ -27,7 +27,7 @@ import {
   Explore,
   Field,
   Result,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {getFieldKey, valueIsNumber, valueIsString} from './util';
 
 export interface FieldRenderMetadata {

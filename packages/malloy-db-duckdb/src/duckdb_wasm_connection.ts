@@ -29,7 +29,7 @@ import {
   RunSQLOptions,
   StructDef,
   SQLBlock,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {StructRow, Table, Vector} from 'apache-arrow';
 import {DuckDBCommon, QueryOptionsReader} from './duckdb_common';
 

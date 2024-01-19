@@ -28,10 +28,10 @@ import {
   Query,
   StructDef,
   StructRelationship,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {describeIfDatabaseAvailable, fStringLike} from '../../util';
 
-import * as malloy from '@malloydata/malloy';
+import * as malloy from '@datairis/malloy';
 import {RuntimeList} from '../../runtimes';
 
 const [describe] = describeIfDatabaseAvailable(['bigquery']);

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {AtomicField, DataArray, DataRecord, Field} from '@malloydata/malloy';
+import {AtomicField, DataArray, DataRecord, Field} from '@datairis/malloy';
 import {
   LitElement,
   PropertyValues,

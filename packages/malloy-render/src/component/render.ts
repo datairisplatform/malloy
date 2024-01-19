@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {ModelDef, QueryResult, Result, Tag} from '@malloydata/malloy';
+import {ModelDef, QueryResult, Result, Tag} from '@datairis/malloy';
 import {LitElement, html, css, PropertyValues} from 'lit';
 import {customElement, property, state} from 'lit/decorators.js';
 import './table';

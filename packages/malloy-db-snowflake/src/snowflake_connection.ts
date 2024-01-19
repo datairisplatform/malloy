@@ -35,12 +35,12 @@ import {
   QueryDataRow,
   SnowflakeDialect,
   NamedStructDefs,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {SnowflakeExecutor} from './snowflake_executor';
 import {
   FetchSchemaOptions,
   TestableConnection,
-} from '@malloydata/malloy/dist/runtime_types';
+} from '@datairis/malloy/dist/runtime_types';
 import {ConnectionOptions} from 'snowflake-sdk';
 import {Options as PoolOptions} from 'generic-pool';
 
