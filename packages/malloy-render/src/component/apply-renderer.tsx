@@ -13,7 +13,7 @@ import {
   ExploreField,
   Field,
   Tag,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {RenderResultMetadata} from './types';
 import {valueIsNumber, valueIsString} from './util';
 import {JSXElement} from 'solid-js';

@@ -29,19 +29,19 @@ import {
   Result,
   RunSQLOptions,
   SingleConnectionRuntime,
-} from '@malloydata/malloy';
-import {BigQueryConnection} from '@malloydata/db-bigquery';
-import {DuckDBConnection} from '@malloydata/db-duckdb';
-import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
-import {SnowflakeConnection} from '@malloydata/db-snowflake';
-import {PooledPostgresConnection} from '@malloydata/db-postgres';
-import {TrinoConnection, TrinoExecutor} from '@malloydata/db-trino';
-import {SnowflakeExecutor} from '@malloydata/db-snowflake/src/snowflake_executor';
-import {PrestoConnection} from '@malloydata/db-trino/src/trino_connection';
+} from '@datairis/malloy';
+import {BigQueryConnection} from '@datairis/db-bigquery';
+import {DuckDBConnection} from '@datairis/db-duckdb';
+import {DuckDBWASMConnection} from '@datairis/db-duckdb/wasm';
+import {SnowflakeConnection} from '@datairis/db-snowflake';
+import {PooledPostgresConnection} from '@datairis/db-postgres';
+import {TrinoConnection, TrinoExecutor} from '@datairis/db-trino';
+import {SnowflakeExecutor} from '@datairis/db-snowflake/src/snowflake_executor';
+import {PrestoConnection} from '@datairis/db-trino/src/trino_connection';
 import {
   MySQLConnection,
   MySQLExecutor,
-} from '@malloydata/db-mysql/src/mysql_connection';
+} from '@datairis/db-mysql/src/mysql_connection';
 import {EventEmitter} from 'events';
 
 export class SnowflakeTestConnection extends SnowflakeConnection {

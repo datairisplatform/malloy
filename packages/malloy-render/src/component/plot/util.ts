@@ -1,4 +1,4 @@
-import {Explore, ExploreField, Field} from '@malloydata/malloy';
+import {Explore, ExploreField, Field} from '@datairis/malloy';
 
 export function walkFields(e: Explore, cb: (f: Field) => void) {
   e.allFields.forEach(f => {

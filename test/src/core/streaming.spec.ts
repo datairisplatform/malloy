@@ -26,7 +26,7 @@ import {
   DataRecord,
   JSONWriter,
   WriteStream,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {RuntimeList} from '../runtimes';
 import {describeIfDatabaseAvailable} from '../util';
 

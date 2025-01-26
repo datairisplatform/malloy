@@ -3412,12 +3412,12 @@ class QueryQuery extends QueryField {
     };
     this.generateStage0Fields(this.rootResult, f, stageWriter);
 
-    if (
-      this.firstSegment.type === 'project' &&
-      !this.parent.modelCompilerFlags().has('unsafe_complex_select_query')
-    ) {
-      throw new Error('PROJECT cannot be used on queries with turtles');
-    }
+    // if (
+    //   this.firstSegment.type === 'project' &&
+    //   !this.parent.modelCompilerFlags().has('unsafe_complex_select_query')
+    // ) {
+    //   throw new Error('PROJECT cannot be used on queries with turtles');
+    // }
 
     const groupBy = 'GROUP BY ' + f.dimensionIndexes.join(',') + '\n';
 

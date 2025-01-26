@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/db-bigquery",
+  "name": "@datairis/db-bigquery",
   "version": "0.0.232",
   "license": "MIT",
   "main": "dist/index.js",
@@ -25,7 +25,7 @@
     "@google-cloud/bigquery": "^7.3.0",
     "@google-cloud/common": "^5.0.1",
     "@google-cloud/paginator": "^5.0.0",
-    "@malloydata/malloy": "^0.0.232",
+    "@datairis/malloy": "^0.0.232",
     "gaxios": "^4.2.0"
   }
 }

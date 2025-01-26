@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/render",
+  "name": "@datairis/render",
   "version": "0.0.232",
   "license": "MIT",
   "main": "dist/module/index.umd.js",
@@ -31,7 +31,7 @@
     "build-types": "tsc --build --declaration --emitDeclarationOnly"
   },
   "dependencies": {
-    "@malloydata/malloy": "^0.0.232",
+    "@datairis/malloy": "^0.0.232",
     "@tanstack/solid-virtual": "^3.10.4",
     "component-register": "^0.8.6",
     "lodash": "^4.17.20",

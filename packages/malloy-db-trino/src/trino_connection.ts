@@ -44,9 +44,9 @@ import {
   FieldDef,
   TinyParser,
   isRepeatedRecord,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
-import {BaseConnection} from '@malloydata/malloy/connection';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {PrestoClient, PrestoQuery} from '@prestodb/presto-js-client';
 import {randomUUID} from 'crypto';

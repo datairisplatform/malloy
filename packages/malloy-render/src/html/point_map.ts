@@ -28,7 +28,7 @@ import {
   Explore,
   Field,
   TimestampTimeframe,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import usAtlas from 'us-atlas/states-10m.json';
 import {HTMLChartRenderer} from './chart';
 import {formatTitle, getColorScale, timeToString} from './utils';

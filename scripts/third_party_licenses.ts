@@ -52,13 +52,13 @@ axios.defaults.timeout = 500000;
 axios.defaults.httpsAgent = new https.Agent({keepAlive: true});
 
 const malloyPackages = [
-  '@malloydata/malloy',
-  '@malloydata/render',
+  '@datairis/malloy',
+  '@datairis/render',
   'test',
-  '@malloydata/db-bigquery',
-  '@malloydata/db-postgres',
-  '@malloydata/db-snowflake',
-  '@malloydata/db-duckdb',
+  '@datairis/db-bigquery',
+  '@datairis/db-postgres',
+  '@datairis/db-snowflake',
+  '@datairis/db-duckdb',
 ];
 
 // licenses that we would need to mirror source for, if we included (we don't today)

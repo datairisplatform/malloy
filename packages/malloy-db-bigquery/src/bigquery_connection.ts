@@ -52,8 +52,8 @@ import {
   toAsyncGenerator,
   StructDef,
   SQLSourceDef,
-} from '@malloydata/malloy';
-import {BaseConnection, TableMetadata} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection, TableMetadata} from '@datairis/malloy/connection';
 // eslint-disable-next-line no-restricted-imports
 
 export interface BigQueryManagerOptions {

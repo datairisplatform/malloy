@@ -30,7 +30,7 @@ import {
   QueryData,
   Result,
   Tag,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {
   getFieldKey,
   valueIsDateTime,

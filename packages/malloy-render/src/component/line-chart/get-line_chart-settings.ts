@@ -5,7 +5,7 @@
  *  LICENSE file in the root directory of this source tree.
  */
 
-import {Explore, Tag} from '@malloydata/malloy';
+import {Explore, Tag} from '@datairis/malloy';
 import {getFieldPathBetweenFields, walkFields} from '../plot/util';
 import {Channel} from '../types';
 

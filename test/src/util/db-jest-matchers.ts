@@ -31,7 +31,7 @@ import {
   LogMessage,
   SingleConnectionRuntime,
   Tag,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import EventEmitter from 'events';
 import {inspect} from 'util';
 

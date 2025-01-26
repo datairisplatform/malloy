@@ -7,7 +7,7 @@
 
 import {expressionFunction} from 'vega';
 import {renderNumericField} from '../render-numeric-field';
-import {Explore, ExploreField} from '@malloydata/malloy';
+import {Explore, ExploreField} from '@datairis/malloy';
 import {getFieldFromRootPath} from '../plot/util';
 import {BrushData} from '../result-store/result-store';
 import {renderTimeString} from '../render-time';

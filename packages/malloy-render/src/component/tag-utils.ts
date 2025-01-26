@@ -1,4 +1,4 @@
-import {Tag} from '@malloydata/malloy/src';
+import {Tag} from '@datairis/malloy/src';
 
 export function hasAny(tag: Tag, ...paths: Array<string | string[]>): boolean {
   return paths.some(path =>

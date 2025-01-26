@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/db-mysql",
+  "name": "@datairis/db-mysql",
   "version": "0.0.232",
   "license": "MIT",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@malloydata/malloy": "^0.0.232",
+    "@datairis/malloy": "^0.0.232",
     "@types/node": "^22.7.4",
     "fastestsmallesttextencoderdecoder": "^1.0.22",
     "luxon": "^3.5.0",

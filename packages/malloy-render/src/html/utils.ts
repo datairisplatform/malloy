@@ -27,7 +27,7 @@ import {
   Field,
   Tag,
   TimestampTimeframe,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import startCase from 'lodash/startCase';
 import {RenderDef} from './data_styles';
 import {RendererOptions} from './renderer_types';

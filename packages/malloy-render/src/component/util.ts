@@ -20,7 +20,7 @@
  * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
-import {Explore, Field} from '@malloydata/malloy';
+import {Explore, Field} from '@datairis/malloy';
 
 function getLocationInParent(f: Field | Explore) {
   const parent = f.parentExplore;

@@ -45,8 +45,8 @@ import {
   StreamingConnection,
   StructDef,
   mkArrayDef,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Client, Pool} from 'pg';
 import QueryStream from 'pg-query-stream';

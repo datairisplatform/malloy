@@ -22,7 +22,7 @@
  */
 
 import {runtimeFor} from '../runtimes';
-import {getDrillQuery} from '@malloydata/render';
+import {getDrillQuery} from '@datairis/render';
 
 const duckdb = runtimeFor('duckdb');
 

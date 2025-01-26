@@ -37,7 +37,7 @@ import {
   QueryData,
   QueryDataRow,
   RunSQLOptions,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 export interface ConnectionConfigFile {
   // a toml file with snowflake connection settings

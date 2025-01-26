@@ -28,7 +28,7 @@ import {
   Result,
   Tag,
   isSourceDef,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {DataStyles, RenderDef, StyleDefaults} from './data_styles';
 import {ChildRenderers, Renderer} from './renderer';
 import {RendererOptions} from './renderer_types';
