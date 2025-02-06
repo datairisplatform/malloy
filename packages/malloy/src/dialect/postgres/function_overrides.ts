@@ -72,4 +72,5 @@ export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   },
   // Aparently the ASCII function also works for unicode code points...
   unicode: {function: 'ASCII'},
+  //like: {function: 'RLIKE'},
 };

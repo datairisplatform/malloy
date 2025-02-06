@@ -51,6 +51,8 @@ import {BaseConnection} from '@malloydata/malloy/connection';
 import {Client, Pool} from 'pg';
 import QueryStream from 'pg-query-stream';
 import {randomUUID} from 'crypto';
+import {DBSQLClient} from '@databricks/sql';
+import { StandardSQLDialect } from '@malloydata/malloy';
 
 interface PostgresConnectionConfiguration {
   host?: string;
@@ -72,7 +74,7 @@ export interface PostgresConnectionOptions
   extends ConnectionConfig,
     PostgresConnectionConfiguration {}
 
-export class PostgresConnection
+export class DatabricksConnection
   extends BaseConnection
   implements Connection, StreamingConnection, PersistSQLResults
 {
@@ -198,48 +200,55 @@ export class PostgresConnection
   ): Promise<SQLSourceDef | string> {
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
-    const infoQuery = `
-      drop table if exists ${tempTableName};
-      create temp table ${tempTableName} as SELECT * FROM (
-        ${sqlRef.selectStr}
-      ) as x where false;
-      SELECT column_name, c.data_type, e.data_type as element_type
-      FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-        ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-          = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-      where table_name='${tempTableName}';
-    `;
+    // const infoQuery = `
+    //   CREATE OR REPLACE TEMP VIEW temp_schema_view AS
+    //   ${sqlRef.selectStr};
+    //   DESCRIBE TABLE temp_schema_view;
+    // `;
+
+    const infoQuery = [
+      `CREATE OR REPLACE TEMP VIEW temp_schema_view AS
+      ${sqlRef.selectStr};`,
+      'DESCRIBE TABLE temp_schema_view;',
+    ];
+    // const infoQuery = `
+    //   drop table if exists ${tempTableName};
+    //   create temp table ${tempTableName} as SELECT * FROM (
+    //     ${sqlRef.selectStr}
+    //   ) as x where false;
+    //   SELECT column_name, c.data_type, e.data_type as element_type
+    //   FROM information_schema.columns c LEFT JOIN information_schema.element_types e
+    //     ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
+    //       = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
+    //   where table_name='${tempTableName}';
+    // `;
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `P Error fetching schema for ${sqlRef.name}: ${error}`;
+      return `BRIAN SELECT Error fetching schema for ${sqlRef.selectStr}: ${error}`;
     }
     return structDef;
   }
 
   private async schemaFromQuery(
-    infoQuery: string,
+    infoQuery: string[],
     structDef: StructDef
   ): Promise<void> {
-    const {rows, totalRows} = await this.runPostgresQuery(
-      infoQuery,
-      SCHEMA_PAGE_SIZE,
-      0,
-      false
-    );
+    const {rows, totalRows} = await this.runRawSQL(infoQuery);
+    //console.log(`BRIAN schemaFromQuery rows: ${JSON.stringify(rows)}`);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
     for (const row of rows) {
-      const postgresDataType = row['data_type'] as string;
-      const name = row['column_name'] as string;
-      if (postgresDataType === 'ARRAY') {
+      const databricksDataType = row['data_type'] as string;
+      const name = row['col_name'] as string;
+      if (databricksDataType === 'ARRAY') {
         const elementType = this.dialect.sqlTypeToMalloyType(
           row['element_type'] as string
         );
         structDef.fields.push(mkArrayDef(elementType, name));
       } else {
-        const malloyType = this.dialect.sqlTypeToMalloyType(postgresDataType);
+        const malloyType = this.dialect.sqlTypeToMalloyType(databricksDataType);
         structDef.fields.push({...malloyType, name});
       }
     }
@@ -259,21 +268,17 @@ export class PostgresConnection
     };
     const [schema, table] = tablePath.split('.');
     if (table === undefined) {
-      return 'Default schema not yet supported in Postgres';
+      return 'Table is undefined';
     }
+
     const infoQuery = `
-      SELECT column_name, c.data_type, e.data_type as element_type
-      FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-        ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-          = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-        WHERE table_name = '${table}'
-          AND table_schema = '${schema}'
+      DESCRIBE TABLE ${tablePath}
     `;
 
     try {
-      await this.schemaFromQuery(infoQuery, structDef);
+      await this.schemaFromQuery([infoQuery], structDef);
     } catch (error) {
-      return `P Error fetching schema for ${tablePath}: ${error.message}`;
+      return `BRIAN Table Error fetching schema for ${tablePath}: ${error.message}`;
     }
     return structDef;
   }
@@ -286,6 +291,59 @@ export class PostgresConnection
     await client.query("SET TIME ZONE 'UTC'");
   }
 
+  public async runRawSQL(
+    sql: string[],
+    {rowLimit}: RunSQLOptions = {},
+    rowIndex = 0
+  ): Promise<MalloyQueryData> {
+    const config = await this.readQueryConfig();
+
+    // databricks
+    const databricks_token = 'todo';
+    const server_hostname = 'todo';
+    const http_path = 'todo';
+
+    const client = new DBSQLClient();
+
+    //const client = await this.getClient();
+
+    return client
+      .connect({
+        token: databricks_token,
+        host: server_hostname,
+        path: http_path,
+      })
+      .then(async client => {
+        const session = await client.openSession();
+
+
+        let result: QueryDataRow[] = [];
+        for (let i = 0; i < sql.length; i++) {
+          const queryOperation = await session.executeStatement(sql[i], {
+            runAsync: true,
+          });
+          result = (await queryOperation.fetchAll()) as QueryDataRow[];
+          await queryOperation.close();
+        }
+
+        // console.log(`BRIAN databricks result:`);
+        // console.log(result);
+        // console.table(result);
+
+        await session.close();
+        await client.close();
+
+        // restrict num rows if necesary
+        const databricksRowLimit =
+          rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
+        if (result.length > databricksRowLimit) {
+          result = result.slice(0, databricksRowLimit);
+        }
+
+        return {rows: result, totalRows: result.length};
+      });
+  }
+
   public async runSQL(
     sql: string,
     {rowLimit}: RunSQLOptions = {},
@@ -293,12 +351,59 @@ export class PostgresConnection
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
 
-    return this.runPostgresQuery(
-      sql,
-      rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE,
-      rowIndex,
-      true
-    );
+    // databricks
+    const databricks_token = 'todo';
+    const server_hostname = 'todo';
+    const http_path = 'todo';
+
+    const client = new DBSQLClient();
+
+    //const client = await this.getClient();
+
+    return client
+      .connect({
+        token: databricks_token,
+        host: server_hostname,
+        path: http_path,
+      })
+      .then(async client => {
+        const session = await client.openSession();
+        const queryOperation = await session.executeStatement(sql, {
+          runAsync: true,
+        });
+
+        let result = (await queryOperation.fetchAll()) as QueryDataRow[];
+
+        //console.log(`BRIAN databricks result:`);
+        //console.log(JSON.stringify(result));
+        //console.table(result);
+
+        console.log(`BRIAN databricks pure result:`);
+        console.log(result);
+        // console.table(`stringified result: ${result[0]['row']}`);
+        // console.table(`stringified result: ${String(result[0]['row'])}`);
+
+        // for Databricks, usually result will be list of objects {}
+        // and the actual result is stored in key 'row' in the objects
+        // We need to extract the actual result out out from here
+        // For some edge cases like SELECT 1, result is already extracted
+        const actualResult = result.map(row =>
+          row['row'] ? JSON.parse(String(row['row'])) : row
+        );
+
+        await queryOperation.close();
+        await session.close();
+        await client.close();
+
+        // restrict num rows if necesary
+        const databricksRowLimit =
+          rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
+        if (result.length > databricksRowLimit) {
+          result = result.slice(0, databricksRowLimit);
+        }
+
+        return {rows: actualResult, totalRows: result.length};
+      });
   }
 
   public async *runSQLStream(
@@ -344,7 +449,7 @@ export class PostgresConnection
 }
 
 export class PooledPostgresConnection
-  extends PostgresConnection
+  extends DatabricksConnection
   implements PooledConnection
 {
   private _pool: Pool | undefined;

@@ -21,4 +21,4 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export {DuckDBConnection} from './duckdb_connection';
+export {DatabricksConnection} from './databricks_connection';

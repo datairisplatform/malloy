@@ -34,6 +34,7 @@ import {
   LeafAtomicTypeDef,
   RecordLiteralNode,
   ArrayLiteralNode,
+  RegexMatchExpr,
 } from '../../model/malloy_types';
 import {
   DialectFunctionOverloadDef,
@@ -66,38 +67,34 @@ const inSeconds: Record<string, number> = {
 const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'character varying': {type: 'string'},
   'name': {type: 'string'},
-  'text': {type: 'string'},
+  'string': {type: 'string'},
   'date': {type: 'date'},
-  'integer': {type: 'number', numberType: 'integer'},
+  'int': {type: 'number', numberType: 'integer'},
   'bigint': {type: 'number', numberType: 'integer'},
-  'double precision': {type: 'number', numberType: 'float'},
-  'timestamp without time zone': {type: 'timestamp'}, // maybe not
-  'oid': {type: 'string'},
+  'double': {type: 'number', numberType: 'float'},
+  'timestamp_ntz': {type: 'timestamp'}, // maybe not
   'boolean': {type: 'boolean'},
   // ARRAY: "string",
   'timestamp': {type: 'timestamp'},
-  '"char"': {type: 'string'},
-  'character': {type: 'string'},
   'smallint': {type: 'number', numberType: 'integer'},
-  'xid': {type: 'string'},
-  'real': {type: 'number', numberType: 'float'},
+  //'real': {type: 'number', numberType: 'float'},
   'interval': {type: 'string'},
-  'inet': {type: 'string'},
-  'regtype': {type: 'string'},
-  'numeric': {type: 'number', numberType: 'float'},
-  'bytea': {type: 'string'},
-  'pg_ndistinct': {type: 'number', numberType: 'integer'},
-  'varchar': {type: 'string'},
+  //'regtype': {type: 'string'},
+  //'numeric': {type: 'number', numberType: 'float'}, // ?
+  //'bytea': {type: 'string'},
+  //'pg_ndistinct': {type: 'number', numberType: 'integer'},
+  //'varchar': {type: 'string'},
 };
 
 export class PostgresDialect extends PostgresBase {
+  // todo
   name = 'postgres';
-  defaultNumberType = 'DOUBLE PRECISION';
-  defaultDecimalType = 'NUMERIC';
+  defaultNumberType = 'BIGINT'; // ?
+  defaultDecimalType = 'DECIMAL';
   udfPrefix = 'pg_temp.__udf';
-  hasFinalStage = true;
+  hasFinalStage = false;
   divisionIsInteger = true;
-  supportsSumDistinctFunction = false;
+  supportsSumDistinctFunction = true;
   unnestWithNumbers = false;
   defaultSampling = {rows: 50000};
   supportUnnestArrayAgg = true;
@@ -106,25 +103,25 @@ export class PostgresDialect extends PostgresBase {
   supportsSafeCast = false;
   dontUnionIndex = false;
   supportsQualify = false;
-  supportsNesting = true;
+  supportsNesting = false; // temp
   experimental = false;
   readsNestedData = false;
   supportsComplexFilteredSources = false;
   compoundObjectInSchema = false;
-
+  supportsPipelinesInViews = false;
   quoteTablePath(tablePath: string): string {
     return tablePath
       .split('.')
-      .map(part => `"${part}"`)
+      .map(part => `${part}`)
       .join('.');
   }
 
   sqlGroupSetTable(groupSetCount: number): string {
-    return `CROSS JOIN GENERATE_SERIES(0,${groupSetCount},1) as group_set`;
+    return `CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,${groupSetCount},1)) as group_set)`;
   }
 
   sqlAnyValue(groupSet: number, fieldName: string): string {
-    return `MAX(${fieldName})`;
+    return `ANY(${fieldName})`;
   }
 
   mapFields(fieldList: DialectFieldList): string {
@@ -166,7 +163,7 @@ export class PostgresDialect extends PostgresBase {
     groupSet: number,
     sqlName: string
   ): string {
-    return `(ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL))[1] as ${sqlName}`;
+    return `GET((ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL)),0) as ${sqlName}`;
   }
 
   sqlCoaleseMeasuresInline(
@@ -236,11 +233,16 @@ export class PostgresDialect extends PostgresBase {
   }
 
   sqlSumDistinctHashedKey(sqlDistinctKey: string): string {
-    return `('x' || MD5(${sqlDistinctKey}::varchar))::bit(64)::bigint::DECIMAL(65,0)  *18446744073709551616 + ('x' || SUBSTR(MD5(${sqlDistinctKey}::varchar),17))::bit(64)::bigint::DECIMAL(65,0)`;
-  }
+    // return `('x' || MD5(${sqlDistinctKey}::varchar))::bit(64)::bigint::DECIMAL(65,0)  *18446744073709551616 + ('x' || SUBSTR(MD5(${sqlDistinctKey}::varchar),17))::bit(64)::bigint::DECIMAL(65,0)`;
+    return `unhex(md5(${sqlDistinctKey}))`;
+  } // todo
 
   sqlGenerateUUID(): string {
-    return 'GEN_RANDOM_UUID()';
+    return 'uuid()';
+  }
+
+  sqlRegexpMatch(df: RegexMatchExpr): string {
+    return `${df.kids.expr.sql} RLIKE ${df.kids.regex.sql}`;
   }
 
   sqlFieldReference(
@@ -258,7 +260,7 @@ export class PostgresDialect extends PostgresBase {
         case 'string':
           break;
         case 'number':
-          ret = `${ret}::double precision`;
+          ret = `${ret}::double`;
           break;
         case 'struct':
         case 'array':
@@ -296,11 +298,12 @@ export class PostgresDialect extends PostgresBase {
   }
 
   sqlFinalStage(lastStageName: string, _fields: string[]): string {
-    return `SELECT row_to_json(finalStage) as row FROM ${lastStageName} AS finalStage`;
+    // BRIAN changed
+    return `SELECT to_json(struct(*)) AS row FROM ${lastStageName}`;
   }
 
   sqlSelectAliasAsStruct(alias: string): string {
-    return `ROW(${alias})`;
+    return `ROW(${alias})`; // todo
   }
 
   // The simple way to do this is to add a comment on the table
@@ -322,14 +325,14 @@ export class PostgresDialect extends PostgresBase {
     }
     const interval = `make_interval(${pgMakeIntervalMap[timeframe]}=>${n})`;
     return `(${df.kids.base.sql})${df.op}${interval}`;
-  }
+  } //todo
 
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
     if (cast.safe) {
       throw new Error("Postgres dialect doesn't support Safe Cast");
     }
     return super.sqlCast(qi, cast);
-  }
+  } //todo
 
   sqlMeasureTimeExpr(df: MeasureTimeExpr): string {
     const from = df.kids.left;
@@ -345,16 +348,50 @@ export class PostgresDialect extends PostgresBase {
         : `FLOOR((${duration})/${inSeconds[df.units].toString()}.0)`;
     }
     throw new Error(`Unknown or unhandled postgres time unit: ${df.units}`);
-  }
+  } //todo
+
+  // sqlSumDistinct(key: string, value: string, funcName: string): string {
+  //   // return `sum_distinct(list({key:${key}, val: ${value}}))`;
+  //   return `(
+  //     SELECT ${funcName}((a::json->>'f2')::DOUBLE) as value
+  //     FROM (
+  //       SELECT UNNEST(array_agg(distinct row_to_json(row(${key},${value}))::text)) a
+  //     ) a
+  //   )`;
+  // } //todo
 
   sqlSumDistinct(key: string, value: string, funcName: string): string {
-    // return `sum_distinct(list({key:${key}, val: ${value}}))`;
-    return `(
-      SELECT ${funcName}((a::json->>'f2')::DOUBLE PRECISION) as value
-      FROM (
-        SELECT UNNEST(array_agg(distinct row_to_json(row(${key},${value}))::text)) a
-      ) a
-    )`;
+    // In Spark SQL, we can use the same functions: concat, md5, substring, conv, etc.
+    // Create a distinct key expression by converting the key to a string.
+    const sqlDistinctKey = `concat(${key}, '')`;
+
+    // Compute the hash key in two parts.
+    // The first part: take the first 16 characters of the MD5 hash, convert from hexadecimal to decimal,
+    // cast to DECIMAL(38,0) and multiply by 4294967296.
+    const upperPart = `CAST(conv(substring(md5(${sqlDistinctKey}), 1, 16), 16, 10) AS DECIMAL(38,0)) * 4294967296`;
+
+    // The second part: take the next 8 characters of the MD5 hash and convert them similarly.
+    const lowerPart = `CAST(conv(substring(md5(${sqlDistinctKey}), 16, 8), 16, 10) AS DECIMAL(38,0))`;
+
+    // The full hash key is the sum of both parts.
+    const hashKey = `(${upperPart} + ${lowerPart})`;
+
+    // Ensure the value is not null.
+    const v = `COALESCE(${value}, 0)`;
+
+    // The symmetric distinct SUM is computed as:
+    //   SUM(DISTINCT (hashKey + value)) - SUM(DISTINCT hashKey)
+    const sqlSum = `(SUM(DISTINCT ${hashKey} + ${v}) - SUM(DISTINCT ${hashKey}))`;
+
+    // Return the appropriate SQL expression based on the aggregation function.
+    if (funcName.toUpperCase() === 'SUM') {
+      return sqlSum;
+    } else if (funcName.toUpperCase() === 'AVG') {
+      // For the AVG case, divide the sum by the distinct count of non-null keys.
+      return `(${sqlSum}) / NULLIF(COUNT(DISTINCT CASE WHEN ${value} IS NOT NULL THEN ${key} END), 0)`;
+    }
+
+    throw new Error(`Unknown Symmetric Aggregate function ${funcName}`);
   }
 
   // TODO this does not preserve the types of the arguments, meaning we have to hack
@@ -373,7 +410,7 @@ export class PostgresDialect extends PostgresBase {
         )}))::text)) a
       ) a
     )`;
-  }
+  } //nesting
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {
     if (sample !== undefined) {
@@ -416,10 +453,10 @@ export class PostgresDialect extends PostgresBase {
       if (malloyType.numberType === 'integer') {
         return 'integer';
       } else {
-        return 'double precision';
+        return 'double';
       }
     } else if (malloyType.type === 'string') {
-      return 'varchar';
+      return 'string';
     }
     return malloyType.type;
   }
@@ -436,11 +473,11 @@ export class PostgresDialect extends PostgresBase {
   }
 
   castToString(expression: string): string {
-    return `CAST(${expression} as VARCHAR)`;
+    return `CAST(${expression} as STRING)`;
   }
 
   concat(...values: string[]): string {
-    return values.join(' || ');
+    return 'CONCAT(' + values.join(',') + ')';
   }
 
   validateTypeName(sqlType: string): boolean {
