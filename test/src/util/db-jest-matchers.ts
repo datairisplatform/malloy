@@ -118,6 +118,9 @@ expect.extend({
     runtime: Runner,
     shouldEqual: ExpectedResult
   ) {
+
+    console.log(`BRIAN expected: ${JSON.stringify(shouldEqual)}`);
+
     // TODO -- THIS IS NOT OK BUT I AM NOT FIXING IT NOW
     if (querySrc.indexOf('nest:') >= 0) {
       if (
@@ -148,6 +151,7 @@ expect.extend({
     let result: Result;
     try {
       result = await query.run();
+      console.log(`BRIAN actual result: ${JSON.stringify(result)}`);
     } catch (e) {
       let failMsg = `query.run failed: ${e.message}\n`;
       if (e instanceof MalloyError) {

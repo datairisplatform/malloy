@@ -49,6 +49,7 @@ type Standard = {
   is_nan: D;
   least: D;
   length: D;
+  //like: D;
   ln: D;
   log: D;
   lower: D;

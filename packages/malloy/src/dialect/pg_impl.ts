@@ -108,6 +108,7 @@ export abstract class PostgresBase extends Dialect {
   }
 
   sqlMaybeQuoteIdentifier(identifier: string): string {
-    return '"' + identifier.replace(/"/g, '""') + '"';
+    //return '"' + identifier.replace(/"/g, '""') + '"';
+    return identifier;
   }
 }
