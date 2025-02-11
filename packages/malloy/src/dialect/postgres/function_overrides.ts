@@ -40,13 +40,6 @@ export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
       sql: "REGEXP_REPLACE(${value}, ${pattern}, ${replacement}, 'g')",
     },
   },
-  // Postgres doesn't let you ROUND a FLOAT to a particular number of decimal places,
-  // so we cast to NUMERIC first...
-  // TODO it would be nice not to have to do this cast if it was already NUMERIC type...
-  round: {
-    to_integer: {sql: 'ROUND((${value})::NUMERIC)'},
-    to_precision: {sql: 'ROUND((${value})::NUMERIC, ${precision})'},
-  },
   // TODO this is a bit of a hack in order to make the arrayAggUnnest work for Postgres,
   // as we don't currently have a good way of doing this while preserving types
   stddev: {sql: 'STDDEV(${value}::DOUBLE PRECISION)'},

@@ -149,7 +149,6 @@ expect.extend({
     let result: Result;
     try {
       result = await query.run();
-      console.log(`BRIAN actual result: ${JSON.stringify(result)}`);
     } catch (e) {
       let failMsg = `query.run failed: ${e.message}\n`;
       if (e instanceof MalloyError) {

@@ -208,7 +208,6 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
         connection = new PostgresTestConnection(dbName);
         break;
       case 'databricks':
-        console.log(`BRIAN dbName: ${dbName}`);
         connection = new DatabricksTestConnection(dbName);
         break;
       case 'duckdb':

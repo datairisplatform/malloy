@@ -390,7 +390,8 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlLiteralString(literal: string): string {
-    return "'" + literal.replace(/'/g, "''") + "'";
+    const noVirgule = literal.replace(/\\/g, '\\\\');
+    return "'" + noVirgule.replace(/'/g, "\\'") + "'";
   }
 
   sqlLiteralRegexp(literal: string): string {

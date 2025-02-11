@@ -60,9 +60,9 @@ type DatabricksConnectionConfigurationReader =
 const DEFAULT_PAGE_SIZE = 1000;
 // const SCHEMA_PAGE_SIZE = 1000;
 
-const databricks_token = 'TODO';
-const server_hostname = 'TODO';
-const http_path = 'TODO';
+const databricks_token = 'todo';
+const server_hostname = 'todo';
+const http_path = 'todo';
 export interface DatabricksConnectionOptions extends ConnectionConfig {
   host?: string;
   port?: number;
@@ -295,8 +295,6 @@ export class DatabricksConnection
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
-
-    // databricks
 
     const client = new DBSQLClient();
 
