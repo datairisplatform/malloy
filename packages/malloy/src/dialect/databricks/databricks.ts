@@ -3,6 +3,7 @@ import {
   DialectFieldList,
   FieldReferenceType,
   QueryInfo,
+  qtz,
 } from '../dialect';
 import {indent} from '../../model/utils';
 import {
@@ -476,7 +477,25 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
-    return `TIMESTAMP '${lt.literal}'`;
+    const tz = qtz(qi);
+    let ret = `'${lt.literal}'`;
+
+    // If we have a timezone (either from the literal or query info)
+    const targetTimeZone = lt.timezone ?? tz;
+    if (targetTimeZone) {
+      // For Databricks, we can use the from_utc_timestamp and to_utc_timestamp functions
+      // to handle timezone conversions
+      ret = `from_utc_timestamp(timestamp'${lt.literal}', '${targetTimeZone}')`;
+    } else {
+      ret = `timestamp${ret}`;
+    }
+
+    // If the type is date, convert the timestamp to a date
+    if (TD.isDate(lt.typeDef)) {
+      return `DATE(${ret})`;
+    }
+
+    return ret;
   }
 
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
