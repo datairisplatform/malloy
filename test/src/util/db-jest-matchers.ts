@@ -119,8 +119,6 @@ expect.extend({
     shouldEqual: ExpectedResult
   ) {
 
-    console.log(`BRIAN expected: ${JSON.stringify(shouldEqual)}`);
-
     // TODO -- THIS IS NOT OK BUT I AM NOT FIXING IT NOW
     if (querySrc.indexOf('nest:') >= 0) {
       if (

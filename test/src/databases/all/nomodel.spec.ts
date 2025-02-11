@@ -95,7 +95,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
   });
 
   // Issue #149
-  it(`refine query from query  - ${databaseName}`, async () => {
+  it(`refine query from query - ${databaseName}`, async () => {
     await expect(`
       run: ${databaseName}.table('malloytest.state_facts')
         -> {group_by: state; order_by: 1 desc; limit: 1}

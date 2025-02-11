@@ -21,21 +21,13 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-// LTNOTE: we need this extension to be installed to correctly index
-//  postgres data...  We should probably do this on connection creation...
-//
-//     create extension if not exists tsm_system_rows
-//
-
-import * as crypto from 'crypto';
 import {
   Connection,
   ConnectionConfig,
   MalloyQueryData,
   PersistSQLResults,
   PooledConnection,
-  PostgresDialect,
-  QueryData,
+  DatabricksDialect,
   QueryDataRow,
   QueryOptionsReader,
   QueryRunStats,
@@ -48,13 +40,11 @@ import {
 } from '@malloydata/malloy';
 import {BaseConnection} from '@malloydata/malloy/connection';
 
-import {Client, Pool} from 'pg';
-import QueryStream from 'pg-query-stream';
-import {randomUUID} from 'crypto';
+import {Client} from 'pg';
 import {DBSQLClient} from '@databricks/sql';
-import { StandardSQLDialect } from '@malloydata/malloy';
+import crypto from 'crypto';
 
-interface PostgresConnectionConfiguration {
+interface DatabricksConnectionConfiguration {
   host?: string;
   port?: number;
   username?: string;
@@ -63,16 +53,24 @@ interface PostgresConnectionConfiguration {
   connectionString?: string;
 }
 
-type PostgresConnectionConfigurationReader =
-  | PostgresConnectionConfiguration
-  | (() => Promise<PostgresConnectionConfiguration>);
+type DatabricksConnectionConfigurationReader =
+  | DatabricksConnectionConfiguration
+  | (() => Promise<DatabricksConnectionConfiguration>);
 
 const DEFAULT_PAGE_SIZE = 1000;
-const SCHEMA_PAGE_SIZE = 1000;
+// const SCHEMA_PAGE_SIZE = 1000;
 
-export interface PostgresConnectionOptions
-  extends ConnectionConfig,
-    PostgresConnectionConfiguration {}
+const databricks_token = 'TODO';
+const server_hostname = 'TODO';
+const http_path = 'TODO';
+export interface DatabricksConnectionOptions extends ConnectionConfig {
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  databaseName?: string;
+  connectionString?: string;
+}
 
 export class DatabricksConnection
   extends BaseConnection
@@ -80,23 +78,23 @@ export class DatabricksConnection
 {
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
-  private configReader: PostgresConnectionConfigurationReader = {};
+  private configReader: DatabricksConnectionConfigurationReader = {};
 
-  private readonly dialect = new PostgresDialect();
+  private readonly dialect = new DatabricksDialect();
 
   constructor(
-    options: PostgresConnectionOptions,
+    options: DatabricksConnectionOptions,
     queryOptionsReader?: QueryOptionsReader
   );
   constructor(
     name: string,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: DatabricksConnectionConfigurationReader
   );
   constructor(
-    arg: string | PostgresConnectionOptions,
+    arg: string | DatabricksConnectionOptions,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: DatabricksConnectionConfigurationReader
   ) {
     super();
     if (typeof arg === 'string') {
@@ -122,16 +120,16 @@ export class DatabricksConnection
     }
   }
 
-  protected async readConfig(): Promise<PostgresConnectionConfiguration> {
-    if (this.configReader instanceof Function) {
-      return this.configReader();
-    } else {
-      return this.configReader;
-    }
-  }
+  // protected async readConfig(): Promise<DatabricksConnectionConfiguration> {
+  //   if (this.configReader instanceof Function) {
+  //     return this.configReader();
+  //   } else {
+  //     return this.configReader;
+  //   }
+  // }
 
   get dialectName(): string {
-    return 'postgres';
+    return 'databricks';
   }
 
   public isPool(): this is PooledConnection {
@@ -150,56 +148,56 @@ export class DatabricksConnection
     return true;
   }
 
-  protected async getClient(): Promise<Client> {
-    const {
-      username: user,
-      password,
-      databaseName: database,
-      port,
-      host,
-      connectionString,
-    } = await this.readConfig();
-    return new Client({
-      user,
-      password,
-      database,
-      port,
-      host,
-      connectionString,
-    });
-  }
+  // protected async getClient(): Promise<Client> {
+  //   const {
+  //     username: user,
+  //     password,
+  //     databaseName: database,
+  //     port,
+  //     host,
+  //     connectionString,
+  //   } = await this.readConfig();
+  //   return new Client({
+  //     user,
+  //     password,
+  //     database,
+  //     port,
+  //     host,
+  //     connectionString,
+  //   });
+  // }
 
-  protected async runPostgresQuery(
-    sqlCommand: string,
-    _pageSize: number,
-    _rowIndex: number,
-    deJSON: boolean
-  ): Promise<MalloyQueryData> {
-    const client = await this.getClient();
-    await client.connect();
-    await this.connectionSetup(client);
+  // protected async runPostgresQuery(
+  //   sqlCommand: string,
+  //   _pageSize: number,
+  //   _rowIndex: number,
+  //   deJSON: boolean
+  // ): Promise<MalloyQueryData> {
+  //   const client = await this.getClient();
+  //   await client.connect();
+  //   await this.connectionSetup(client);
 
-    let result = await client.query(sqlCommand);
-    if (Array.isArray(result)) {
-      result = result.pop();
-    }
-    if (deJSON) {
-      for (let i = 0; i < result.rows.length; i++) {
-        result.rows[i] = result.rows[i].row;
-      }
-    }
-    await client.end();
-    return {
-      rows: result.rows as QueryData,
-      totalRows: result.rows.length,
-    };
-  }
+  //   let result = await client.query(sqlCommand);
+  //   if (Array.isArray(result)) {
+  //     result = result.pop();
+  //   }
+  //   if (deJSON) {
+  //     for (let i = 0; i < result.rows.length; i++) {
+  //       result.rows[i] = result.rows[i].row;
+  //     }
+  //   }
+  //   await client.end();
+  //   return {
+  //     rows: result.rows as QueryData,
+  //     totalRows: result.rows.length,
+  //   };
+  // }
 
   async fetchSelectSchema(
     sqlRef: SQLSourceDef
   ): Promise<SQLSourceDef | string> {
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
-    const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
+    // const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
     // const infoQuery = `
     //   CREATE OR REPLACE TEMP VIEW temp_schema_view AS
     //   ${sqlRef.selectStr};
@@ -261,12 +259,12 @@ export class DatabricksConnection
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
-      dialect: 'postgres',
+      dialect: 'databricks',
       tablePath,
       connection: this.name,
       fields: [],
     };
-    const [schema, table] = tablePath.split('.');
+    const [_, table] = tablePath.split('.');
     if (table === undefined) {
       return 'Table is undefined';
     }
@@ -294,18 +292,15 @@ export class DatabricksConnection
   public async runRawSQL(
     sql: string[],
     {rowLimit}: RunSQLOptions = {},
-    rowIndex = 0
+    _rowIndex = 0
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
 
     // databricks
-    const databricks_token = 'todo';
-    const server_hostname = 'todo';
-    const http_path = 'todo';
 
     const client = new DBSQLClient();
 
-    //const client = await this.getClient();
+    // const client = await this.getClient();
 
     return client
       .connect({
@@ -315,7 +310,6 @@ export class DatabricksConnection
       })
       .then(async client => {
         const session = await client.openSession();
-
 
         let result: QueryDataRow[] = [];
         for (let i = 0; i < sql.length; i++) {
@@ -347,14 +341,9 @@ export class DatabricksConnection
   public async runSQL(
     sql: string,
     {rowLimit}: RunSQLOptions = {},
-    rowIndex = 0
+    _rowIndex = 0
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
-
-    // databricks
-    const databricks_token = 'todo';
-    const server_hostname = 'todo';
-    const http_path = 'todo';
 
     const client = new DBSQLClient();
 
@@ -378,8 +367,8 @@ export class DatabricksConnection
         //console.log(JSON.stringify(result));
         //console.table(result);
 
-        console.log(`BRIAN databricks pure result:`);
-        console.log(result);
+        // console.log(`BRIAN databricks pure result:`);
+        // console.log(result);
         // console.table(`stringified result: ${result[0]['row']}`);
         // console.table(`stringified result: ${String(result[0]['row'])}`);
 
@@ -410,23 +399,11 @@ export class DatabricksConnection
     sqlCommand: string,
     {rowLimit, abortSignal}: RunSQLOptions = {}
   ): AsyncIterableIterator<QueryDataRow> {
-    const query = new QueryStream(sqlCommand);
-    const client = await this.getClient();
-    await client.connect();
-    const rowStream = client.query(query);
-    let index = 0;
-    for await (const row of rowStream) {
-      yield row.row as QueryDataRow;
-      index += 1;
-      if (
-        (rowLimit !== undefined && index >= rowLimit) ||
-        abortSignal?.aborted
-      ) {
-        query.destroy();
-        break;
-      }
+    const result = await this.runSQL(sqlCommand, {rowLimit});
+    for (const row of result.rows) {
+      if (abortSignal?.aborted) break;
+      yield row;
     }
-    await client.end();
   }
 
   public async estimateQueryCost(_: string): Promise<QueryRunStats> {
@@ -436,127 +413,12 @@ export class DatabricksConnection
   public async manifestTemporaryTable(sqlCommand: string): Promise<string> {
     const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
     const tableName = `tt${hash}`;
-
-    const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
-    // console.log(cmd);
-    await this.runPostgresQuery(cmd, 1000, 0, false);
+    const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand})`;
+    await this.runSQL(cmd);
     return tableName;
   }
 
   async close(): Promise<void> {
     return;
-  }
-}
-
-export class PooledPostgresConnection
-  extends DatabricksConnection
-  implements PooledConnection
-{
-  private _pool: Pool | undefined;
-
-  constructor(
-    options: PostgresConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader
-  );
-  constructor(
-    name: string,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
-  );
-  constructor(
-    arg: string | PostgresConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
-  ) {
-    if (typeof arg === 'string') {
-      super(arg, queryOptionsReader, configReader);
-    } else {
-      super(arg, queryOptionsReader);
-    }
-  }
-
-  public isPool(): this is PooledConnection {
-    return true;
-  }
-
-  public async drain(): Promise<void> {
-    await this._pool?.end();
-  }
-
-  async getPool(): Promise<Pool> {
-    if (!this._pool) {
-      const {
-        username: user,
-        password,
-        databaseName: database,
-        port,
-        host,
-        connectionString,
-      } = await this.readConfig();
-      this._pool = new Pool({
-        user,
-        password,
-        database,
-        port,
-        host,
-        connectionString,
-      });
-      this._pool.on('acquire', client => client.query("SET TIME ZONE 'UTC'"));
-    }
-    return this._pool;
-  }
-
-  protected async runPostgresQuery(
-    sqlCommand: string,
-    _pageSize: number,
-    _rowIndex: number,
-    deJSON: boolean
-  ): Promise<MalloyQueryData> {
-    const pool = await this.getPool();
-    let result = await pool.query(sqlCommand);
-
-    if (Array.isArray(result)) {
-      result = result.pop();
-    }
-    if (deJSON) {
-      for (let i = 0; i < result.rows.length; i++) {
-        result.rows[i] = result.rows[i].row;
-      }
-    }
-    return {
-      rows: result.rows as QueryData,
-      totalRows: result.rows.length,
-    };
-  }
-
-  public async *runSQLStream(
-    sqlCommand: string,
-    {rowLimit, abortSignal}: RunSQLOptions = {}
-  ): AsyncIterableIterator<QueryDataRow> {
-    const query = new QueryStream(sqlCommand);
-    let index = 0;
-    // This is a strange hack... `this.pool.query(query)` seems to return the wrong
-    // type. Because `query` is a `QueryStream`, the result is supposed to be a
-    // `QueryStream` as well, but it's not. So instead, we get a client and call
-    // `client.query(query)`, which does what it's supposed to.
-    const pool = await this.getPool();
-    const client = await pool.connect();
-    const resultStream: QueryStream = client.query(query);
-    for await (const row of resultStream) {
-      yield row.row as QueryDataRow;
-      index += 1;
-      if (
-        (rowLimit !== undefined && index >= rowLimit) ||
-        abortSignal?.aborted
-      ) {
-        query.destroy();
-        break;
-      }
-    }
-    client.release();
-  }
-
-  async close(): Promise<void> {
-    await this.drain();
   }
 }
