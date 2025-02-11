@@ -28,7 +28,7 @@ import {SnowflakeDialect} from './snowflake';
 import {StandardSQLDialect} from './standardsql';
 import {PrestoDialect, TrinoDialect} from './trino';
 import {MySQLDialect} from './mysql';
-import { DatabricksDialect } from './databricks/databricks';
+import {DatabricksDialect} from './databricks';
 
 const dialectMap = new Map<string, Dialect>();
 

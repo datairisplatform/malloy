@@ -84,8 +84,5 @@
     "typescript": "5.3.3",
     "unified": "^10.1.2",
     "uuid": "^8.3.2"
-  },
-  "dependencies": {
-    "@databricks/sql": "^1.9.0"
   }
 }

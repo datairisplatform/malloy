@@ -133,7 +133,6 @@ export class DatabricksTestConnection extends DatabricksConnection {
   }
 }
 
-
 export class DuckDBTestConnection extends DuckDBConnection {
   // we probably need a better way to do this.
 
@@ -209,6 +208,7 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
         connection = new PostgresTestConnection(dbName);
         break;
       case 'databricks':
+        console.log(`BRIAN dbName: ${dbName}`);
         connection = new DatabricksTestConnection(dbName);
         break;
       case 'duckdb':
@@ -289,6 +289,7 @@ export const allDatabases = [
   'snowflake',
   'trino',
   'mysql',
+  'databricks',
 ];
 
 type RuntimeDatabaseNames = (typeof allDatabases)[number];
