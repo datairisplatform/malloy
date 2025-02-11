@@ -59,7 +59,7 @@ const databricksToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   //'numeric': {type: 'number', numberType: 'float'}, // ?
   //'bytea': {type: 'string'},
   //'pg_ndistinct': {type: 'number', numberType: 'integer'},
-  //'varchar': {type: 'string'},
+  'varchar': {type: 'string'},
 };
 
 export class DatabricksDialect extends Dialect {

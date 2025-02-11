@@ -33,7 +33,7 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   // Parameter order is backwards in Postgres.
   log: {sql: 'LOG(${base}, ${value})'},
   rand: {function: 'RANDOM'},
-  regexp_extract: {function: 'SUBSTRING'},
+  regexp_extract: {sql: 'REGEXP_EXTRACT(${value}, ${pattern}, 0)'},
   replace: {
     // In Postgres we specifically need to say that the replacement should be global.
     regular_expression: {

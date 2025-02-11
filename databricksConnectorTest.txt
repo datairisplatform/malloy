@@ -1,7 +1,11 @@
 
 > malloy@0.0.1 test
-> jest --runInBand nomodel
+> jest --runInBand functions
 
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
 {"level":"info","message":"Created DBSQLClient"}
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
 {"level":"info","message":"Created DBSQLClient"}
@@ -32,31 +36,813 @@
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
   console.log
     Exeption when running SQL:
-     WITH __stage0 AS (
-      SELECT 
-         COALESCE(SUM(base.`airport_count`),0) as `r`
-      FROM malloytest.state_facts as base
-    )
-    SELECT 
-       count(distinct CONCAT(base.`state`,CAST(a_0.`r` AS undefined))) as `row_count`,
-       COALESCE(SUM(base.`airport_count`),0) as `left_sum`,
-       COALESCE((SUM(DISTINCT (CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 1, 16), 16, 10) AS DECIMAL(38,0)) * 4294967296 + CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 16, 8), 16, 10) AS DECIMAL(38,0))) + COALESCE(a_0.`r`, 0)) - SUM(DISTINCT (CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 1, 16), 16, 10) AS DECIMAL(38,0)) * 4294967296 + CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 16, 8), 16, 10) AS DECIMAL(38,0))))),0) as `right_sum`,
-       COALESCE(SUM(base.`airport_count`+a_0.`r`),0) as `sum_sum`
+     SELECT 
+       REPLACE('aaaa','a','c') as `f0`,
+       REGEXP_REPLACE('aaaa', '.', 'c', 'g') as `f1`,
+       REGEXP_REPLACE('axbxc', '(a).(b).(c)', '\\0 - \\1 - \\2 - \\3', 'g') as `f2`,
+       REPLACE('aaaa','','c') as `f3`,
+       REPLACE(NULL,'a','c') as `f4`,
+       REPLACE('aaaa',NULL,'c') as `f5`,
+       REPLACE('aaaa','a',NULL) as `f6`
     FROM malloytest.state_facts as base
-     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM __stage0 as x) AS a_0
-      ON 1=1
+    GROUP BY 1,2,3,4,5,6,7
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [CAST_INVALID_INPUT] The value 'g' of the type "STRING" cannot be cast to "INT" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. If necessary set "ansi_mode" to "false" to bypass this error. SQLSTATE: 22018
+    == SQL (line 3, position 4) ==
+       REGEXP_REPLACE('aaaa', '.', 'c', 'g') as `f1`,
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       FLOOR(CAST((sqrt(25)) AS undefined)) as `f0`,
+       FLOOR(sqrt(25)) as `f1`,
+       SUBSTR('foo bar baz', CASE WHEN -3 < 0 THEN LENGTH('foo bar baz') + -3 + 1 ELSE -3 END) as `f2`,
+       SUBSTR(NULLIF('x','x'), CASE WHEN 1 < 0 THEN LENGTH(NULLIF('x','x')) + 1 + 1 ELSE 1 END, 2) as `f3`,
+       SUBSTR('aaaa', CASE WHEN NULL < 0 THEN LENGTH('aaaa') + NULL + 1 ELSE NULL END, 1) as `f4`,
+       SUBSTR('aaaa', CASE WHEN 1 < 0 THEN LENGTH('aaaa') + 1 + 1 ELSE 1 END, NULL) as `f5`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4,5,6
+    ORDER BY 1 asc NULLS LAST
 
       at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
 
   console.log
     Exception: Error: 
     [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
-    == SQL (line 7, position 55) ==
-    ...AT(base.`state`,CAST(a_0.`r` AS undefined))) as `row_count`,
-                                       ^^^^^^^^^
+    == SQL (line 2, position 29) ==
+       FLOOR(CAST((sqrt(25)) AS undefined)) as `f0`,
+                                ^^^^^^^^^
 
       at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
 
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       ROUND(STDDEV(aircraft_models_0.`seats`::DOUBLE PRECISION)) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'PRECISION': extra input 'PRECISION'. SQLSTATE: 42601 (line 2, pos 50)
+    
+    == SQL ==
+    SELECT 
+       ROUND(STDDEV(aircraft_models_0.`seats`::DOUBLE PRECISION)) as `f`
+    --------------------------------------------------^^^
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       ROUND((
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+    
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       ROUND((
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+    
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       ROUND((
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,CASE WHEN 1=1 THEN aircraft_models_0.`seats` END))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+    
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,CASE WHEN 1=1 THEN aircraft_models_0.`seats` END))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END asc NULLS LAST ) END as `row_num__1`
+      FROM malloytest.state_facts as base
+       LEFT JOIN malloytest.airports AS airports_0
+        ON airports_0.`state`=base.`state`
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      GROUP BY 1,2,3
+    )
+    SELECT
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `row_num__1`::BIGINT as `row_num`
+        ) as __x)  ORDER BY  `county__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `q`
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 22, pos 15)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END asc NULLS LAST ) END as `row_num__1`
+      FROM malloytest.state_facts as base
+       LEFT JOIN malloytest.airports AS airports_0
+        ON airports_0.`state`=base.`state`
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      GROUP BY 1,2,3
+    )
+    SELECT
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `row_num__1`::BIGINT as `row_num`
+        ) as __x)  ORDER BY  `county__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `q`
+    ---------------^^^
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  base.`state` asc NULLS LAST ) END as `row_num__0`,
+        CASE WHEN group_set=1 THEN
+          base.`state`
+          END as `state__1`
+      FROM malloytest.state_facts as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      GROUP BY 1,2,4
+    )
+    SELECT
+      `state__0` as `state`,
+      GET((ARRAY_AGG(`row_num__0`) FILTER (WHERE group_set=0 AND `row_num__0` IS NOT NULL)),0) as `row_num`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `state__1` as `state`
+        ) as __x)  ORDER BY  `state__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `nested`
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 18, pos 15)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  base.`state` asc NULLS LAST ) END as `row_num__0`,
+        CASE WHEN group_set=1 THEN
+          base.`state`
+          END as `state__1`
+      FROM malloytest.state_facts as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      GROUP BY 1,2,4
+    )
+    SELECT
+      `state__0` as `state`,
+      GET((ARRAY_AGG(`row_num__0`) FILTER (WHERE group_set=0 AND `row_num__0` IS NOT NULL)),0) as `row_num`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `state__1` as `state`
+        ) as __x)  ORDER BY  `state__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `nested`
+    ---------------^^^
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       base.`state` as `state`,
+       (CEIL(base.`births`*1.0/1000000))*1000000 as `births_ballpark`,
+       RANK() OVER(  ORDER BY  (CEIL(base.`births`*1.0/1000000))*1000000 desc NULLS LAST ) as `births_ballpark_rank`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2
+    ORDER BY 2 desc NULLS LAST
+    LIMIT 20
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "births" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(births)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`faa_region` as `faa_region__0`,
+        CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END as `airport_count__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          base.`fac_type`
+          END as `fac_type__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `airport_count__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`faa_region`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id2__1`,
+        CASE WHEN group_set=2 THEN
+          AVG(base.`elevation`)
+          END as `avg_elevation__2`
+      FROM malloytest.airports as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+      GROUP BY 1,2,5
+    )
+    , __stage1 AS (
+      SELECT 
+        CASE WHEN group_set=2 THEN 1 ELSE group_set END as group_set,
+        `faa_region__0` as `faa_region__0`,
+        ANY(`airport_count__0`) as `airport_count__0`,
+        ANY(`id__0`) as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          `fac_type__1`
+          END as `fac_type__1`,
+        ANY(`airport_count__1`) as `airport_count__1`,
+        ANY(`id2__1`) as `id2__1`,
+        TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT 
+          `avg_elevation__2`::BIGINT as `avg_elevation`) as __x)) FILTER (WHERE group_set=2))[1]) as `elevation__1`
+      FROM __stage0
+      GROUP BY 1,2,5
+    )
+    , __stage2 AS (
+      SELECT
+        `faa_region__0` as `faa_region`,
+        GET((ARRAY_AGG(`airport_count__0`) FILTER (WHERE group_set=0 AND `airport_count__0` IS NOT NULL)),0) as `airport_count`,
+        GET((ARRAY_AGG(`id__0`) FILTER (WHERE group_set=0 AND `id__0` IS NOT NULL)),0) as `id`,
+        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+          `fac_type__1` as `fac_type`, 
+          `airport_count__1`::BIGINT as `airport_count`, 
+          `id2__1`::BIGINT as `id2`, 
+          `elevation__1` as `elevation`
+          ) as __x)  ORDER BY  `airport_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_fac_type`
+      FROM __stage1
+      GROUP BY 1
+    )
+    SELECT 
+       JSONB_EXTRACT_PATH_TEXT(by_fac_type_0,'id2')::double as `id2`
+    FROM __stage2 as base
+    LEFT JOIN JSONB_ARRAY_ELEMENTS(base.`by_fac_type`) as by_fac_type_0 ON true
+    GROUP BY 1
+    ORDER BY 1 desc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 53, pos 17)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`faa_region` as `faa_region__0`,
+        CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END as `airport_count__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          base.`fac_type`
+          END as `fac_type__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `airport_count__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`faa_region`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id2__1`,
+        CASE WHEN group_set=2 THEN
+          AVG(base.`elevation`)
+          END as `avg_elevation__2`
+      FROM malloytest.airports as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+      GROUP BY 1,2,5
+    )
+    , __stage1 AS (
+      SELECT 
+        CASE WHEN group_set=2 THEN 1 ELSE group_set END as group_set,
+        `faa_region__0` as `faa_region__0`,
+        ANY(`airport_count__0`) as `airport_count__0`,
+        ANY(`id__0`) as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          `fac_type__1`
+          END as `fac_type__1`,
+        ANY(`airport_count__1`) as `airport_count__1`,
+        ANY(`id2__1`) as `id2__1`,
+        TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT 
+          `avg_elevation__2`::BIGINT as `avg_elevation`) as __x)) FILTER (WHERE group_set=2))[1]) as `elevation__1`
+      FROM __stage0
+      GROUP BY 1,2,5
+    )
+    , __stage2 AS (
+      SELECT
+        `faa_region__0` as `faa_region`,
+        GET((ARRAY_AGG(`airport_count__0`) FILTER (WHERE group_set=0 AND `airport_count__0` IS NOT NULL)),0) as `airport_count`,
+        GET((ARRAY_AGG(`id__0`) FILTER (WHERE group_set=0 AND `id__0` IS NOT NULL)),0) as `id`,
+        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+          `fac_type__1` as `fac_type`, 
+          `airport_count__1`::BIGINT as `airport_count`, 
+          `id2__1`::BIGINT as `id2`, 
+          `elevation__1` as `elevation`
+          ) as __x)  ORDER BY  `airport_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_fac_type`
+    -----------------^^^
+      FROM __stage1
+      GROUP BY 1
+    )
+    SELECT 
+       JSONB_EXTRACT_PATH_TEXT(by_fac_type_0,'id2')::double as `id2`
+    FROM __stage2 as base
+    LEFT JOIN JSONB_ARRAY_ELEMENTS(base.`by_fac_type`) as by_fac_type_0 ON true
+    GROUP BY 1
+    ORDER BY 1 desc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       LOWER(base.`state`) as `lower_state`,
+       LAG((LOWER(base.`state`))) OVER(  ORDER BY  LOWER(base.`state`) asc NULLS LAST ) as `prev_state`
+    FROM malloytest.state_facts as base
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       LOWER(base.`state`) as `lower_state`,
+       COUNT(1) as `c`,
+       LAG((COUNT(1))) OVER(  ORDER BY  LOWER(base.`state`) ASC NULLS LAST ) as `prev_count`
+    FROM malloytest.state_facts as base
+    GROUP BY 1
+    ORDER BY 1 ASC NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          base.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `aircraft_count__1`,
+        CASE WHEN group_set=1 THEN FIRST_VALUE(CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END) OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `first_count__1`
+      FROM malloytest.aircraft as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      WHERE base.`state` IS NOT NULL
+      GROUP BY 1,2,3
+    )
+    SELECT
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `aircraft_count__1`::BIGINT as `aircraft_count`, 
+        `first_count__1`::BIGINT as `first_count`
+        ) as __x)  ORDER BY  `aircraft_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_county`
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 27, pos 15)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          base.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `aircraft_count__1`,
+        CASE WHEN group_set=1 THEN FIRST_VALUE(CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END) OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `first_count__1`
+      FROM malloytest.aircraft as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      WHERE base.`state` IS NOT NULL
+      GROUP BY 1,2,3
+    )
+    SELECT
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `aircraft_count__1`::BIGINT as `aircraft_count`, 
+        `first_count__1`::BIGINT as `first_count`
+        ) as __x)  ORDER BY  `aircraft_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_county`
+    ---------------^^^
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       TRUNC(1.9::NUMERIC) as `f0`,
+       TRUNC(-1.9::NUMERIC) as `f1`,
+       TRUNC((12.29::NUMERIC), 1) as `f2`,
+       TRUNC((19.2::NUMERIC), -1) as `f3`,
+       TRUNC(NULL::NUMERIC) as `f4`,
+       TRUNC((1::NUMERIC), NULL) as `f5`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4,5,6
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [WRONG_NUM_ARGS.WITHOUT_SUGGESTION] The `trunc` requires 2 parameters but the actual number is 1. Please, refer to 'https://spark.apache.org/docs/latest/sql-ref-functions.html' for a fix. SQLSTATE: 42605; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COALESCE(CAST('+inf' AS undefined) = DOUBLE PRECISION 'Infinity' OR CAST('+inf' AS undefined) = DOUBLE PRECISION '-Infinity', false) as `f0`,
+       COALESCE(100 = DOUBLE PRECISION 'Infinity' OR 100 = DOUBLE PRECISION '-Infinity', false) as `f1`,
+       COALESCE(NULL = DOUBLE PRECISION 'Infinity' OR NULL = DOUBLE PRECISION '-Infinity', false) as `f2`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'PRECISION'. SQLSTATE: 42601 (line 2, pos 47)
+    
+    == SQL ==
+    SELECT 
+       COALESCE(CAST('+inf' AS undefined) = DOUBLE PRECISION 'Infinity' OR CAST('+inf' AS undefined) = DOUBLE PRECISION '-Infinity', false) as `f0`,
+    -----------------------------------------------^^^
+       COALESCE(100 = DOUBLE PRECISION 'Infinity' OR 100 = DOUBLE PRECISION '-Infinity', false) as `f1`,
+       COALESCE(NULL = DOUBLE PRECISION 'Infinity' OR NULL = DOUBLE PRECISION '-Infinity', false) as `f2`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COALESCE(CAST('NaN' AS undefined) = NUMERIC 'NaN', false) as `f0`,
+       COALESCE(100 = NUMERIC 'NaN', false) as `f1`,
+       COALESCE(NULL = NUMERIC 'NaN', false) as `f2`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
+    == SQL (line 2, position 27) ==
+       COALESCE(CAST('NaN' AS undefined) = NUMERIC 'NaN', false) as `f0...
+                              ^^^^^^^^^
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       CASE WHEN NUM_NULLS(1,10,-100) > 0 THEN NULL ELSE GREATEST(1,10,-100) END as `f0`,
+       ((CASE WHEN NUM_NULLS(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') > 0 THEN NULL ELSE GREATEST(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') END)>=TIMESTAMP '2004-01-01') and ((CASE WHEN NUM_NULLS(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') > 0 THEN NULL ELSE GREATEST(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') END)<TIMESTAMP '2005-01-01') as `f1`,
+       (CASE WHEN NUM_NULLS(TIMESTAMP '2023-05-26 11:58:00',TIMESTAMP '2023-05-26 11:59:00') > 0 THEN NULL ELSE GREATEST(TIMESTAMP '2023-05-26 11:58:00',TIMESTAMP '2023-05-26 11:59:00') END)=TIMESTAMP '2023-05-26 11:59:00' as `f2`,
+       CASE WHEN NUM_NULLS('a','b') > 0 THEN NULL ELSE GREATEST('a','b') END as `f3`,
+       CASE WHEN NUM_NULLS(1,NULL,0) > 0 THEN NULL ELSE GREATEST(1,NULL,0) END as `f4`,
+       CASE WHEN NUM_NULLS(NULL,NULL) > 0 THEN NULL ELSE GREATEST(NULL,NULL) END as `f5`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4,5,6
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `NUM_NULLS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 13
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       CASE WHEN NUM_NULLS(1,10,-100) > 0 THEN NULL ELSE LEAST(1,10,-100) END as `f0`,
+       ((CASE WHEN NUM_NULLS(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') > 0 THEN NULL ELSE LEAST(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') END)>=TIMESTAMP '1994-01-01') and ((CASE WHEN NUM_NULLS(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') > 0 THEN NULL ELSE LEAST(TIMESTAMP '2003-01-01',TIMESTAMP '2004-01-01',TIMESTAMP '1994-01-01') END)<TIMESTAMP '1995-01-01') as `f1`,
+       (CASE WHEN NUM_NULLS(TIMESTAMP '2023-05-26 11:58:00',TIMESTAMP '2023-05-26 11:59:00') > 0 THEN NULL ELSE LEAST(TIMESTAMP '2023-05-26 11:58:00',TIMESTAMP '2023-05-26 11:59:00') END)=TIMESTAMP '2023-05-26 11:58:00' as `f2`,
+       CASE WHEN NUM_NULLS('a','b') > 0 THEN NULL ELSE LEAST('a','b') END as `f3`,
+       CASE WHEN NUM_NULLS(1,NULL,0) > 0 THEN NULL ELSE LEAST(1,NULL,0) END as `f4`,
+       CASE WHEN NUM_NULLS(NULL,NULL) > 0 THEN NULL ELSE LEAST(NULL,NULL) END as `f5`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4,5,6
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `NUM_NULLS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 13
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRPOS('123456789','3') as `f0`,
+       STRPOS('123456789','0') as `f1`,
+       STRPOS(NULL,'0') as `f2`,
+       STRPOS('123456789',NULL) as `f3`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRPOS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COALESCE(STARTS_WITH('hello world', 'hello'), false) as `f0`,
+       COALESCE(STARTS_WITH('hello world', 'world'), false) as `f1`,
+       COALESCE(STARTS_WITH(NULL, 'world'), false) as `f2`,
+       COALESCE(STARTS_WITH('hello world', NULL), false) as `f3`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3,4
+    ORDER BY 1 asc NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STARTS_WITH` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 12
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
 {"level":"info","message":"Created DBSQLClient"}
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
 {"level":"info","message":"Created DBSQLClient"}
@@ -105,46 +891,55 @@
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
   console.log
     Exeption when running SQL:
-     WITH __stage0 AS (
-      SELECT
-        group_set,
-        CASE WHEN group_set IN (2,1) THEN
-          base.`popular_name`
-          END as `popular_name__2`,
-        CASE WHEN group_set=2 THEN
-          base.`state`
-          END as `state__2`,
-        CASE WHEN group_set=2 THEN
-          COALESCE(SUM(base.`births`),0)
-          END as `total_births__2`,
-        MAX((CASE WHEN group_set=0 THEN
-          COALESCE(SUM(base.`births`),0)
-          END)) OVER () as `all_births__2`,
-        MAX((CASE WHEN group_set=1 THEN
-          COALESCE(SUM(base.`births`),0)
-          END)) OVER (PARTITION BY CASE WHEN group_set IN (2,1) THEN
-          base.`popular_name`
-          END) as `all_name__2`
-      FROM malloytest.state_facts as base
-      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
-      GROUP BY 1,2,3
-    )
-    SELECT
-      `popular_name__2` as `popular_name`,
-      `state__2` as `state`,
-      GET((ARRAY_AGG(`total_births__2`) FILTER (WHERE group_set=2 AND `total_births__2` IS NOT NULL)),0) as `total_births`,
-      GET((ARRAY_AGG(`all_births__2`) FILTER (WHERE group_set=2 AND `all_births__2` IS NOT NULL)),0) as `all_births`,
-      GET((ARRAY_AGG(`all_name__2`) FILTER (WHERE group_set=2 AND `all_name__2` IS NOT NULL)),0) as `all_name`
-    FROM __stage0
-    WHERE group_set NOT IN (0,1)
-    GROUP BY 1,2
-    ORDER BY 3 desc NULLS LAST
+     SELECT 
+       STRING_AGG(base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
 
       at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
 
   console.log
-    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "popular_name" is based on columns which are not participating in the GROUP BY clause.
-    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(popular_name)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name`) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
 
       at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
 
@@ -152,210 +947,2218 @@
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
 {"level":"info","message":"Created DBSQLClient"}
 {"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-{"level":"info","message":"Created DBSQLClient"}
-{"level":"info","message":"DBSQLClient: initializing thrift client"}
-FAIL test/src/databases/all/nomodel.spec.ts (89.127 s)
-  ✓ parenthesize output field values - databricks (13129 ms)
-  ✓ bug 151 which used to throw unknown dialect is still fixed- databricks (5473 ms)
-  ✓ refine query from query - databricks (2721 ms)
-  ✓ source- not -found  - databricks (45 ms)
-  ✓ join_many - databricks (3341 ms)
-  ✓ join_many condition no primary key - databricks (1949 ms)
-  ✓ join_many filter multiple values - databricks (2175 ms)
-  ✓ join_one condition no primary key - databricks (1248 ms)
-  ✓ join_one filter multiple values - databricks (1330 ms)
-  ✓ join_many cross from  - databricks (1384 ms)
-  ✕ join_one only  - databricks (542 ms)
-  ✓ join_many cross ON  - databricks (1158 ms)
-  ✓ limit - provided - databricks (982 ms)
-  ✓ join inner- databricks (1371 ms)
-  ✓ join left - databricks (1234 ms)
-  ✓ join right - databricks (1332 ms)
-  ✓ join full - databricks (1319 ms)
-  ✓ leafy count - databricks (955 ms)
-  ✓ nest/unnest -basic - databricks (1 ms)
-  ✓ count at root should not use distinct key - databricks (969 ms)
-  ✓ leafy nested count - databricks (1 ms)
-  ✓ basic index - databricks (5789 ms)
-  ✓ sql block- databricks (1525 ms)
-  ✓ avg ignore null- databricks (2493 ms)
-  ✓ limit - not provided - databricks (985 ms)
-  ✓ ungrouped top level - databricks (1249 ms)
-  ✓ ungrouped - eliminate rows  - databricks (1201 ms)
-  ✓ run simple sql - databricks (1390 ms)
-  ✓ simple sql is exactly as written - databricks (522 ms)
-  ✓ source from query defined as sql query - databricks (550 ms)
-  ✓ source from query defined as other query - databricks (1087 ms)
-  ✕ all with parameters - basic  - databricks (619 ms)
-  ✓ sql as source - databricks (1604 ms)
-  ✓ sql directly - databricks (646 ms)
-  ✓ sql with turducken- databricks (2144 ms)
-  ✓ local declarations external query - databricks (664 ms)
-  ✓ local declarations named query - databricks (833 ms)
-  ✓ local declarations refined named query - databricks (763 ms)
-  ✓ regexp match- databricks (2154 ms)
-  ✓ substitution precedence- databricks (1509 ms)
-  ✓ removes surpuflous order_by - solo aggregates - databricks (697 ms)
-  ✓ removes surpuflous order_by - pipeline - databricks (849 ms)
-  ✓ removes surpuflous order_by - joined_query - databricks (1082 ms)
-  ✓ removes surpuflous order_by - joined_query pipeline - databricks (1057 ms)
-  ○ skipped number as null 2 - databricks
-  ○ skipped ungrouped top level with nested  - databricks
-  ○ skipped ungrouped nested with no grouping above - databricks
-  ○ skipped ungrouped - partial grouping - databricks
-  ○ skipped ungrouped - all nested - databricks
-  ○ skipped ungrouped nested  - databricks
-  ○ skipped ungrouped nested expression  - databricks
-  ○ skipped ungrouped nested group by float  - databricks
-  ○ skipped all with parameters - nest  - databricks
-  ○ skipped single value to udf - databricks
-  ○ skipped Multi value to udf - databricks
-  ○ skipped Multi value to udf group by - databricks
-  ○ skipped array unnest - databricks
-  ○ skipped array unnest x 2 - databricks
-  ○ skipped can unnest simply from file - databricks
-  ○ skipped can unnest from file - databricks
-  ○ skipped can double unnest - databricks
-  ○ skipped nest null - databricks
-  ○ skipped Nested pipelines sort properly - databricks
-  ○ skipped number as null- databricks
-  quoting and strings
-    ✓ backslash quote (1380 ms)
-    ✓ backslash backslash (525 ms)
-    ✓ source with reserve word (672 ms)
-    ○ skipped spaces in names
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
 
-  ● join_one only  - databricks
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
 
-    query.run failed: 
-    [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
-    == SQL (line 7, position 55) ==
-    ...AT(base.`state`,CAST(a_0.`r` AS undefined))) as `row_count`,
-                                       ^^^^^^^^^
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
 
-    SQL: WITH __stage0 AS (
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`city`, base.`name`) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`city`, base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
       SELECT 
-         COALESCE(SUM(base.`airport_count`),0) as `r`
-      FROM malloytest.state_facts as base
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
     )
     SELECT 
-       count(distinct CONCAT(base.`state`,CAST(a_0.`r` AS undefined))) as `row_count`,
-       COALESCE(SUM(base.`airport_count`),0) as `left_sum`,
-       COALESCE((SUM(DISTINCT (CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 1, 16), 16, 10) AS DECIMAL(38,0)) * 4294967296 + CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 16, 8), 16, 10) AS DECIMAL(38,0))) + COALESCE(a_0.`r`, 0)) - SUM(DISTINCT (CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 1, 16), 16, 10) AS DECIMAL(38,0)) * 4294967296 + CAST(conv(substring(md5(concat(a_0.`__distinct_key`, '')), 16, 8), 16, 10) AS DECIMAL(38,0))))),0) as `right_sum`,
-       COALESCE(SUM(base.`airport_count`+a_0.`r`),0) as `sum_sum`
+       STRING_AGG(base.`name`, ',' ORDER BY LENGTH(base.`name`)) as `f`
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY LENGTH(base.`name`)) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY aircraft_models_0.`model`) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+    WHERE base.`name` RLIKE '.*ADVENTURE.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY aircraft_models_0.`model`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+    WHERE base.`name` RLIKE '.*ADVENTURE.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',' ORDER BY (a::json->>'f3'), (a::json->>'f4')) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,base.`state`,base.`popular_name`,base.`state`))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+    
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',' ORDER BY (a::json->>'f3'), (a::json->>'f4')) as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,base.`state`,base.`popular_name`,base.`state`))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',') as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o'))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+    
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o'))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), '') as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o',''))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+    
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), '') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o',''))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(DISTINCT aircraft_0.`name`, ',' ORDER BY aircraft_0.`name` ASC) as `f_dist`,
+       STRING_AGG(aircraft_0.`name`, ',' ORDER BY aircraft_0.`name`) as `f_all`
+    FROM malloytest.aircraft_models as base
+     LEFT JOIN malloytest.aircraft AS aircraft_0
+      ON base.`aircraft_model_code`=aircraft_0.`aircraft_model_code`
+    WHERE aircraft_0.`name` IN ('RAYTHEON AIRCRAFT COMPANY','FOWLER IRA R DBA')
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 46)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT aircraft_0.`name`, ',' ORDER BY aircraft_0.`name` ASC) as `f_dist`,
+    ----------------------------------------------^^^
+       STRING_AGG(aircraft_0.`name`, ',' ORDER BY aircraft_0.`name`) as `f_all`
+    FROM malloytest.aircraft_models as base
+     LEFT JOIN malloytest.aircraft AS aircraft_0
+      ON base.`aircraft_model_code`=aircraft_0.`aircraft_model_code`
+    WHERE aircraft_0.`name` IN ('RAYTHEON AIRCRAFT COMPANY','FOWLER IRA R DBA')
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 40)
+    
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+    
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       EXTRACT(year FROM base.`dep_time`) as `yr`,
+       EXTRACT(quarter FROM base.`dep_time`) as `qtr`,
+       COUNT(1) as `qtr_flights`,
+       LAG((COUNT(1))) OVER(PARTITION BY (EXTRACT(quarter FROM base.`dep_time`)) ORDER BY (EXTRACT(year FROM base.`dep_time`)) ASC ) as `last_yr_qtr_flights`
+    FROM malloytest.flights as base
+    WHERE base.`dep_time`<TIMESTAMP '2002-01-01 00:00:00'
+    GROUP BY 1,2
+    ORDER BY 1 ASC NULLS LAST,2 ASC NULLS LAST
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
+
+  console.log
+    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "dep_time" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(dep_time)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+  console.log
+    Exeption when running SQL:
+     SELECT 
+       COUNT(1) as `c`,
+       SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1) as `l`,
+       LAG((SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1))) OVER(PARTITION BY (COUNT(1))  ORDER BY  SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1) ASC NULLS LAST ) as `prev`
     FROM malloytest.state_facts as base
-     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM __stage0 as x) AS a_0
-      ON 1=1
+    GROUP BY 2
+    ORDER BY 2 ASC NULLS LAST
+    LIMIT 5
 
-    [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
-    == SQL (line 7, position 55) ==
-    ...AT(base.`state`,CAST(a_0.`r` AS undefined))) as `row_count`,
-                                       ^^^^^^^^^
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:128:15)
 
-      245 |           sum_sum is sum(airport_count + a.r)
-      246 |       }
-    > 247 |     `).malloyResultMatches(runtime, {
-          |        ^
-      248 |       row_count: 51,
-      249 |       left_sum: 19701,
-      250 |       right_sum: 19701,
+  console.log
+    Exception: Error: [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DatabricksTestConnection.runSQL (test/src/runtimes.ts:130:15)
+
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+{"level":"info","message":"Created DBSQLClient"}
+{"level":"info","message":"DBSQLClient: initializing thrift client"}
+FAIL test/src/databases/all/functions.spec.ts (109.484 s)
+  concat
+    ✕ works - databricks (17313 ms)
+  round
+    ✓ works - databricks (1089 ms)
+  floor
+    ✓ works - databricks (1938 ms)
+  ceil
+    ✓ works - databricks (1005 ms)
+  length
+    ✓ works - databricks (951 ms)
+  lower
+    ✓ works - databricks (870 ms)
+  upper
+    ✓ works - databricks (940 ms)
+  regexp_extract
+    ✓ works - databricks (966 ms)
+  replace
+    ✕ works - databricks (675 ms)
+  substr
+    ✓ works - databricks (999 ms)
+  raw function call
+    ✕ works - databricks (483 ms)
+  stddev
+    ✕ works - databricks (442 ms)
+    ✕ works with struct - databricks (514 ms)
+    ✕ works with implicit parameter - databricks (384 ms)
+    ✕ works with filter - databricks (724 ms)
+  row_number
+    ✓ works when the order by is a dimension  - databricks (3924 ms)
+    ✓ works when the order by is a dimension in the other order  - databricks (873 ms)
+    ✓ works when the order by is a measure - databricks (870 ms)
+    ✓ works when the order by is a measure but there is no group by - databricks (1106 ms)
+    ✕ works inside nest - databricks (456 ms)
+    ✕ works outside nest, but with a nest nearby - databricks (398 ms)
+  rank
+    ✕ works ordered by dimension - databricks (601 ms)
+    ✓ works ordered by aggregate - databricks (1020 ms)
+    ✓ works using unary minus in calculate block - databricks (882 ms)
+    ✕ properly isolated nested calculations - databricks (474 ms)
+  lag
+    ✓ works with one param - databricks (979 ms)
+    ✕ works with expression field - databricks (519 ms)
+    ✓ works with expression - databricks (864 ms)
+    ✕ works with field, ordering by expression field - databricks (634 ms)
+    ✓ works with offset - databricks (975 ms)
+    ✓ works with default value - databricks (852 ms)
+    ✓ works with now as the default value - databricks (983 ms)
+  output field in calculate
+    ✓ output field referenceable in calculate - databricks (1769 ms)
+  first_value
+    ✕ works in nest - databricks (436 ms)
+    ✓ works outside nest - databricks (940 ms)
+    ✓ works with an aggregate which is not in the query - databricks (1387 ms)
+    ✓ works with a localized aggregate - databricks (1407 ms)
+  trunc
+    ✕ works - databricks (535 ms)
+  log
+    ✓ works - databricks (872 ms)
+  ln
+    ✓ works - databricks (799 ms)
+  exp
+    ✓ works - databricks (863 ms)
+  cos
+    ✓ works - databricks (757 ms)
+  acos
+    ✓ works - databricks (747 ms)
+  sin
+    ✓ works - databricks (651 ms)
+  asin
+    ✓ works - databricks (603 ms)
+  tan
+    ✓ works - databricks (601 ms)
+  atan
+    ✓ works - databricks (672 ms)
+  atan2
+    ✓ works - databricks (807 ms)
+  sqrt
+    ✓ works - databricks (721 ms)
+  pow
+    ✓ works - databricks (747 ms)
+  abs
+    ✓ works - databricks (821 ms)
+  sign
+    ✓ works - databricks (830 ms)
+  is_inf
+    ✕ works - databricks (393 ms)
+  is_nan
+    ✕ works - databricks (416 ms)
+  greatest
+    ✕ works - databricks (563 ms)
+  least
+    ✕ works - databricks (521 ms)
+  div
+    ✓ works - databricks (808 ms)
+  strpos
+    ✕ works - databricks (505 ms)
+  starts_with
+    ✕ works - databricks (587 ms)
+  ends_with
+    ✓ works - databricks (829 ms)
+  trim
+    ✕ trim works - databricks (786 ms)
+  ltrim
+    ✕ ltrim works - databricks (727 ms)
+  rtrim
+    ✕ rtrim works - databricks (748 ms)
+  rand
+    ✓ is usually not the same value - databricks (839 ms)
+  pi
+    ✓ is pi - databricks (834 ms)
+  byte_length
+    ✓ works - databricks (803 ms)
+  ifnull
+    ✓ works - databricks (758 ms)
+  coalesce
+    ✓ works - databricks (806 ms)
+  nullif
+    ✓ works - databricks (833 ms)
+  chr
+    ✓ works - databricks (728 ms)
+  ascii
+    ✓ works - databricks (714 ms)
+  unicode
+    ✓ works - databricks (734 ms)
+  string_repeat
+    ✓ works - databricks (748 ms)
+    ○ skipped works floor decimal - databricks
+  reverse
+    ✓ works - databricks (736 ms)
+  lead
+    ✓ works with one param - databricks (857 ms)
+    ✓ works with offset - databricks (817 ms)
+    ✓ works with default value - databricks (1076 ms)
+  count_approx
+    ○ skipped works generally
+    ○ skipped works with fanout
+  last_value
+    ✓ works - databricks (871 ms)
+  avg_moving
+    ✓ works - databricks (820 ms)
+    ✓ works forward - databricks (869 ms)
+  sum_moving
+    ✓ works - databricks (886 ms)
+    ✓ works forward - databricks (808 ms)
+  min, max, sum / window, cumulative
+    ✓ works - databricks (942 ms)
+  hll_functions
+    ○ skipped hyperloglog basic - databricks
+    ○ skipped hyperloglog combine - databricks
+    ○ skipped hyperloglog import/export - databricks
+  dialect functions
+    duckdb
+      ○ skipped to_timestamp
+      ○ skipped list_extract
+      ○ skipped date_part,to_seconds
+    trino
+      ○ skipped from_unixtime
+  databricks
+    string_agg
+      ✕ works no order by - databricks (533 ms)
+      ✕ works with dotted shortcut - databricks (464 ms)
+      ✕ works with order by field - databricks (437 ms)
+      ✓ works with order by direction - databricks (34 ms)
+      ✕ works with multiple order_bys - databricks (434 ms)
+      ✕ works with order by expression - databricks (404 ms)
+      ✕ works with order by join expression - databricks (403 ms)
+      ✕ works with order asc - databricks (687 ms)
+      ✕ works with order desc - databricks (420 ms)
+      ✕ works with fanout and order_by - databricks (441 ms)
+      ✕ works with fanout - databricks (407 ms)
+      ✕ works with fanout and separator - databricks (383 ms)
+      ✓ works with limit - databricks (47 ms)
+    string_agg_distinct
+      ✕ actually distincts - databricks (394 ms)
+      ✕ works no order by - databricks (484 ms)
+      ✕ works with dotted shortcut - databricks (484 ms)
+      ✕ works with order by direction - databricks (384 ms)
+      ✕ works with order asc - databricks (367 ms)
+      ✕ works with order desc - databricks (380 ms)
+      ✓ works with limit - databricks (20 ms)
+    partition_by
+      ✕ works - databricks (684 ms)
+      ✕ works with aggregate - databricks (555 ms)
+      ✓ works with multiple order_bys - databricks (1272 ms)
+      ✓ can be used in a select (1023 ms)
+
+  ● concat › works - databricks
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "foo2003-01-01"
+    Received: "foo2003-01-01 00:00:00"
+
+      119 |       // console.log(databaseName, result.sql);
+      120 |       // console.log(result.data);
+    > 121 |       expect(result.data.path(0, `f${i}`).value).toBe(testCase[1]);
+          |                                                  ^
+      122 |     });
+      123 |   };
+      124 |
+
+      at test/src/databases/all/functions.spec.ts:121:50
+          at Array.forEach (<anonymous>)
+      at funcTestMultiple (test/src/databases/all/functions.spec.ts:118:15)
+      at async Object.<anonymous> (test/src/databases/all/functions.spec.ts:137:7)
+
+  ● replace › works - databricks
+
+    [CAST_INVALID_INPUT] The value 'g' of the type "STRING" cannot be cast to "INT" because it is malformed. Correct the value as per the syntax, or change its target type. Use `try_cast` to tolerate malformed input and return NULL instead. If necessary set "ansi_mode" to "false" to bypass this error. SQLSTATE: 22018
+    == SQL (line 3, position 4) ==
+       REGEXP_REPLACE('aaaa', '.', 'c', 'g') as `f1`,
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
       at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
       at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
       at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
-      at Object.<anonymous> (test/src/databases/all/nomodel.spec.ts:247:8)
 
-  ● all with parameters - basic  - databricks
+  ● raw function call › works - databricks
 
-    query.run failed: [MISSING_AGGREGATION] The non-aggregating expression "popular_name" is based on columns which are not participating in the GROUP BY clause.
-    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(popular_name)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
-    SQL: WITH __stage0 AS (
+
+    [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
+    == SQL (line 2, position 29) ==
+       FLOOR(CAST((sqrt(25)) AS undefined)) as `f0`,
+                                ^^^^^^^^^
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● stddev › works - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'PRECISION': extra input 'PRECISION'. SQLSTATE: 42601 (line 2, pos 50)
+
+    == SQL ==
+    SELECT 
+       ROUND(STDDEV(aircraft_models_0.`seats`::DOUBLE PRECISION)) as `f`
+    --------------------------------------------------^^^
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● stddev › works with struct - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● stddev › works with implicit parameter - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,aircraft_models_0.`seats`))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● stddev › works with filter - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '('. SQLSTATE: 42601 (line 2, pos 9)
+
+    == SQL ==
+    SELECT 
+       ROUND((
+    ---------^^^
+          SELECT STDDEV((a::json->>'f2')::DOUBLE PRECISION) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(aircraft_models_0.`aircraft_model_code`,CASE WHEN 1=1 THEN aircraft_models_0.`seats` END))::text)) a
+          ) a
+        )) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● row_number › works inside nest - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 22, pos 15)
+
+    == SQL ==
+    WITH __stage0 AS (
       SELECT
         group_set,
-        CASE WHEN group_set IN (2,1) THEN
-          base.`popular_name`
-          END as `popular_name__2`,
-        CASE WHEN group_set=2 THEN
-          base.`state`
-          END as `state__2`,
-        CASE WHEN group_set=2 THEN
-          COALESCE(SUM(base.`births`),0)
-          END as `total_births__2`,
-        MAX((CASE WHEN group_set=0 THEN
-          COALESCE(SUM(base.`births`),0)
-          END)) OVER () as `all_births__2`,
-        MAX((CASE WHEN group_set=1 THEN
-          COALESCE(SUM(base.`births`),0)
-          END)) OVER (PARTITION BY CASE WHEN group_set IN (2,1) THEN
-          base.`popular_name`
-          END) as `all_name__2`
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          airports_0.`county`
+          END asc NULLS LAST ) END as `row_num__1`
       FROM malloytest.state_facts as base
-      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+       LEFT JOIN malloytest.airports AS airports_0
+        ON airports_0.`state`=base.`state`
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
       GROUP BY 1,2,3
     )
     SELECT
-      `popular_name__2` as `popular_name`,
-      `state__2` as `state`,
-      GET((ARRAY_AGG(`total_births__2`) FILTER (WHERE group_set=2 AND `total_births__2` IS NOT NULL)),0) as `total_births`,
-      GET((ARRAY_AGG(`all_births__2`) FILTER (WHERE group_set=2 AND `all_births__2` IS NOT NULL)),0) as `all_births`,
-      GET((ARRAY_AGG(`all_name__2`) FILTER (WHERE group_set=2 AND `all_name__2` IS NOT NULL)),0) as `all_name`
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `row_num__1`::BIGINT as `row_num`
+        ) as __x)  ORDER BY  `county__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `q`
+    ---------------^^^
     FROM __stage0
-    WHERE group_set NOT IN (0,1)
-    GROUP BY 1,2
-    ORDER BY 3 desc NULLS LAST
-
-    Error: [MISSING_AGGREGATION] The non-aggregating expression "popular_name" is based on columns which are not participating in the GROUP BY clause.
-    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(popular_name)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
-
-      841 |           all_name is exclude(total_births, state)
-      842 |       }
-    > 843 |     `).malloyResultMatches(runtime, {
-          |        ^
-      844 |       all_births: 295727065,
-      845 |       all_name: 197260594,
-      846 |     });
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
 
       at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
       at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
       at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
-      at Object.<anonymous> (test/src/databases/all/nomodel.spec.ts:843:8)
+
+  ● row_number › works outside nest, but with a nest nearby - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 18, pos 15)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  base.`state` asc NULLS LAST ) END as `row_num__0`,
+        CASE WHEN group_set=1 THEN
+          base.`state`
+          END as `state__1`
+      FROM malloytest.state_facts as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      GROUP BY 1,2,4
+    )
+    SELECT
+      `state__0` as `state`,
+      GET((ARRAY_AGG(`row_num__0`) FILTER (WHERE group_set=0 AND `row_num__0` IS NOT NULL)),0) as `row_num`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `state__1` as `state`
+        ) as __x)  ORDER BY  `state__1` asc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as `nested`
+    ---------------^^^
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● rank › works ordered by dimension - databricks
+
+    [MISSING_AGGREGATION] The non-aggregating expression "births" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(births)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● rank › properly isolated nested calculations - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 53, pos 17)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`faa_region` as `faa_region__0`,
+        CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END as `airport_count__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          base.`fac_type`
+          END as `fac_type__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `airport_count__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`faa_region`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id2__1`,
+        CASE WHEN group_set=2 THEN
+          AVG(base.`elevation`)
+          END as `avg_elevation__2`
+      FROM malloytest.airports as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+      GROUP BY 1,2,5
+    )
+    , __stage1 AS (
+      SELECT 
+        CASE WHEN group_set=2 THEN 1 ELSE group_set END as group_set,
+        `faa_region__0` as `faa_region__0`,
+        ANY(`airport_count__0`) as `airport_count__0`,
+        ANY(`id__0`) as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          `fac_type__1`
+          END as `fac_type__1`,
+        ANY(`airport_count__1`) as `airport_count__1`,
+        ANY(`id2__1`) as `id2__1`,
+        TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT 
+          `avg_elevation__2`::BIGINT as `avg_elevation`) as __x)) FILTER (WHERE group_set=2))[1]) as `elevation__1`
+      FROM __stage0
+      GROUP BY 1,2,5
+    )
+    , __stage2 AS (
+      SELECT
+        `faa_region__0` as `faa_region`,
+        GET((ARRAY_AGG(`airport_count__0`) FILTER (WHERE group_set=0 AND `airport_count__0` IS NOT NULL)),0) as `airport_count`,
+        GET((ARRAY_AGG(`id__0`) FILTER (WHERE group_set=0 AND `id__0` IS NOT NULL)),0) as `id`,
+        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+          `fac_type__1` as `fac_type`, 
+          `airport_count__1`::BIGINT as `airport_count`, 
+          `id2__1`::BIGINT as `id2`, 
+          `elevation__1` as `elevation`
+          ) as __x)  ORDER BY  `airport_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_fac_type`
+    -----------------^^^
+      FROM __stage1
+      GROUP BY 1
+    )
+    SELECT 
+       JSONB_EXTRACT_PATH_TEXT(by_fac_type_0,'id2')::double as `id2`
+    FROM __stage2 as base
+    LEFT JOIN JSONB_ARRAY_ELEMENTS(base.`by_fac_type`) as by_fac_type_0 ON true
+    GROUP BY 1
+    ORDER BY 1 desc NULLS LAST
+
+    SQL: WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`faa_region` as `faa_region__0`,
+        CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END as `airport_count__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          base.`fac_type`
+          END as `fac_type__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `airport_count__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`faa_region`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id2__1`,
+        CASE WHEN group_set=2 THEN
+          AVG(base.`elevation`)
+          END as `avg_elevation__2`
+      FROM malloytest.airports as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+      GROUP BY 1,2,5
+    )
+    , __stage1 AS (
+      SELECT 
+        CASE WHEN group_set=2 THEN 1 ELSE group_set END as group_set,
+        `faa_region__0` as `faa_region__0`,
+        ANY(`airport_count__0`) as `airport_count__0`,
+        ANY(`id__0`) as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          `fac_type__1`
+          END as `fac_type__1`,
+        ANY(`airport_count__1`) as `airport_count__1`,
+        ANY(`id2__1`) as `id2__1`,
+        TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT 
+          `avg_elevation__2`::BIGINT as `avg_elevation`) as __x)) FILTER (WHERE group_set=2))[1]) as `elevation__1`
+      FROM __stage0
+      GROUP BY 1,2,5
+    )
+    , __stage2 AS (
+      SELECT
+        `faa_region__0` as `faa_region`,
+        GET((ARRAY_AGG(`airport_count__0`) FILTER (WHERE group_set=0 AND `airport_count__0` IS NOT NULL)),0) as `airport_count`,
+        GET((ARRAY_AGG(`id__0`) FILTER (WHERE group_set=0 AND `id__0` IS NOT NULL)),0) as `id`,
+        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+          `fac_type__1` as `fac_type`, 
+          `airport_count__1`::BIGINT as `airport_count`, 
+          `id2__1`::BIGINT as `id2`, 
+          `elevation__1` as `elevation`
+          ) as __x)  ORDER BY  `airport_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_fac_type`
+      FROM __stage1
+      GROUP BY 1
+    )
+    SELECT 
+       JSONB_EXTRACT_PATH_TEXT(by_fac_type_0,'id2')::double as `id2`
+    FROM __stage2 as base
+    LEFT JOIN JSONB_ARRAY_ELEMENTS(base.`by_fac_type`) as by_fac_type_0 ON true
+    GROUP BY 1
+    ORDER BY 1 desc NULLS LAST
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 53, pos 17)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`faa_region` as `faa_region__0`,
+        CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END as `airport_count__0`,
+        CASE WHEN group_set=0 THEN ROW_NUMBER() OVER(PARTITION BY group_set  ORDER BY  CASE WHEN group_set=0 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          base.`fac_type`
+          END as `fac_type__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `airport_count__1`,
+        CASE WHEN group_set=1 THEN ROW_NUMBER() OVER(PARTITION BY group_set, base.`faa_region`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `id2__1`,
+        CASE WHEN group_set=2 THEN
+          AVG(base.`elevation`)
+          END as `avg_elevation__2`
+      FROM malloytest.airports as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,2,1)) as group_set)
+      GROUP BY 1,2,5
+    )
+    , __stage1 AS (
+      SELECT 
+        CASE WHEN group_set=2 THEN 1 ELSE group_set END as group_set,
+        `faa_region__0` as `faa_region__0`,
+        ANY(`airport_count__0`) as `airport_count__0`,
+        ANY(`id__0`) as `id__0`,
+        CASE WHEN group_set IN (1,2) THEN
+          `fac_type__1`
+          END as `fac_type__1`,
+        ANY(`airport_count__1`) as `airport_count__1`,
+        ANY(`id2__1`) as `id2__1`,
+        TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT 
+          `avg_elevation__2`::BIGINT as `avg_elevation`) as __x)) FILTER (WHERE group_set=2))[1]) as `elevation__1`
+      FROM __stage0
+      GROUP BY 1,2,5
+    )
+    , __stage2 AS (
+      SELECT
+        `faa_region__0` as `faa_region`,
+        GET((ARRAY_AGG(`airport_count__0`) FILTER (WHERE group_set=0 AND `airport_count__0` IS NOT NULL)),0) as `airport_count`,
+        GET((ARRAY_AGG(`id__0`) FILTER (WHERE group_set=0 AND `id__0` IS NOT NULL)),0) as `id`,
+        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+          `fac_type__1` as `fac_type`, 
+          `airport_count__1`::BIGINT as `airport_count`, 
+          `id2__1`::BIGINT as `id2`, 
+          `elevation__1` as `elevation`
+          ) as __x)  ORDER BY  `airport_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_fac_type`
+    -----------------^^^
+      FROM __stage1
+      GROUP BY 1
+    )
+    SELECT 
+       JSONB_EXTRACT_PATH_TEXT(by_fac_type_0,'id2')::double as `id2`
+    FROM __stage2 as base
+    LEFT JOIN JSONB_ARRAY_ELEMENTS(base.`by_fac_type`) as by_fac_type_0 ON true
+    GROUP BY 1
+    ORDER BY 1 desc NULLS LAST
+
+      501 |             order_by: id2 desc
+      502 |           }
+    > 503 |       `).malloyResultMatches(expressionModel, {
+          |          ^
+      504 |         id2: 2,
+      505 |       });
+      506 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:503:10)
+
+  ● lag › works with expression field - databricks
+
+    [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● lag › works with field, ordering by expression field - databricks
+
+    [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● first_value › works in nest - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER'. SQLSTATE: 42601 (line 27, pos 15)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT
+        group_set,
+        base.`state` as `state__0`,
+        CASE WHEN group_set=1 THEN
+          base.`county`
+          END as `county__1`,
+        CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END as `aircraft_count__1`,
+        CASE WHEN group_set=1 THEN FIRST_VALUE(CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END) OVER(PARTITION BY group_set, base.`state`  ORDER BY  CASE WHEN group_set=1 THEN
+          COUNT(1)
+          END desc NULLS LAST ) END as `first_count__1`
+      FROM malloytest.aircraft as base
+      CROSS JOIN (SELECT EXPLODE(SEQUENCE(0,1,1)) as group_set)
+      WHERE base.`state` IS NOT NULL
+      GROUP BY 1,2,3
+    )
+    SELECT
+      `state__0` as `state`,
+      COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
+        `county__1` as `county`, 
+        `aircraft_count__1`::BIGINT as `aircraft_count`, 
+        `first_count__1`::BIGINT as `first_count`
+        ) as __x)  ORDER BY  `aircraft_count__1` desc NULLS LAST ) FILTER (WHERE group_set=1))[1:2]),'[]'::JSONB) as `by_county`
+    ---------------^^^
+    FROM __stage0
+    GROUP BY 1
+    ORDER BY 1 asc NULLS LAST
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● trunc › works - databricks
+
+    [WRONG_NUM_ARGS.WITHOUT_SUGGESTION] The `trunc` requires 2 parameters but the actual number is 1. Please, refer to 'https://spark.apache.org/docs/latest/sql-ref-functions.html' for a fix. SQLSTATE: 42605; line 2 pos 3
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● is_inf › works - databricks
+
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'PRECISION'. SQLSTATE: 42601 (line 2, pos 47)
+
+    == SQL ==
+    SELECT 
+       COALESCE(CAST('+inf' AS undefined) = DOUBLE PRECISION 'Infinity' OR CAST('+inf' AS undefined) = DOUBLE PRECISION '-Infinity', false) as `f0`,
+    -----------------------------------------------^^^
+       COALESCE(100 = DOUBLE PRECISION 'Infinity' OR 100 = DOUBLE PRECISION '-Infinity', false) as `f1`,
+       COALESCE(NULL = DOUBLE PRECISION 'Infinity' OR NULL = DOUBLE PRECISION '-Infinity', false) as `f2`
+    FROM malloytest.state_facts as base
+    GROUP BY 1,2,3
+    ORDER BY 1 asc NULLS LAST
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● is_nan › works - databricks
+
+
+    [UNSUPPORTED_DATATYPE] Unsupported data type "UNDEFINED". SQLSTATE: 0A000
+    == SQL (line 2, position 27) ==
+       COALESCE(CAST('NaN' AS undefined) = NUMERIC 'NaN', false) as `f0...
+                              ^^^^^^^^^
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● greatest › works - databricks
+
+    [UNRESOLVED_ROUTINE] Cannot resolve routine `NUM_NULLS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 13
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● least › works - databricks
+
+    [UNRESOLVED_ROUTINE] Cannot resolve routine `NUM_NULLS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 13
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● strpos › works - databricks
+
+    [UNRESOLVED_ROUTINE] Cannot resolve routine `STRPOS` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● starts_with › works - databricks
+
+    [UNRESOLVED_ROUTINE] Cannot resolve routine `STARTS_WITH` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 12
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+
+  ● trim › trim works - databricks
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "keep_this"
+    Received: ""
+
+      119 |       // console.log(databaseName, result.sql);
+      120 |       // console.log(result.data);
+    > 121 |       expect(result.data.path(0, `f${i}`).value).toBe(testCase[1]);
+          |                                                  ^
+      122 |     });
+      123 |   };
+      124 |
+
+      at test/src/databases/all/functions.spec.ts:121:50
+          at Array.forEach (<anonymous>)
+      at funcTestMultiple (test/src/databases/all/functions.spec.ts:118:15)
+      at async Object.<anonymous> (test/src/databases/all/functions.spec.ts:946:7)
+
+  ● ltrim › ltrim works - databricks
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "keep_this -> __"
+    Received: ""
+
+      119 |       // console.log(databaseName, result.sql);
+      120 |       // console.log(result.data);
+    > 121 |       expect(result.data.path(0, `f${i}`).value).toBe(testCase[1]);
+          |                                                  ^
+      122 |     });
+      123 |   };
+      124 |
+
+      at test/src/databases/all/functions.spec.ts:121:50
+          at Array.forEach (<anonymous>)
+      at funcTestMultiple (test/src/databases/all/functions.spec.ts:118:15)
+      at async Object.<anonymous> (test/src/databases/all/functions.spec.ts:958:7)
+
+  ● rtrim › rtrim works - databricks
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "__ <- keep_this"
+    Received: ""
+
+      119 |       // console.log(databaseName, result.sql);
+      120 |       // console.log(result.data);
+    > 121 |       expect(result.data.path(0, `f${i}`).value).toBe(testCase[1]);
+          |                                                  ^
+      122 |     });
+      123 |   };
+      124 |
+
+      at test/src/databases/all/functions.spec.ts:121:50
+          at Array.forEach (<anonymous>)
+      at funcTestMultiple (test/src/databases/all/functions.spec.ts:118:15)
+      at async Object.<anonymous> (test/src/databases/all/functions.spec.ts:970:7)
+
+  ● databricks › string_agg › works no order by - databricks
+
+    query.run failed: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+    Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      1383 |         where: name = 'RUTHERFORD PAT R JR'
+      1384 |         aggregate: f is string_agg(name)
+    > 1385 |       }`).malloyResultMatches(expressionModel, {f: 'RUTHERFORD PAT R JR'});
+           |           ^
+      1386 |     });
+      1387 |
+      1388 |     it(`works with dotted shortcut - ${databaseName}`, async () => {
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1385:11)
+
+  ● databricks › string_agg › works with dotted shortcut - databricks
+
+    query.run failed: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+    Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      1390 |         where: name = 'RUTHERFORD PAT R JR'
+      1391 |         aggregate: f is name.string_agg()
+    > 1392 |       }`).malloyResultMatches(expressionModel, {f: 'RUTHERFORD PAT R JR'});
+           |           ^
+      1393 |     });
+      1394 |
+      1395 |     it(`works with order by field - ${databaseName}`, async () => {
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1392:11)
+
+  ● databricks › string_agg › works with order by field - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name`) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      1400 |           order_by: name
+      1401 |         }
+    > 1402 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1403 |         f: 'RUTHERFORD JAMES C,RUTHERFORD PAT R JR',
+      1404 |       });
+      1405 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1402:11)
+
+  ● databricks › string_agg › works with multiple order_bys - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      1412 |           order_by: asc
+      1413 |         }
+    > 1414 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1415 |         f: 'RUTHERFORD JAMES C,RUTHERFORD PAT R JR',
+      1416 |       });
+      1417 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1414:11)
+
+  ● databricks › string_agg › works with multiple order_bys - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`city`, base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`city`, base.`name`) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`city`, base.`name`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      1424 |           order_by: city, name
+      1425 |         }
+    > 1426 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1427 |         f: 'RUTHERFORD PAT R JR,RUTHERFORD JAMES C',
+      1428 |       });
+      1429 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1426:11)
+
+  ● databricks › string_agg › works with order by expression - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY LENGTH(base.`name`)) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+    SQL: WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY LENGTH(base.`name`)) as `f`
+    FROM __stage0 as base
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY LENGTH(base.`name`)) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      1440 |           order_by: length(name)
+      1441 |         }
+    > 1442 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1443 |         f: 'YANKEE FLYING CLUB INC,WESTCHESTER FLYING CLUB,WILSON FLYING SERVICE INC',
+      1444 |       });
+      1445 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1442:11)
+
+  ● databricks › string_agg › works with order by join expression - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY aircraft_models_0.`model`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+    WHERE base.`name` RLIKE '.*ADVENTURE.*'
+
+    SQL: SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY aircraft_models_0.`model`) as `f`
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+    WHERE base.`name` RLIKE '.*ADVENTURE.*'
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 31)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY aircraft_models_0.`model`) as `f`
+    -------------------------------^^^
+    FROM malloytest.aircraft as base
+     LEFT JOIN malloytest.aircraft_models AS aircraft_models_0
+      ON aircraft_models_0.`aircraft_model_code`=base.`aircraft_model_code`
+    WHERE base.`name` RLIKE '.*ADVENTURE.*'
+
+      1450 |         where: name ~ r'.*ADVENTURE.*'
+      1451 |         aggregate: f is string_agg(name, ',') { order_by: aircraft_models.model }
+    > 1452 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1453 |         f: 'ADVENTURE INC,SEA PLANE ADVENTURE INC,A BALLOON ADVENTURES ALOFT,A AERONAUTICAL ADVENTURE INC',
+      1454 |       });
+      1455 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1452:11)
+
+  ● databricks › string_agg › works with order asc - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+    SQL: WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM __stage0 as base
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      1464 |       } -> {
+      1465 |         aggregate: f is string_agg(name, ',') { order_by: name asc }
+    > 1466 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1467 |         f: 'WESTCHESTER FLYING CLUB,WILSON FLYING SERVICE INC,YANKEE FLYING CLUB INC',
+      1468 |       });
+      1469 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1466:11)
+
+  ● databricks › string_agg › works with order desc - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+    SQL: WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    FROM __stage0 as base
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 31)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    -------------------------------^^^
+    FROM __stage0 as base
+
+      1478 |       } -> {
+      1479 |         aggregate: f is string_agg(name, ',') { order_by: name desc }
+    > 1480 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1481 |         f: 'YANKEE FLYING CLUB INC,WILSON FLYING SERVICE INC,WESTCHESTER FLYING CLUB',
+      1482 |       });
+      1483 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1480:11)
+
+  ● databricks › string_agg › works with fanout and order_by - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',' ORDER BY (a::json->>'f3'), (a::json->>'f4')) as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,base.`state`,base.`popular_name`,base.`state`))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    SQL: SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',' ORDER BY (a::json->>'f3'), (a::json->>'f4')) as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,base.`state`,base.`popular_name`,base.`state`))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',' ORDER BY (a::json->>'f3'), (a::json->>'f4')) as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,base.`state`,base.`popular_name`,base.`state`))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      1500 |           order_by: popular_name, state
+      1501 |         }
+    > 1502 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1503 |         s: 'IA,LA,MN,AL,AR,IN,ME,MT,NC,AZ,CA,CO,CT,FL,GA,HI,IL,KS,KY,MA,MO,NJ,NM,NV,NY,OH,OK,PA,RI,TN,TX,WV,WY,DC,MS,SC,ID,NE,UT,VA,AK,DE,MD,MI,ND,NH,OR,SD,VT,WA,WI',
+      1504 |         c: 51,
+      1505 |       });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1502:11)
+
+  ● databricks › string_agg › works with fanout - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o'))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    SQL: SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',') as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o'))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), ',') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o'))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      1516 |         aggregate: c is state_facts2.count()
+      1517 |         aggregate: s is string_agg('o')
+    > 1518 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1519 |         s: 'o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o,o',
+      1520 |         c: 51,
+      1521 |       });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1518:11)
+
+  ● databricks › string_agg › works with fanout and separator - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), '') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o',''))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    SQL: SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), '') as value
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o',''))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near '->'. SQLSTATE: 42601 (line 4, pos 32)
+
+    == SQL ==
+    SELECT 
+       COUNT(DISTINCT state_facts2_0.`__distinct_key`) as `c`,
+       (
+          SELECT STRING_AGG((a::json->>'f2'), '') as value
+    --------------------------------^^^
+          FROM (
+            SELECT UNNEST(array_agg(distinct row_to_json(row(base.`__distinct_key`,'o',''))::text)) a
+          ) a
+        ) as `s`
+    FROM (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) as base
+     LEFT JOIN (SELECT uuid() as `__distinct_key`, x.*  FROM malloytest.state_facts as x) AS state_facts2_0
+      ON state_facts2_0.`state`=base.`state`
+
+      1532 |         aggregate: c is state_facts2.count()
+      1533 |         aggregate: s is string_agg('o', '')
+    > 1534 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1535 |         s: 'ooooooooooooooooooooooooooooooooooooooooooooooooooo',
+      1536 |         c: 51,
+      1537 |       });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1534:11)
+
+  ● databricks › string_agg_distinct › actually distincts - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 46)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT aircraft_0.`name`, ',' ORDER BY aircraft_0.`name` ASC) as `f_dist`,
+    ----------------------------------------------^^^
+       STRING_AGG(aircraft_0.`name`, ',' ORDER BY aircraft_0.`name`) as `f_all`
+    FROM malloytest.aircraft_models as base
+     LEFT JOIN malloytest.aircraft AS aircraft_0
+      ON base.`aircraft_model_code`=aircraft_0.`aircraft_model_code`
+    WHERE aircraft_0.`name` IN ('RAYTHEON AIRCRAFT COMPANY','FOWLER IRA R DBA')
+
+    SQL: SELECT 
+       STRING_AGG(DISTINCT aircraft_0.`name`, ',' ORDER BY aircraft_0.`name` ASC) as `f_dist`,
+       STRING_AGG(aircraft_0.`name`, ',' ORDER BY aircraft_0.`name`) as `f_all`
+    FROM malloytest.aircraft_models as base
+     LEFT JOIN malloytest.aircraft AS aircraft_0
+      ON base.`aircraft_model_code`=aircraft_0.`aircraft_model_code`
+    WHERE aircraft_0.`name` IN ('RAYTHEON AIRCRAFT COMPANY','FOWLER IRA R DBA')
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 46)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT aircraft_0.`name`, ',' ORDER BY aircraft_0.`name` ASC) as `f_dist`,
+    ----------------------------------------------^^^
+       STRING_AGG(aircraft_0.`name`, ',' ORDER BY aircraft_0.`name`) as `f_all`
+    FROM malloytest.aircraft_models as base
+     LEFT JOIN malloytest.aircraft AS aircraft_0
+      ON base.`aircraft_model_code`=aircraft_0.`aircraft_model_code`
+    WHERE aircraft_0.`name` IN ('RAYTHEON AIRCRAFT COMPANY','FOWLER IRA R DBA')
+
+      1579 |           aggregate: f_dist is aircraft.name.string_agg_distinct() { order_by: asc }
+      1580 |           aggregate: f_all is aircraft.name.string_agg() { order_by: aircraft.name }
+    > 1581 |       }`).malloyResultMatches(runtime, {
+           |           ^
+      1582 |         f_dist: 'FOWLER IRA R DBA,RAYTHEON AIRCRAFT COMPANY',
+      1583 |         f_all:
+      1584 |           'FOWLER IRA R DBA,FOWLER IRA R DBA,RAYTHEON AIRCRAFT COMPANY,RAYTHEON AIRCRAFT COMPANY',
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1581:11)
+
+  ● databricks › string_agg_distinct › works no order by - databricks
+
+    query.run failed: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+    SQL: SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+    Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      1590 |         where: name = 'RUTHERFORD PAT R JR'
+      1591 |         aggregate: f is string_agg_distinct(name)
+    > 1592 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1593 |         f: 'RUTHERFORD PAT R JR',
+      1594 |       });
+      1595 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1592:11)
+
+  ● databricks › string_agg_distinct › works with dotted shortcut - databricks
+
+    query.run failed: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+    SQL: SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',') as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name`='RUTHERFORD PAT R JR'
+
+    Error: [UNRESOLVED_ROUTINE] Cannot resolve routine `STRING_AGG` on search path [`system`.`builtin`, `system`.`session`, `workspace`.`default`]. SQLSTATE: 42883; line 2 pos 3
+
+      1599 |         where: name = 'RUTHERFORD PAT R JR'
+      1600 |         aggregate: f is name.string_agg_distinct()
+    > 1601 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1602 |         f: 'RUTHERFORD PAT R JR',
+      1603 |       });
+      1604 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1601:11)
+
+  ● databricks › string_agg_distinct › works with order by direction - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 40)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    SQL: SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 2, pos 40)
+
+    == SQL ==
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM malloytest.aircraft as base
+    WHERE base.`name` RLIKE '.*RUTHERFORD.*'
+
+      1611 |           order_by: asc
+      1612 |         }
+    > 1613 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1614 |         f: 'RUTHERFORD JAMES C,RUTHERFORD PAT R JR',
+      1615 |       });
+      1616 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1613:11)
+
+  ● databricks › string_agg_distinct › works with order asc - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+    SQL: WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    FROM __stage0 as base
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` ASC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+      1625 |       } -> {
+      1626 |         aggregate: f is string_agg_distinct(name, ',') { order_by: asc }
+    > 1627 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1628 |         f: 'WESTCHESTER FLYING CLUB,WILSON FLYING SERVICE INC,YANKEE FLYING CLUB INC',
+      1629 |       });
+      1630 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1627:11)
+
+  ● databricks › string_agg_distinct › works with order desc - databricks
+
+    query.run failed: 
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+    SQL: WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    FROM __stage0 as base
+
+    [PARSE_SYNTAX_ERROR] Syntax error at or near 'ORDER': extra input 'ORDER'. SQLSTATE: 42601 (line 11, pos 40)
+
+    == SQL ==
+    WITH __stage0 AS (
+      SELECT 
+         base.`name` as `name`
+      FROM malloytest.aircraft as base
+      WHERE base.`name` RLIKE '.*FLY.*'
+      GROUP BY 1
+      ORDER BY 1 desc NULLS LAST
+      LIMIT 3
+    )
+    SELECT 
+       STRING_AGG(DISTINCT base.`name`, ',' ORDER BY base.`name` DESC) as `f`
+    ----------------------------------------^^^
+    FROM __stage0 as base
+
+      1639 |       } -> {
+      1640 |         aggregate: f is string_agg_distinct(name, ',') { order_by: desc }
+    > 1641 |       }`).malloyResultMatches(expressionModel, {
+           |           ^
+      1642 |         f: 'YANKEE FLYING CLUB INC,WILSON FLYING SERVICE INC,WESTCHESTER FLYING CLUB',
+      1643 |       });
+      1644 |     });
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1641:11)
+
+  ● databricks › partition_by › works - databricks
+
+    query.run failed: [MISSING_AGGREGATION] The non-aggregating expression "dep_time" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(dep_time)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+    SQL: SELECT 
+       EXTRACT(year FROM base.`dep_time`) as `yr`,
+       EXTRACT(quarter FROM base.`dep_time`) as `qtr`,
+       COUNT(1) as `qtr_flights`,
+       LAG((COUNT(1))) OVER(PARTITION BY (EXTRACT(quarter FROM base.`dep_time`)) ORDER BY (EXTRACT(year FROM base.`dep_time`)) ASC ) as `last_yr_qtr_flights`
+    FROM malloytest.flights as base
+    WHERE base.`dep_time`<TIMESTAMP '2002-01-01 00:00:00'
+    GROUP BY 1,2
+    ORDER BY 1 ASC NULLS LAST,2 ASC NULLS LAST
+
+    Error: [MISSING_AGGREGATION] The non-aggregating expression "dep_time" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(dep_time)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      1687 |         order_by: yr, qtr
+      1688 |         where: dep_time < @2002
+    > 1689 |       }`).malloyResultMatches(expressionModel, [
+           |           ^
+      1690 |         {yr: 2000, qtr: 1, qtr_flights: 12148, last_yr_qtr_flights: null},
+      1691 |         {yr: 2000, qtr: 2, qtr_flights: 11599, last_yr_qtr_flights: null},
+      1692 |         {yr: 2000, qtr: 3, qtr_flights: 12075, last_yr_qtr_flights: null},
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1689:11)
+
+  ● databricks › partition_by › works with aggregate - databricks
+
+    query.run failed: [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+    SQL: SELECT 
+       COUNT(1) as `c`,
+       SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1) as `l`,
+       LAG((SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1))) OVER(PARTITION BY (COUNT(1))  ORDER BY  SUBSTR(base.`state`, CASE WHEN 1 < 0 THEN LENGTH(base.`state`) + 1 + 1 ELSE 1 END, 1) ASC NULLS LAST ) as `prev`
+    FROM malloytest.state_facts as base
+    GROUP BY 2
+    ORDER BY 2 ASC NULLS LAST
+    LIMIT 5
+
+    Error: [MISSING_AGGREGATION] The non-aggregating expression "state" is based on columns which are not participating in the GROUP BY clause.
+    Add the columns or the expression to the GROUP BY, aggregate the expression, or use "any_value(state)" if you do not care which of the values within a group is returned. SQLSTATE: 42803
+
+      1711 |         order_by: l
+      1712 |         limit: 5
+    > 1713 |       }`).malloyResultMatches(expressionModel, [
+           |           ^
+      1714 |         {l: 'A', c: 4, prev: null},
+      1715 |         {l: 'C', c: 3, prev: null},
+      1716 |         {l: 'D', c: 2, prev: null},
+
+      at DBSQLOperation.waitUntilReady (node_modules/@databricks/sql/lib/DBSQLOperation.ts:369:17)
+      at async DBSQLOperation.fetchChunk (node_modules/@databricks/sql/lib/DBSQLOperation.ts:173:5)
+      at async DBSQLOperation.fetchAll (node_modules/@databricks/sql/lib/DBSQLOperation.ts:149:21)
+      at Object.<anonymous> (test/src/databases/all/functions.spec.ts:1713:11)
 
 Test Suites: 1 failed, 1 total
-Tests:       2 failed, 21 skipped, 45 passed, 68 total
+Tests:       43 failed, 10 skipped, 64 passed, 117 total
 Snapshots:   0 total
-Time:        89.23 s
-Ran all test suites matching /nomodel/i.
+Time:        109.545 s
+Ran all test suites matching /functions/i.
