@@ -21,6 +21,7 @@ import {
   TimeExtractExpr,
   TimeLiteralNode,
   TimeTruncExpr,
+  TD,
 } from '../../model/malloy_types';
 import {
   DialectFunctionOverloadDef,
@@ -479,6 +480,31 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
-    return `CAST(${cast.e.sql} AS ${cast.typeDef})`;
+    const src = cast.e.sql || '';
+    const {op, srcTypeDef, dstTypeDef, dstSQLType} = this.sqlCastPrep(cast);
+
+    if (TD.eq(srcTypeDef, dstTypeDef)) {
+      return src;
+    }
+
+    // Databricks doesn't have a TRY_CAST equivalent, so we'll need to handle safe casting differently
+    if (cast.safe) {
+      // For safe casting in Databricks, we can use a CASE statement to handle NULL and invalid casts
+      return `CASE
+        WHEN ${src} IS NULL THEN NULL
+        WHEN TRY_CAST(${src} AS ${dstSQLType}) IS NOT NULL THEN CAST(${src} AS ${dstSQLType})
+        ELSE NULL
+      END`;
+    }
+
+    // Handle special timestamp and date casting cases
+    if (op === 'timestamp::date') {
+      return `DATE(${src})`;
+    } else if (op === 'date::timestamp') {
+      return `TIMESTAMP(${src})`;
+    }
+
+    // Default case - standard CAST
+    return `CAST(${src} AS ${dstSQLType})`;
   }
 }
