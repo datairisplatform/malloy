@@ -900,7 +900,7 @@ expressionModels.forEach((x, databaseName) => {
       );
     });
   });
-  describe('strpos', () => {
+  describe.only('strpos', () => {
     it(`works - ${databaseName}`, async () => {
       await funcTestMultiple(
         ["strpos('123456789', '3')", 3],

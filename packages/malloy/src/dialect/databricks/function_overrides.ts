@@ -9,7 +9,7 @@ import {MalloyStandardFunctionImplementations as OverrideMap} from '../functions
 
 function greatestOrLeastSQL(name: string) {
   return (
-    'CASE WHEN NUM_NULLS(${...values}) > 0 THEN NULL ELSE ' +
+    'CASE WHEN EXISTS (SELECT 1 FROM (VALUES ${...values}) AS t(val) WHERE val IS NULL) THEN NULL ELSE ' +
     name +
     '(${...values}) END'
   );
@@ -27,9 +27,9 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   // Postgres doesn't have an IFNULL function, so we use COALESCE, which is equivalent.
   ifnull: {sql: 'COALESCE(${value}, ${default})'},
   is_inf: {
-    sql: "COALESCE(${value} = DOUBLE 'Infinity' OR ${value} = DOUBLE '-Infinity', false)",
+    sql: "COALESCE(${value} = double('infinity') OR ${value} = double('-infinity'), false)",
   },
-  is_nan: {sql: "COALESCE(${value} = NUMERIC 'NaN', false)"},
+  is_nan: {sql: "COALESCE(${value} = double('NaN'), false)"},
   // Parameter order is backwards in Postgres.
   log: {sql: 'LOG(${base}, ${value})'},
   rand: {function: 'RANDOM'},
@@ -49,18 +49,18 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
       sql: 'SUBSTR(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END, ${length})',
     },
   },
-  // Postgres doesn't let you TRUNC a FLOAT with a precision, so we cast to NUMERIC first
-  // Also, TRUNC(NULL) doesn't compile because PG doesn't know the type of NULL, so we cast to
-  // NUMERIC there too...
-  // TODO Maybe there's a way we don't have to cast to NUMERIC.
   trunc: {
     to_integer: {
-      sql: 'TRUNC(${value}::NUMERIC)',
+      sql: 'IF (${value} < 0, CEIL(${value}), FLOOR(${value}))',
     },
     to_precision: {
-      sql: 'TRUNC((${value}::NUMERIC), ${precision})',
+      sql: 'CASE WHEN ${value} < 0 THEN CEIL(${value} * POW(10, ${precision})) / POW(10, ${precision}) ELSE FLOOR(${value} * POW(10, ${precision})) / POW(10, ${precision}) END',
     },
   },
+  strpos: {
+    sql: 'POSITION(${search_string} IN ${test_string})',
+  },
+
   // Aparently the ASCII function also works for unicode code points...
   unicode: {function: 'ASCII'},
   //like: {function: 'RLIKE'},
