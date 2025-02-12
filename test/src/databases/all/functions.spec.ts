@@ -238,7 +238,8 @@ expressionModels.forEach((x, databaseName) => {
             ? '\\0 - a - b - c'
             : databaseName === 'trino' ||
               databaseName === 'presto' ||
-              databaseName === 'mysql'
+              databaseName === 'mysql' ||
+              databaseName === 'databricks'
             ? '0 - 1 - 2 - 3'
             : 'axbxc - a - b - c',
         ],
@@ -284,7 +285,7 @@ expressionModels.forEach((x, databaseName) => {
   describe('stddev', () => {
     // TODO symmetric aggregates don't work with custom aggregate functions in BQ currently
     if (
-      ['bigquery', 'snowflake', 'trino', 'presto', 'mysql'].includes(
+      ['bigquery', 'snowflake', 'trino', 'presto', 'mysql', 'databricks'].includes(
         databaseName
       )
     )

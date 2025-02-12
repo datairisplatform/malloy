@@ -27,7 +27,7 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   // Postgres doesn't have an IFNULL function, so we use COALESCE, which is equivalent.
   ifnull: {sql: 'COALESCE(${value}, ${default})'},
   is_inf: {
-    sql: "COALESCE(${value} = DOUBLE PRECISION 'Infinity' OR ${value} = DOUBLE PRECISION '-Infinity', false)",
+    sql: "COALESCE(${value} = DOUBLE 'Infinity' OR ${value} = DOUBLE '-Infinity', false)",
   },
   is_nan: {sql: "COALESCE(${value} = NUMERIC 'NaN', false)"},
   // Parameter order is backwards in Postgres.
@@ -37,12 +37,10 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   replace: {
     // In Postgres we specifically need to say that the replacement should be global.
     regular_expression: {
-      sql: "REGEXP_REPLACE(${value}, ${pattern}, ${replacement}, 'g')",
+      sql: 'REGEXP_REPLACE(${value}, ${pattern}, ${replacement})',
     },
   },
-  // TODO this is a bit of a hack in order to make the arrayAggUnnest work for Postgres,
-  // as we don't currently have a good way of doing this while preserving types
-  stddev: {sql: 'STDDEV(${value}::DOUBLE PRECISION)'},
+  stddev: {sql: 'STDDEV(${value}::DOUBLE)'},
   substr: {
     position_only: {
       sql: 'SUBSTR(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END)',

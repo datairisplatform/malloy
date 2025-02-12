@@ -16,7 +16,7 @@ const string_agg: OverloadedDefinitionBlueprint = {
     takes: {'value': {dimension: 'string'}},
     returns: {measure: 'string'},
     supportsOrderBy: true,
-    impl: {sql: "STRING_AGG(${value}, ','${order_by:})"},
+    impl: {sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_LIST(${value})), ', ')"},
   },
   with_separator: {
     takes: {
@@ -25,7 +25,11 @@ const string_agg: OverloadedDefinitionBlueprint = {
     },
     returns: {measure: 'string'},
     supportsOrderBy: true,
-    impl: {sql: 'STRING_AGG(${value}, ${separator}${order_by:})'},
+    //impl: {sql: 'STRING_AGG(${value}, ${separator}${order_by:})'},
+    impl: {sql: 'ARRAY_JOIN(ARRAY_SORT(COLLECT_LIST(${value})), ${separator})'},
+    // impl: {
+    //   sql: "ARRAY_JOIN(TRANSFORM(ARRAY_SORT(ARRAY_AGG((${value}, ${order_by:})), (left, right) -> CASE WHEN left.${order_by:} < right.${order_by:} THEN -1 WHEN left.${order_by:} > right.${order_by:} THEN 1 ELSE CASE WHEN left.${value} < right.${value} THEN -1 WHEN left.${value} > right.${value} THEN 1 ELSE 0 END END), base -> base.${value}), ',')",
+    // },
   },
 };
 
@@ -35,7 +39,7 @@ const string_agg_distinct: OverloadedDefinitionBlueprint = {
     isSymmetric: true,
     supportsOrderBy: 'only_default',
     impl: {
-      sql: "STRING_AGG(DISTINCT ${value}, ','${order_by:})",
+      sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_SET(${value})), ', ')",
       defaultOrderByArgIndex: 0,
     },
   },
@@ -44,7 +48,7 @@ const string_agg_distinct: OverloadedDefinitionBlueprint = {
     isSymmetric: true,
     supportsOrderBy: 'only_default',
     impl: {
-      sql: 'STRING_AGG(DISTINCT ${value}, ${separator}${order_by:})',
+      sql: 'ARRAY_JOIN(ARRAY_SORT(COLLECT_SET(${value})), ${separator})',
       defaultOrderByArgIndex: 0,
     },
   },

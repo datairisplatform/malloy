@@ -406,6 +406,10 @@ export class DatabricksDialect extends Dialect {
       )}))::text)) a
     ) a
   )`;
+
+  return `(
+
+  )`
   } //nesting
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {
