@@ -414,10 +414,6 @@ export class DatabricksDialect extends Dialect {
       )}))::text)) a
     ) a
   )`;
-
-  return `(
-
-  )`
   } //nesting
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {
@@ -516,11 +512,20 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlTruncExpr(qi: QueryInfo, toTrunc: TimeTruncExpr): string {
-    console.log('toTrunc', toTrunc);
-    if (toTrunc.units === 'week') {
-      return `DATE_SUB(DATE_TRUNC('week', ${toTrunc.e.sql}), 1)`;
+    // adjusting for sunday/monday weeks
+    const week = toTrunc.units === 'week';
+    const truncThis = week ? `DATE_ADD(${toTrunc.e.sql}, 1)` : toTrunc.e.sql;
+    if (TD.isTimestamp(toTrunc.e.typeDef)) {
+      const tz = qtz(qi);
+      if (tz) {
+        return `DATE_TRUNC('${toTrunc.units}', from_utc_timestamp(${truncThis}, '${tz}'))`;
+      }
     }
-    return `DATE_TRUNC('${toTrunc.units}', ${toTrunc.e.sql})`;
+    let result = `DATE_TRUNC('${toTrunc.units}', ${truncThis})`;
+    if (week) {
+      result = `DATE_SUB(${result}, 1)`;
+    }
+    return result;
   }
 
   sqlTimeExtractExpr(qi: QueryInfo, from: TimeExtractExpr): string {
