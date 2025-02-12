@@ -117,13 +117,48 @@ export class DatabricksDialect extends Dialect {
     orderBy: string | undefined,
     limit: number | undefined
   ): string {
-    let tail = '';
-    if (limit !== undefined) {
-      tail += `[1:${limit}]`;
+    let fields = this.mapFields(fieldList);
+
+    // Parse orderBy if provided to get column and direction
+    if (orderBy) {
+      const orderMatch = orderBy.match(
+        /ORDER BY\s+`?([^`\s]+)`?\s*(asc|desc)?/i
+      );
+      if (orderMatch) {
+        const [, orderColumn, direction] = orderMatch;
+        // Find the matching field and move it to front of struct
+        const orderedFields = fieldList.reduce(
+          (acc: DialectFieldList, field) => {
+            // Compare against rawName since sqlOutputName includes __1 suffix
+            if (field.sqlExpression.replace(/`/g, '') === orderColumn) {
+              acc.unshift(field);
+            } else {
+              acc.push(field);
+            }
+            return acc;
+          },
+          []
+        );
+        fields = this.mapFields(orderedFields);
+        const isDesc = direction?.toLowerCase() === 'desc';
+        const aggClause = `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN STRUCT(${fields}) END)`;
+        let result = `COALESCE(${aggClause}, ARRAY())`;
+        result = `SORT_ARRAY(${result}, ${isDesc ? 'false' : 'true'})`;
+
+        if (limit !== undefined) {
+          result = `SLICE(${result}, 1, ${limit})`;
+        }
+        return result;
+      }
     }
-    const fields = this.mapFields(fieldList);
-    // return `(ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}`;
-    return `COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT ${fields}\n  ) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}),'[]'::JSONB)`;
+
+    // If no valid orderBy, proceed with original logic
+    const aggClause = `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN STRUCT(${fields}) END)`;
+    let result = `COALESCE(${aggClause}, ARRAY())`;
+    if (limit !== undefined) {
+      result = `SLICE(${result}, 1, ${limit})`;
+    }
+    return result;
   }
 
   sqlAnyValueTurtle(groupSet: number, fieldList: DialectFieldList): string {
@@ -231,21 +266,21 @@ export class DatabricksDialect extends Dialect {
     childType: string
   ): string {
     if (childName === '__row_id') {
-      return `(${parentAlias}->>'__row_id')`;
+      return `get_json_object(${parentAlias}, '$.value')`;
     }
     if (parentType !== 'table') {
-      let ret = `JSONB_EXTRACT_PATH_TEXT(${parentAlias},'${childName}')`;
+      let ret = `get_json_object(${parentAlias}, '$.${childName}')`;
       switch (childType) {
         case 'string':
           break;
         case 'number':
-          ret = `${ret}::double`;
+          ret = `CAST(${ret} AS DOUBLE)`;
           break;
         case 'struct':
         case 'array':
         case 'record':
         case 'array[record]':
-          ret = `JSONB_EXTRACT_PATH(${parentAlias},'${childName}')`;
+          ret = `to_json(${parentAlias}.${childName})`;
           break;
       }
       return ret;
@@ -260,9 +295,9 @@ export class DatabricksDialect extends Dialect {
     sourceSQLExpression: string
   ): string {
     if (isSingleton) {
-      return `UNNEST(ARRAY((SELECT ${sourceSQLExpression})))`;
+      return `(SELECT ${sourceSQLExpression})`;
     } else {
-      return `JSONB_ARRAY_ELEMENTS(${sourceSQLExpression})`;
+      return `EXPLODE(${sourceSQLExpression})`;
     }
   }
 
