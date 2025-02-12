@@ -40,6 +40,11 @@ const inSeconds: Record<string, number> = {
   'week': 7 * 24 * 3600,
 };
 
+const extractionMap: Record<string, string> = {
+  'day_of_week': 'dayofweek',
+  'day_of_year': 'doy',
+};
+
 const databricksToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'character varying': {type: 'string'},
   'name': {type: 'string'},
@@ -96,7 +101,7 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlAnyValue(groupSet: number, fieldName: string): string {
-    return `ANY(${fieldName})`;
+    return `GET((ARRAY_AGG(${fieldName}) FILTER (WHERE group_set=${groupSet} AND ${fieldName} IS NOT NULL)),0)`;
   }
 
   mapFields(fieldList: DialectFieldList): string {
@@ -233,16 +238,14 @@ export class DatabricksDialect extends Dialect {
   ): string {
     if (isArray) {
       if (needDistinctKey) {
-        return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_id', row_number() over (), 'value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
+        return `LEFT JOIN LATERAL (SELECT row_number() over () as __row_id, value FROM EXPLODE(${source}) as value) as ${alias} ON true`;
       } else {
-        return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
+        return `LEFT JOIN LATERAL (SELECT value FROM EXPLODE(${source}) as value) as ${alias} ON true`;
       }
     } else if (needDistinctKey) {
-      // return `UNNEST(ARRAY(( SELECT AS STRUCT GENERATE_UUID() as __distinct_key, * FROM UNNEST(${source})))) as ${alias}`;
-      return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_number', row_number() over())|| __xx::jsonb as b FROM  JSONB_ARRAY_ELEMENTS(${source}) __xx ))) as ${alias} ON true`;
+      return `LEFT JOIN LATERAL (SELECT row_number() over () as __row_number, value FROM EXPLODE(to_json(${source})) as value) as ${alias} ON true`;
     } else {
-      // return `CROSS JOIN LATERAL JSONB_ARRAY_ELEMENTS(${source}) as ${alias}`;
-      return `LEFT JOIN JSONB_ARRAY_ELEMENTS(${source}) as ${alias} ON true`;
+      return `LEFT JOIN LATERAL (SELECT value FROM EXPLODE(to_json(${source})) as value) as ${alias} ON true`;
     }
   }
 
@@ -346,14 +349,19 @@ export class DatabricksDialect extends Dialect {
   sqlAlterTimeExpr(df: TimeDeltaExpr): string {
     let timeframe = df.units;
     let n = df.kids.delta.sql;
+
+    // Handle quarter and week conversions
     if (timeframe === 'quarter') {
       timeframe = 'month';
-      n = `${n}*3`;
+      n = `(${n}*3)`;
     } else if (timeframe === 'week') {
       timeframe = 'day';
-      n = `${n}*7`;
+      n = `(${n}*7)`;
     }
-    return `DATE_ADD(${df.kids.base.sql}, INTERVAL ${n} ${timeframe})`;
+
+    return `DATEADD(${timeframe}, ${n}${df.op === '+' ? '' : '*-1'}, ${
+      df.kids.base.sql
+    })`;
   }
 
   sqlSumDistinct(key: string, value: string, funcName: string): string {
@@ -508,33 +516,28 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlTruncExpr(qi: QueryInfo, toTrunc: TimeTruncExpr): string {
+    console.log('toTrunc', toTrunc);
+    if (toTrunc.units === 'week') {
+      return `DATE_SUB(DATE_TRUNC('week', ${toTrunc.e.sql}), 1)`;
+    }
     return `DATE_TRUNC('${toTrunc.units}', ${toTrunc.e.sql})`;
   }
 
   sqlTimeExtractExpr(qi: QueryInfo, from: TimeExtractExpr): string {
-    return `EXTRACT(${from.units} FROM ${from.e.sql})`;
+    return `EXTRACT(${extractionMap[from.units] || from.units} FROM ${
+      from.e.sql
+    })`;
   }
 
   sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
-    const tz = qtz(qi);
-    let ret = `'${lt.literal}'`;
-
-    // If we have a timezone (either from the literal or query info)
-    const targetTimeZone = lt.timezone ?? tz;
-    if (targetTimeZone) {
-      // For Databricks, we can use the from_utc_timestamp and to_utc_timestamp functions
-      // to handle timezone conversions
-      ret = `from_utc_timestamp(timestamp'${lt.literal}', '${targetTimeZone}')`;
-    } else {
-      ret = `timestamp${ret}`;
-    }
-
-    // If the type is date, convert the timestamp to a date
     if (TD.isDate(lt.typeDef)) {
-      return `DATE(${ret})`;
+      return `DATE '${lt.literal}'`;
     }
-
-    return ret;
+    const tz = lt.timezone || qtz(qi);
+    if (tz) {
+      return `from_utc_timestamp(timestamp'${lt.literal}', '${tz}')`;
+    }
+    return `timestamp '${lt.literal}'`;
   }
 
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
