@@ -333,15 +333,10 @@ export class DatabricksDialect extends Dialect {
   sqlMeasureTimeExpr(df: MeasureTimeExpr): string {
     const from = df.kids.left;
     const to = df.kids.right;
-    let lVal = from.sql;
-    let rVal = to.sql;
+    const lVal = from.sql;
+    const rVal = to.sql;
     if (inSeconds[df.units]) {
-      lVal = `UNIX_TIMESTAMP(${lVal})`;
-      rVal = `UNIX_TIMESTAMP(${rVal})`;
-      const duration = `${rVal}-${lVal}`;
-      return df.units === 'second'
-        ? `FLOOR(${duration})`
-        : `FLOOR((${duration})/${inSeconds[df.units].toString()}.0)`;
+      return `datediff(${df.units}, ${lVal}, ${rVal})`;
     }
     throw new Error(`Unknown or unhandled databricks time unit: ${df.units}`);
   }
