@@ -2881,7 +2881,6 @@ export class ModelMaterializer extends FluentState<Model> {
     const connectionName = schema.connection;
     const connection =
       await this.runtime.connections.lookupConnection(connectionName);
-    console.log('BRIAN searching index');
     return await queryModel.searchIndex(
       connection,
       sourceName,
@@ -2906,7 +2905,9 @@ export class ModelMaterializer extends FluentState<Model> {
     if (schema.getFieldByNameIfExists('search_index')) {
       indexQuery = 'search_index';
     }
-
+    // i think: fieldName = col name.
+    // find cardinality of all string cols, (num unique values)
+    // also nest: each col value, its weight desc
     const searchMapMalloy = `
       run: ${sourceName}
         -> ${indexQuery}
@@ -2922,6 +2923,7 @@ export class ModelMaterializer extends FluentState<Model> {
           limit: 1000
         }
     `;
+    const sql = await this.loadQuery(searchMapMalloy, options).getSQL();
     const result = await this.loadQuery(searchMapMalloy, options).run({
       rowLimit: 1000,
     });

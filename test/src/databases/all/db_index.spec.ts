@@ -43,7 +43,6 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
         }
     `
       );
-      console.log('BRIAN created index table');
       let result = await model.search('airports', 'SANTA', 10);
 
       // if (result !== undefined) {

@@ -110,10 +110,16 @@ export class DatabricksDialect extends Dialect {
         f =>
           `\n  ${f.sqlExpression}${
             f.type === 'number' ? `::${this.defaultNumberType}` : ''
-          } as ${f.sqlOutputName}`
+          } as ${f.sqlOutputName}`,
         //`${f.sqlExpression} ${f.type} as ${f.sqlOutputName}`
       )
       .join(', ');
+  }
+
+  asNamesToSQLNames(fieldList: DialectFieldList): Record<string, string> {
+    return Object.fromEntries(
+      fieldList.map(f => [f.sqlExpression.replace(/`/g, ''), f.sqlOutputName.replace(/`/g, '')])
+    );
   }
 
   sqlAggregateTurtle(
@@ -126,9 +132,15 @@ export class DatabricksDialect extends Dialect {
 
     // Parse orderBy if provided to get column and direction
     if (orderBy) {
+      console.log('BRIAN orderBy:', orderBy);
+      // const orderMatch = orderBy.match(
+      //   /ORDER BY\s+`?([^`\s]+)`?\s*(asc|desc)?/i
+      // );
+      // ORDER BY base.colName asc/desc
       const orderMatch = orderBy.match(
-        /ORDER BY\s+`?([^`\s]+)`?\s*(asc|desc)?/i
+        /ORDER BY\s+(?:(?:[^`\s.]+\.)?`?([^`\s]+)`?)\s*(asc|desc)?/i
       );
+      console.log('BRIAN orderMatch:', orderMatch);
       if (orderMatch) {
         const [, orderColumn, direction] = orderMatch;
         // Find the matching field and move it to front of struct
@@ -145,10 +157,24 @@ export class DatabricksDialect extends Dialect {
           []
         );
         fields = this.mapFields(orderedFields);
+        // "as" names to original col names
+        const sqlNames = this.asNamesToSQLNames(orderedFields);
+        console.log('BRIAN sqlNames:', sqlNames);
+        console.log('BRIAN fields:', fields);
         const isDesc = direction?.toLowerCase() === 'desc';
         const aggClause = `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN STRUCT(${fields}) END)`;
         let result = `COALESCE(${aggClause}, ARRAY())`;
-        result = `SORT_ARRAY(${result}, ${isDesc ? 'false' : 'true'})`;
+
+        // Extract column name after dot if present
+        const pureColumnName = orderColumn.includes('.') ? orderColumn.split('.')[1] : orderColumn;
+        // use original col name if available
+        const sqlName = sqlNames[pureColumnName] ?? pureColumnName;
+
+        let lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN 1 ELSE -1 END`
+        if (!isDesc) {
+          lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN -1 ELSE 1 END`
+        }
+        result = `ARRAY_SORT(${result}, ${lambda})`;
 
         if (limit !== undefined) {
           result = `SLICE(${result}, 1, ${limit})`;
