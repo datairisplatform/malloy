@@ -442,9 +442,9 @@ export class DatabricksDialect extends Dialect {
         sample = this.defaultSampling;
       }
       if (isSamplingRows(sample)) {
-        return `(SELECT * FROM ${tableSQL} TABLESAMPLE SYSTEM_ROWS(${sample.rows}))`;
+        return `(SELECT * FROM ${tableSQL} TABLESAMPLE(${sample.rows} ROWS))`;
       } else if (isSamplingPercent(sample)) {
-        return `(SELECT * FROM ${tableSQL} TABLESAMPLE SYSTEM (${sample.percent}))`;
+        return `(SELECT * FROM ${tableSQL} TABLESAMPLE(${sample.percent} PERCENT))`;
       }
     }
     return tableSQL;

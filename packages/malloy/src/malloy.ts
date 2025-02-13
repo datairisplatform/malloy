@@ -2881,6 +2881,7 @@ export class ModelMaterializer extends FluentState<Model> {
     const connectionName = schema.connection;
     const connection =
       await this.runtime.connections.lookupConnection(connectionName);
+    console.log('BRIAN searching index');
     return await queryModel.searchIndex(
       connection,
       sourceName,

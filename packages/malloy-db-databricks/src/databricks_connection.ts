@@ -82,15 +82,10 @@ export class DatabricksConnection
 
   private readonly dialect = new DatabricksDialect();
 
-  constructor(
-    options: DatabricksConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader
-  );
-  constructor(
-    name: string,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: DatabricksConnectionConfigurationReader
-  );
+  private client: DBSQLClient | null = null;
+  private session: any | null = null;
+  private connecting: Promise<void>;
+
   constructor(
     arg: string | DatabricksConnectionOptions,
     queryOptionsReader?: QueryOptionsReader,
@@ -110,6 +105,19 @@ export class DatabricksConnection
     if (queryOptionsReader) {
       this.queryOptionsReader = queryOptionsReader;
     }
+
+    // Initialize connection
+    this.connecting = this.connect();
+  }
+
+  private async connect(): Promise<void> {
+    this.client = new DBSQLClient();
+    await this.client.connect({
+      token: databricks_token,
+      host: server_hostname,
+      path: http_path,
+    });
+    this.session = await this.client.openSession();
   }
 
   private async readQueryConfig(): Promise<RunSQLOptions> {
@@ -296,44 +304,27 @@ export class DatabricksConnection
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
 
-    const client = new DBSQLClient();
+    await this.connecting; // Wait for connection to be established
+    if (!this.client || !this.session) {
+      throw new Error('Databricks connection not established');
+    }
 
-    // const client = await this.getClient();
-
-    return client
-      .connect({
-        token: databricks_token,
-        host: server_hostname,
-        path: http_path,
-      })
-      .then(async client => {
-        const session = await client.openSession();
-
-        let result: QueryDataRow[] = [];
-        for (let i = 0; i < sql.length; i++) {
-          const queryOperation = await session.executeStatement(sql[i], {
-            runAsync: true,
-          });
-          result = (await queryOperation.fetchAll()) as QueryDataRow[];
-          await queryOperation.close();
-        }
-
-        // console.log(`BRIAN databricks result:`);
-        // console.log(result);
-        // console.table(result);
-
-        await session.close();
-        await client.close();
-
-        // restrict num rows if necesary
-        const databricksRowLimit =
-          rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
-        if (result.length > databricksRowLimit) {
-          result = result.slice(0, databricksRowLimit);
-        }
-
-        return {rows: result, totalRows: result.length};
+    let result: QueryDataRow[] = [];
+    for (let i = 0; i < sql.length; i++) {
+      const queryOperation = await this.session.executeStatement(sql[i], {
+        runAsync: true,
       });
+      result = (await queryOperation.fetchAll()) as QueryDataRow[];
+      await queryOperation.close();
+    }
+
+    // restrict num rows if necessary
+    const databricksRowLimit = rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
+    if (result.length > databricksRowLimit) {
+      result = result.slice(0, databricksRowLimit);
+    }
+
+    return {rows: result, totalRows: result.length};
   }
 
   public async runSQL(
@@ -343,54 +334,31 @@ export class DatabricksConnection
   ): Promise<MalloyQueryData> {
     const config = await this.readQueryConfig();
 
-    const client = new DBSQLClient();
+    await this.connecting; // Wait for connection to be established
+    if (!this.client || !this.session) {
+      throw new Error('Databricks connection not established');
+    }
 
-    //const client = await this.getClient();
+    const queryOperation = await this.session.executeStatement(sql, {
+      runAsync: true,
+    });
 
-    return client
-      .connect({
-        token: databricks_token,
-        host: server_hostname,
-        path: http_path,
-      })
-      .then(async client => {
-        const session = await client.openSession();
-        const queryOperation = await session.executeStatement(sql, {
-          runAsync: true,
-        });
+    let result = (await queryOperation.fetchAll()) as QueryDataRow[];
 
-        let result = (await queryOperation.fetchAll()) as QueryDataRow[];
+    // Extract actual result from Databricks response
+    const actualResult = result.map(row =>
+      row['row'] ? JSON.parse(String(row['row'])) : row
+    );
 
-        //console.log(`BRIAN databricks result:`);
-        //console.log(JSON.stringify(result));
-        //console.table(result);
+    await queryOperation.close();
 
-        // console.log(`BRIAN databricks pure result:`);
-        // console.log(result);
-        // console.table(`stringified result: ${result[0]['row']}`);
-        // console.table(`stringified result: ${String(result[0]['row'])}`);
+    // restrict num rows if necessary
+    const databricksRowLimit = rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
+    if (result.length > databricksRowLimit) {
+      result = result.slice(0, databricksRowLimit);
+    }
 
-        // for Databricks, usually result will be list of objects {}
-        // and the actual result is stored in key 'row' in the objects
-        // We need to extract the actual result out out from here
-        // For some edge cases like SELECT 1, result is already extracted
-        const actualResult = result.map(row =>
-          row['row'] ? JSON.parse(String(row['row'])) : row
-        );
-
-        await queryOperation.close();
-        await session.close();
-        await client.close();
-
-        // restrict num rows if necesary
-        const databricksRowLimit =
-          rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE;
-        if (result.length > databricksRowLimit) {
-          result = result.slice(0, databricksRowLimit);
-        }
-
-        return {rows: actualResult, totalRows: result.length};
-      });
+    return {rows: actualResult, totalRows: result.length};
   }
 
   public async *runSQLStream(
@@ -399,7 +367,7 @@ export class DatabricksConnection
   ): AsyncIterableIterator<QueryDataRow> {
     const result = await this.runSQL(sqlCommand, {rowLimit});
     for (const row of result.rows) {
-      if (abortSignal?.aborted) break;
+    if (abortSignal?.aborted) break;
       yield row;
     }
   }
@@ -411,12 +379,19 @@ export class DatabricksConnection
   public async manifestTemporaryTable(sqlCommand: string): Promise<string> {
     const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
     const tableName = `tt${hash}`;
-    const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand})`;
+    const cmd = `CREATE or replace TEMPORARY VIEW ${tableName} AS (${sqlCommand})`;
     await this.runSQL(cmd);
     return tableName;
   }
 
   async close(): Promise<void> {
-    return;
+    if (this.session) {
+      await this.session.close();
+      this.session = null;
+    }
+    if (this.client) {
+      await this.client.close();
+      this.client = null;
+    }
   }
 }
