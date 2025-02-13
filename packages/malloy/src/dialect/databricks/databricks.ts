@@ -83,7 +83,7 @@ export class DatabricksDialect extends Dialect {
   supportsSafeCast = false;
   dontUnionIndex = false;
   supportsQualify = false;
-  supportsNesting = false; // temp
+  supportsNesting = true; // temp
   experimental = false;
   readsNestedData = false;
   supportsComplexFilteredSources = false;
@@ -273,10 +273,9 @@ export class DatabricksDialect extends Dialect {
     if (childName === '__row_id') {
       return `${parentAlias}.col`;
     }
-
     // For non-table parents, use map/array access
     if (parentType !== 'table') {
-      const fieldReference = `${parentAlias}['${childName}']`;
+      const fieldReference = `${parentAlias}.${childName}`;
       let ret = fieldReference;
 
       switch (childType) {
@@ -300,22 +299,36 @@ export class DatabricksDialect extends Dialect {
   }
 
   // sqlLiteralRecord(lit: RecordLiteralNode): string {
+  //   console.log('literal record', lit);
+  //   console.log('typedef', JSON.stringify(lit.typeDef, null, 2));
   //   const ents: string[] = [];
   //   for (const [name, val] of Object.entries(lit.kids)) {
   //     const expr = val.sql || 'internal-error-literal-record';
   //     ents.push(`"${name}": ${expr}`);
   //   }
-  //   return `to_json(parse_json('{${ents.join(',')}}'))`;
+  //   return `parse_json('{${ents.join(',')}}')`;
   // }
 
   sqlLiteralRecord(lit: RecordLiteralNode): string {
+    // console.log('literal record', lit);
+    // console.log('typedef', JSON.stringify(lit.typeDef, null, 2));
     const ents: string[] = [];
     for (const [name, val] of Object.entries(lit.kids)) {
       const expr = val.sql || 'internal-error-literal-record';
-      ents.push(`'${name}', ${expr}`);
+      ents.push(`"${name}": ${this.sqlMaybeQuoteIdentifier(expr)}`);
     }
-    return `map(${ents.join(',')})`;
+    return `parse_json('{${ents.join(',')}}')`;
   }
+
+
+  // sqlLiteralRecord(lit: RecordLiteralNode): string {
+  //   const ents: string[] = [];
+  //   for (const [name, val] of Object.entries(lit.kids)) {
+  //     const expr = val.sql || 'internal-error-literal-record';
+  //     ents.push(`'${name}', ${expr}`);
+  //   }
+  //   return `map(${ents.join(',')})`;
+  // }
 
   sqlLiteralArray(lit: ArrayLiteralNode): string {
     const array = lit.kids.values.map(val => val.sql);
