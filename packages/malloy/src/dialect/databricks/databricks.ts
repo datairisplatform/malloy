@@ -422,23 +422,19 @@ export class DatabricksDialect extends Dialect {
     throw new Error(`Unknown Symmetric Aggregate function ${funcName}`);
   }
 
-  // TODO this does not preserve the types of the arguments, meaning we have to hack
-  // around this in the definitions of functions that use this to cast back to the correct
-  // type (from text). See the postgres implementation of stddev.
   sqlAggDistinct(
     key: string,
     values: string[],
     func: (valNames: string[]) => string
   ): string {
     return `(
-    SELECT ${func(values.map((v, i) => `(a::json->>'f${i + 2}')`))} as value
-    FROM (
-      SELECT UNNEST(array_agg(distinct row_to_json(row(${key},${values.join(
-        ','
-      )}))::text)) a
-    ) a
-  )`;
-  } //nesting
+      SELECT ${func(values.map((v, i) => `get_json_object(a.value, '$.val${i}')`))} as value
+      FROM (
+        SELECT ARRAY_AGG(DISTINCT to_json(named_struct('key', ${key}, ${values.map((v, i) => `'val${i}', ${v}`).join(', ')}))) as arr
+      ) t
+      LATERAL VIEW EXPLODE(t.arr) a AS value
+    )`;
+  }
 
   sqlSampleTable(tableSQL: string, sample: Sampling | undefined): string {
     if (sample !== undefined) {

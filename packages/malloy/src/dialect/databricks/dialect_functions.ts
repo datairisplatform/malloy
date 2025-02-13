@@ -15,8 +15,8 @@ const string_agg: OverloadedDefinitionBlueprint = {
   default_separator: {
     takes: {'value': {dimension: 'string'}},
     returns: {measure: 'string'},
-    supportsOrderBy: true,
-    impl: {sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_LIST(${value})), ', ')"},
+    supportsOrderBy: 'only_default',
+    impl: {sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_LIST(${value})), ',')"}, //${order_by:}
   },
   with_separator: {
     takes: {
@@ -24,7 +24,7 @@ const string_agg: OverloadedDefinitionBlueprint = {
       'separator': {literal: 'string'},
     },
     returns: {measure: 'string'},
-    supportsOrderBy: true,
+    supportsOrderBy: 'only_default',
     //impl: {sql: 'STRING_AGG(${value}, ${separator}${order_by:})'},
     impl: {sql: 'ARRAY_JOIN(ARRAY_SORT(COLLECT_LIST(${value})), ${separator})'},
     // impl: {
@@ -39,7 +39,7 @@ const string_agg_distinct: OverloadedDefinitionBlueprint = {
     isSymmetric: true,
     supportsOrderBy: 'only_default',
     impl: {
-      sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_SET(${value})), ', ')",
+      sql: "ARRAY_JOIN(ARRAY_SORT(COLLECT_SET(${value})), ',')",
       defaultOrderByArgIndex: 0,
     },
   },

@@ -60,7 +60,22 @@ export const DATABRICKS_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   strpos: {
     sql: 'POSITION(${search_string} IN ${test_string})',
   },
-
+  starts_with: {sql: 'COALESCE(startswith(${value}, ${prefix}), false)'},
+  trim: {
+    characters: {
+      sql: 'TRIM(${trim_characters} FROM ${value})',
+    },
+  },
+  ltrim: {
+    characters: {
+      sql: 'LTRIM(${trim_characters}, ${value})',
+    },
+  },
+  rtrim: {
+    characters: {
+      sql: 'RTRIM(${trim_characters}, ${value})',
+    },
+  },
   // Aparently the ASCII function also works for unicode code points...
   unicode: {function: 'ASCII'},
   //like: {function: 'RLIKE'},
