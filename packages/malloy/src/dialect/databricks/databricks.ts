@@ -194,40 +194,6 @@ export class DatabricksDialect extends Dialect {
   }
 
   // UNNEST((select ARRAY((SELECT ROW(gen_random_uuid()::text, state, airport_count) FROM UNNEST(base.by_state) as by_state(state text, airport_count numeric, by_fac_type record[]))))) as by_state(__distinct_key text, state text, airport_count numeric)
-
-  // sqlUnnestAlias(
-  //   source: string,
-  //   alias: string,
-  //   fieldList: DialectFieldList,
-  //   needDistinctKey: boolean
-  // ): string {
-  //   const fields = [];
-  //   for (const f of fieldList) {
-  //     let t = undefined;
-  //     switch (f.type) {
-  //       case "string":
-  //         t = "text";
-  //         break;
-  //       case "number":
-  //         t = this.defaultNumberType;
-  //         break;
-  //       case "struct":
-  //         t = "record[]";
-  //         break;
-  //     }
-  //     fields.push(`${f.sqlOutputName} ${t || f.type}`);
-  //   }
-  //   if (needDistinctKey) {
-  //     return `UNNEST((select ARRAY((SELECT ROW(gen_random_uuid()::text, ${fieldList
-  //       .map((f) => f.sqlOutputName)
-  //       .join(", ")}) FROM UNNEST(${source}) as ${alias}(${fields.join(
-  //       ", "
-  //     )}))))) as ${alias}(__distinct_key text, ${fields.join(", ")})`;
-  //   } else {
-  //     return `UNNEST(${source}) as ${alias}(${fields.join(", ")})`;
-  //   }
-  // }
-
   sqlUnnestAlias(
     source: string,
     alias: string,
@@ -238,14 +204,14 @@ export class DatabricksDialect extends Dialect {
   ): string {
     if (isArray) {
       if (needDistinctKey) {
-        return `LEFT JOIN LATERAL (SELECT row_number() over () as __row_id, value FROM EXPLODE(${source}) as value) as ${alias} ON true`;
+        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS value`;
       } else {
-        return `LEFT JOIN LATERAL (SELECT value FROM EXPLODE(${source}) as value) as ${alias} ON true`;
+        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS value`;
       }
     } else if (needDistinctKey) {
-      return `LEFT JOIN LATERAL (SELECT row_number() over () as __row_number, value FROM EXPLODE(to_json(${source})) as value) as ${alias} ON true`;
+      return `LATERAL VIEW OUTER EXPLODE(ARRAY(${source})) ${alias} AS value`;
     } else {
-      return `LEFT JOIN LATERAL (SELECT value FROM EXPLODE(to_json(${source})) as value) as ${alias} ON true`;
+      return `LATERAL VIEW OUTER EXPLODE(ARRAY(${source})) ${alias} AS value`;
     }
   }
 
@@ -262,6 +228,42 @@ export class DatabricksDialect extends Dialect {
     return `${df.kids.expr.sql} RLIKE ${df.kids.regex.sql}`;
   }
 
+  // sqlFieldReference(
+  //   parentAlias: string,
+  //   parentType: FieldReferenceType,
+  //   childName: string,
+  //   childType: string
+  // ): string {
+  //   if (childName === '__row_id') {
+  //     return `${parentAlias}.col`;
+  //   }
+
+  //   // For non-table parents, use dot notation rather than colon
+  //   if (parentType !== 'table') {
+  //     // Use sqlMaybeQuoteIdentifier to properly quote the child name
+  //     const fieldReference = `variant_get(${parentAlias}, '$.${childName}')`;
+  //     let ret = fieldReference;
+
+  //     switch (childType) {
+  //       case 'string':
+  //         break;
+  //       case 'number':
+  //         ret = `CAST(${fieldReference} AS DOUBLE)`;
+  //         break;
+  //       case 'struct':
+  //       case 'record':
+  //       case 'array[record]':
+  //         ret = fieldReference;
+  //         break;
+  //     }
+  //     return ret;
+  //   } else {
+  //     // For table parents, keep using dot notation with proper quoting
+  //     const child = this.sqlMaybeQuoteIdentifier(childName);
+  //     return `${parentAlias}.${child}`;
+  //   }
+  // }
+
   sqlFieldReference(
     parentAlias: string,
     parentType: FieldReferenceType,
@@ -269,28 +271,55 @@ export class DatabricksDialect extends Dialect {
     childType: string
   ): string {
     if (childName === '__row_id') {
-      return `get_json_object(${parentAlias}, '$.value')`;
+      return `${parentAlias}.col`;
     }
+
+    // For non-table parents, use map/array access
     if (parentType !== 'table') {
-      let ret = `get_json_object(${parentAlias}, '$.${childName}')`;
+      const fieldReference = `${parentAlias}['${childName}']`;
+      let ret = fieldReference;
+
       switch (childType) {
         case 'string':
           break;
         case 'number':
-          ret = `CAST(${ret} AS DOUBLE)`;
+          ret = `CAST(${fieldReference} AS DOUBLE)`;
           break;
         case 'struct':
-        case 'array':
         case 'record':
         case 'array[record]':
-          ret = `to_json(${parentAlias}.${childName})`;
+          ret = fieldReference;
           break;
       }
       return ret;
     } else {
+      // For table parents, keep using dot notation with proper quoting
       const child = this.sqlMaybeQuoteIdentifier(childName);
       return `${parentAlias}.${child}`;
     }
+  }
+
+  // sqlLiteralRecord(lit: RecordLiteralNode): string {
+  //   const ents: string[] = [];
+  //   for (const [name, val] of Object.entries(lit.kids)) {
+  //     const expr = val.sql || 'internal-error-literal-record';
+  //     ents.push(`"${name}": ${expr}`);
+  //   }
+  //   return `to_json(parse_json('{${ents.join(',')}}'))`;
+  // }
+
+  sqlLiteralRecord(lit: RecordLiteralNode): string {
+    const ents: string[] = [];
+    for (const [name, val] of Object.entries(lit.kids)) {
+      const expr = val.sql || 'internal-error-literal-record';
+      ents.push(`'${name}', ${expr}`);
+    }
+    return `map(${ents.join(',')})`;
+  }
+
+  sqlLiteralArray(lit: ArrayLiteralNode): string {
+    const array = lit.kids.values.map(val => val.sql);
+    return `array(${array.join(',')})`;
   }
 
   sqlUnnestPipelineHead(
@@ -483,19 +512,6 @@ export class DatabricksDialect extends Dialect {
     // Parentheses, Commas:  NUMERIC(5, 2)
     // Square Brackets:      INT64[]
     return sqlType.match(/^[A-Za-z\s(),[\]0-9]*$/) !== null;
-  }
-
-  sqlLiteralRecord(lit: RecordLiteralNode): string {
-    const props: string[] = [];
-    for (const [kName, kVal] of Object.entries(lit.kids)) {
-      props.push(`'${kName}',${kVal.sql}`);
-    }
-    return `JSONB_BUILD_OBJECT(${props.join(', ')})`;
-  }
-
-  sqlLiteralArray(lit: ArrayLiteralNode): string {
-    const array = lit.kids.values.map(val => val.sql);
-    return 'JSONB_BUILD_ARRAY(' + array.join(',') + ')';
   }
 
   sqlMaybeQuoteIdentifier(ident: string): string {
