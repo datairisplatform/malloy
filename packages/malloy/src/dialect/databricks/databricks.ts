@@ -110,7 +110,7 @@ export class DatabricksDialect extends Dialect {
         f =>
           `\n  ${f.sqlExpression}${
             f.type === 'number' ? `::${this.defaultNumberType}` : ''
-          } as ${f.sqlOutputName}`,
+          } as ${f.sqlOutputName}`
         //`${f.sqlExpression} ${f.type} as ${f.sqlOutputName}`
       )
       .join(', ');
@@ -118,7 +118,10 @@ export class DatabricksDialect extends Dialect {
 
   asNamesToSQLNames(fieldList: DialectFieldList): Record<string, string> {
     return Object.fromEntries(
-      fieldList.map(f => [f.sqlExpression.replace(/`/g, ''), f.sqlOutputName.replace(/`/g, '')])
+      fieldList.map(f => [
+        f.sqlExpression.replace(/`/g, ''),
+        f.sqlOutputName.replace(/`/g, ''),
+      ])
     );
   }
 
@@ -166,13 +169,15 @@ export class DatabricksDialect extends Dialect {
         let result = `COALESCE(${aggClause}, ARRAY())`;
 
         // Extract column name after dot if present
-        const pureColumnName = orderColumn.includes('.') ? orderColumn.split('.')[1] : orderColumn;
+        const pureColumnName = orderColumn.includes('.')
+          ? orderColumn.split('.')[1]
+          : orderColumn;
         // use original col name if available
         const sqlName = sqlNames[pureColumnName] ?? pureColumnName;
 
-        let lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN 1 ELSE -1 END`
+        let lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN 1 ELSE -1 END`;
         if (!isDesc) {
-          lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN -1 ELSE 1 END`
+          lambda = `(x, y) -> CASE WHEN x.${sqlName} = y.${sqlName} THEN 0 WHEN x.${sqlName} < y.${sqlName} THEN -1 ELSE 1 END`;
         }
         result = `ARRAY_SORT(${result}, ${lambda})`;
 
@@ -346,7 +351,6 @@ export class DatabricksDialect extends Dialect {
     return `parse_json('{${ents.join(',')}}')`;
   }
 
-
   // sqlLiteralRecord(lit: RecordLiteralNode): string {
   //   const ents: string[] = [];
   //   for (const [name, val] of Object.entries(lit.kids)) {
@@ -467,9 +471,13 @@ export class DatabricksDialect extends Dialect {
     func: (valNames: string[]) => string
   ): string {
     return `(
-      SELECT ${func(values.map((v, i) => `get_json_object(a.value, '$.val${i}')`))} as value
+      SELECT ${func(
+        values.map((v, i) => `get_json_object(a.value, '$.val${i}')`)
+      )} as value
       FROM (
-        SELECT ARRAY_AGG(DISTINCT to_json(named_struct('key', ${key}, ${values.map((v, i) => `'val${i}', ${v}`).join(', ')}))) as arr
+        SELECT ARRAY_AGG(DISTINCT to_json(named_struct('key', ${key}, ${values
+          .map((v, i) => `'val${i}', ${v}`)
+          .join(', ')}))) as arr
       ) t
       LATERAL VIEW EXPLODE(t.arr) a AS value
     )`;
@@ -563,8 +571,9 @@ export class DatabricksDialect extends Dialect {
     const truncThis = week ? `DATE_ADD(${toTrunc.e.sql}, 1)` : toTrunc.e.sql;
     if (TD.isTimestamp(toTrunc.e.typeDef)) {
       const tz = qtz(qi);
+      console.log('BRIAN trunc tz:', tz);
       if (tz) {
-        return `DATE_TRUNC('${toTrunc.units}', from_utc_timestamp(${truncThis}, '${tz}'))`;
+        return `DATE_TRUNC('${toTrunc.units}', to_utc_timestamp(${truncThis}, '${tz}'))`;
       }
     }
     let result = `DATE_TRUNC('${toTrunc.units}', ${truncThis})`;
@@ -575,9 +584,20 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlTimeExtractExpr(qi: QueryInfo, from: TimeExtractExpr): string {
-    return `EXTRACT(${extractionMap[from.units] || from.units} FROM ${
-      from.e.sql
-    })`;
+    // convert from utc
+    // we're probly getting this in utc time, convert to local time
+    // since that's what the cx expects us to return
+    const queryTZ = qtz(qi);
+    let extractFrom = from.e.sql;
+    // if we have user's local time, convert from utc to their time
+    if (queryTZ) {
+      extractFrom = `from_utc_timestamp(${from.e.sql}, '${queryTZ}')`;
+    }
+
+    // return `EXTRACT(${extractionMap[from.units] || from.units} FROM ${from.e.sql})`;
+    return `EXTRACT(${
+      extractionMap[from.units] || from.units
+    } FROM (${extractFrom}))`;
   }
 
   sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
@@ -585,8 +605,9 @@ export class DatabricksDialect extends Dialect {
       return `DATE '${lt.literal}'`;
     }
     const tz = lt.timezone || qtz(qi);
+    console.log('BRIAN literal tz:', tz);
     if (tz) {
-      return `from_utc_timestamp(timestamp'${lt.literal}', '${tz}')`;
+      return `to_utc_timestamp(timestamp'${lt.literal}', '${tz}')`;
     }
     return `timestamp '${lt.literal}'`;
   }
