@@ -573,7 +573,7 @@ export class DatabricksDialect extends Dialect {
       const tz = qtz(qi);
       console.log('BRIAN trunc tz:', tz);
       if (tz) {
-        return `DATE_TRUNC('${toTrunc.units}', to_utc_timestamp(${truncThis}, '${tz}'))`;
+        return `DATE_TRUNC('${toTrunc.units}', from_utc_timestamp(${truncThis}, '${tz}'))`;
       }
     }
     let result = `DATE_TRUNC('${toTrunc.units}', ${truncThis})`;
@@ -634,6 +634,11 @@ export class DatabricksDialect extends Dialect {
     if (op === 'timestamp::date') {
       return `DATE(${src})`;
     } else if (op === 'date::timestamp') {
+      const queryTZ = qtz(qi);
+      if (queryTZ) {
+        // convert to utc time
+        return `to_utc_timestamp(TIMESTAMP(${src}), '${queryTZ}')`;
+      }
       return `TIMESTAMP(${src})`;
     }
 
