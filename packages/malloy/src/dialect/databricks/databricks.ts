@@ -235,14 +235,14 @@ export class DatabricksDialect extends Dialect {
   ): string {
     if (isArray) {
       if (needDistinctKey) {
-        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS value`;
+        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
       } else {
-        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS value`;
+        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
       }
     } else if (needDistinctKey) {
-      return `LATERAL VIEW OUTER EXPLODE(ARRAY(${source})) ${alias} AS value`;
+      return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`; // distinct
     } else {
-      return `LATERAL VIEW OUTER EXPLODE(ARRAY(${source})) ${alias} AS value`;
+      return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
     }
   }
 
