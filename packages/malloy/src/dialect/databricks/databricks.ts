@@ -65,6 +65,7 @@ const databricksToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   //'bytea': {type: 'string'},
   //'pg_ndistinct': {type: 'number', numberType: 'integer'},
   'varchar': {type: 'string'},
+  'variant': {type: 'json'},
 };
 
 export class DatabricksDialect extends Dialect {
@@ -135,7 +136,6 @@ export class DatabricksDialect extends Dialect {
 
     // Parse orderBy if provided to get column and direction
     if (orderBy) {
-      console.log('BRIAN orderBy:', orderBy);
       // const orderMatch = orderBy.match(
       //   /ORDER BY\s+`?([^`\s]+)`?\s*(asc|desc)?/i
       // );
@@ -143,7 +143,6 @@ export class DatabricksDialect extends Dialect {
       const orderMatch = orderBy.match(
         /ORDER BY\s+(?:(?:[^`\s.]+\.)?`?([^`\s]+)`?)\s*(asc|desc)?/i
       );
-      console.log('BRIAN orderMatch:', orderMatch);
       if (orderMatch) {
         const [, orderColumn, direction] = orderMatch;
         // Find the matching field and move it to front of struct
@@ -235,14 +234,14 @@ export class DatabricksDialect extends Dialect {
   ): string {
     if (isArray) {
       if (needDistinctKey) {
-        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
+        return `LATERAL VIEW posexplode_outer(${source}) ${alias} AS __row_id, ${alias}`;
       } else {
-        return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
+        return `LATERAL VIEW posexplode_outer(${source}) ${alias} AS __row_id, ${alias}`;
       }
     } else if (needDistinctKey) {
-      return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`; // distinct
+      return `LATERAL VIEW posexplode_outer(${source}) ${alias} AS __row_id, ${alias}`; // distinct
     } else {
-      return `LATERAL VIEW OUTER EXPLODE(${source}) ${alias} AS ${alias}`;
+      return `LATERAL VIEW posexplode_outer(${source}) ${alias} AS __row_id, ${alias}`;
     }
   }
 
@@ -301,8 +300,12 @@ export class DatabricksDialect extends Dialect {
     childName: string,
     childType: string
   ): string {
+    console.log('BRIAN sqlFieldReference', parentAlias, parentType, childName, childType);
     if (childName === '__row_id') {
-      return `${parentAlias}.col`;
+      return `${parentAlias}.${childName}`;
+    }
+    if (parentType === 'array[scalar]') {
+      return `${parentAlias}`;
     }
     // For non-table parents, use map/array access
     if (parentType !== 'table') {
@@ -346,9 +349,9 @@ export class DatabricksDialect extends Dialect {
     const ents: string[] = [];
     for (const [name, val] of Object.entries(lit.kids)) {
       const expr = val.sql || 'internal-error-literal-record';
-      ents.push(`"${name}": ${this.sqlMaybeQuoteIdentifier(expr)}`);
+      ents.push(`'${name}', ${expr}`);
     }
-    return `parse_json('{${ents.join(',')}}')`;
+    return `named_struct(${ents.join(',')})`;
   }
 
   // sqlLiteralRecord(lit: RecordLiteralNode): string {
@@ -571,7 +574,6 @@ export class DatabricksDialect extends Dialect {
     const truncThis = week ? `DATE_ADD(${toTrunc.e.sql}, 1)` : toTrunc.e.sql;
     if (TD.isTimestamp(toTrunc.e.typeDef)) {
       const tz = qtz(qi);
-      console.log('BRIAN trunc tz:', tz);
       if (tz) {
         return `DATE_TRUNC('${toTrunc.units}', from_utc_timestamp(${truncThis}, '${tz}'))`;
       }
@@ -605,7 +607,6 @@ export class DatabricksDialect extends Dialect {
       return `DATE '${lt.literal}'`;
     }
     const tz = lt.timezone || qtz(qi);
-    console.log('BRIAN literal tz:', tz);
     if (tz) {
       return `to_utc_timestamp(timestamp'${lt.literal}', '${tz}')`;
     }

@@ -54,6 +54,8 @@ function getSplitFunction(db: string) {
       `split(${column}, '${splitChar}')`,
     'presto': (column: string, splitChar: string) =>
       `split(${column}, '${splitChar}')`,
+    'databricks': (column: string, splitChar: string) =>
+      `struct(split(${column}, '${splitChar}') as value)`,
   }[db];
 }
 
@@ -491,7 +493,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
     expect(q.sql.toLowerCase()).not.toContain('distinct');
   });
 
-  it.when(runtime.dialect.supportsLeftJoinUnnest)(
+  it(
     `leafy nested count - ${databaseName}`,
     async () => {
       // in a joined table when the joined is leafiest
@@ -1024,7 +1026,7 @@ SELECT row_to_json(finalStage) as row FROM __stage0 AS finalStage`);
       `).malloyResultMatches(runtime, {x: 30});
   });
 
-  test.when(runtime.supportsNesting && runtime.dialect.supportsArraysInData)(
+  test.when(runtime.dialect.supportsLeftJoinUnnest)(
     `array unnest - ${databaseName}`,
     async () => {
       const splitFN = getSplitFunction(databaseName);
