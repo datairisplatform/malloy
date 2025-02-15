@@ -298,7 +298,6 @@ export class PostgresDialect extends PostgresBase {
   }
 
   sqlFinalStage(lastStageName: string, _fields: string[]): string {
-    // BRIAN changed
     return `SELECT to_json(struct(*)) AS row FROM ${lastStageName}`;
   }
 

@@ -161,8 +161,6 @@ export class DatabricksDialect extends Dialect {
         fields = this.mapFields(orderedFields);
         // "as" names to original col names
         const sqlNames = this.asNamesToSQLNames(orderedFields);
-        console.log('BRIAN sqlNames:', sqlNames);
-        console.log('BRIAN fields:', fields);
         const isDesc = direction?.toLowerCase() === 'desc';
         const aggClause = `ARRAY_AGG(CASE WHEN group_set=${groupSet} THEN STRUCT(${fields}) END)`;
         let result = `COALESCE(${aggClause}, ARRAY())`;
@@ -300,7 +298,6 @@ export class DatabricksDialect extends Dialect {
     childName: string,
     childType: string
   ): string {
-    console.log('BRIAN sqlFieldReference', parentAlias, parentType, childName, childType);
     if (childName === '__row_id') {
       return `${parentAlias}.${childName}`;
     }
@@ -390,7 +387,6 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlFinalStage(lastStageName: string, _fields: string[]): string {
-    // BRIAN changed
     return `SELECT to_json(struct(*)) AS row FROM ${lastStageName}`;
   }
 

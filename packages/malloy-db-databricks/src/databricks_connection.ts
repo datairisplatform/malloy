@@ -231,7 +231,7 @@ export class DatabricksConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `BRIAN SELECT Error fetching schema for ${sqlRef.selectStr}: ${error}`;
+      return `SELECT Error fetching schema for ${sqlRef.selectStr}: ${error}`;
     }
     return structDef;
   }
@@ -241,7 +241,6 @@ export class DatabricksConnection
     structDef: StructDef
   ): Promise<void> {
     const {rows, totalRows} = await this.runRawSQL(infoQuery);
-    //console.log(`BRIAN schemaFromQuery rows: ${JSON.stringify(rows)}`);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -284,7 +283,7 @@ export class DatabricksConnection
     try {
       await this.schemaFromQuery([infoQuery], structDef);
     } catch (error) {
-      return `BRIAN Table Error fetching schema for ${tablePath}: ${error.message}`;
+      return `Table Error fetching schema for ${tablePath}: ${error.message}`;
     }
     return structDef;
   }

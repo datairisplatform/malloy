@@ -5119,8 +5119,6 @@ export class QueryModel {
       this.exploreSearchSQLMap.set(explore, sqlPDT);
     }
 
-    console.log("BRIAN making index table query")
-
     let query = `SELECT
               ${fieldNameColumn},
               ${fieldPathColumn},

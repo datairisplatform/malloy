@@ -149,7 +149,6 @@ expect.extend({
     let result: Result;
     try {
       result = await query.run();
-      console.log('BRIAN result', result.data.toObject());
     } catch (e) {
       let failMsg = `query.run failed: ${e.message}\n`;
       if (e instanceof MalloyError) {
@@ -201,8 +200,6 @@ expect.extend({
           }
           const got = result.data.path(...resultPath).value;
           const pGot = JSON.stringify(got);
-          console.log('BRIAN got', got);
-          console.log('BRIAN pGot', pGot);
           const mustBe = value instanceof Date ? value.getTime() : value;
           const actuallyGot = got instanceof Date ? got.getTime() : got;
           if (typeof mustBe === 'number' && typeof actuallyGot !== 'number') {
