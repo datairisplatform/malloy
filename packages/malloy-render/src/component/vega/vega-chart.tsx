@@ -8,7 +8,7 @@
 import {createEffect, createSignal, untrack} from 'solid-js';
 import {EventListenerHandler, View, SignalListenerHandler, Runtime} from 'vega';
 import './vega-expr-addons';
-import {Explore, ExploreField} from '@malloydata/malloy';
+import {Explore, ExploreField} from '@datairis/malloy';
 import {addSignalListenerIfExists, setSignalIfExists} from './vega-utils';
 
 type VegaChartProps = {

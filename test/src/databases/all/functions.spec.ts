@@ -25,7 +25,7 @@
 import {RuntimeList, allDatabases} from '../../runtimes';
 import {booleanResult, brokenIn, databasesFromEnvironmentOr} from '../../util';
 import '../../util/db-jest-matchers';
-import * as malloy from '@malloydata/malloy';
+import * as malloy from '@datairis/malloy';
 
 const runtimes = new RuntimeList(databasesFromEnvironmentOr(allDatabases));
 
@@ -131,7 +131,6 @@ expressionModels.forEach((x, databaseName) => {
         'bigquery': 'foo2003-01-01 12:00:00+00',
         'snowflake': 'foo2003-01-01T12:00:00.000Z',
         'databricks': 'foo2003-01-01 00:00:00',
-
       };
 
       await funcTestMultiple(
@@ -285,9 +284,14 @@ expressionModels.forEach((x, databaseName) => {
   describe('stddev', () => {
     // TODO symmetric aggregates don't work with custom aggregate functions in BQ currently
     if (
-      ['bigquery', 'snowflake', 'trino', 'presto', 'mysql', 'databricks'].includes(
-        databaseName
-      )
+      [
+        'bigquery',
+        'snowflake',
+        'trino',
+        'presto',
+        'mysql',
+        'databricks',
+      ].includes(databaseName)
     )
       return;
     it(`works - ${databaseName}`, async () => {
@@ -1486,9 +1490,14 @@ describe.each(runtimes.runtimeList)('%s', (databaseName, runtime) => {
     it(`works with fanout and order_by - ${databaseName}`, async () => {
       // TODO bigquery cannot handle both fanout and order_by today
       if (
-        ['bigquery', 'snowflake', 'trino', 'presto', 'mysql', 'databricks'].includes(
-          databaseName
-        )
+        [
+          'bigquery',
+          'snowflake',
+          'trino',
+          'presto',
+          'mysql',
+          'databricks',
+        ].includes(databaseName)
       )
         return;
       await expect(`##! experimental.aggregate_order_by
@@ -1508,7 +1517,12 @@ describe.each(runtimes.runtimeList)('%s', (databaseName, runtime) => {
 
     it(`works with fanout - ${databaseName}`, async () => {
       // Snowflake cannot handle the fanout case today
-      if (databaseName === 'snowflake' || databaseName === 'mysql' || databaseName === 'databricks') return;
+      if (
+        databaseName === 'snowflake' ||
+        databaseName === 'mysql' ||
+        databaseName === 'databricks'
+      )
+        return;
       await expect(`##! experimental.aggregate_order_by
       run: state_facts extend { join_many:
         state_facts2 is ${databaseName}.table('malloytest.state_facts')

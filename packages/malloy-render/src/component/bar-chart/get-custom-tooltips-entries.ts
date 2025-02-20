@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Explore} from '@malloydata/malloy';
+import {Explore} from '@datairis/malloy';
 import {
   ChartTooltipEntry,
   MalloyVegaDataRecord,

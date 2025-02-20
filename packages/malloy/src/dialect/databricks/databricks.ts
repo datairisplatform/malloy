@@ -55,22 +55,16 @@ const databricksToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'double': {type: 'number', numberType: 'float'},
   'timestamp_ntz': {type: 'timestamp'}, // maybe not
   'boolean': {type: 'boolean'},
-  // ARRAY: "string",
   'timestamp': {type: 'timestamp'},
   'smallint': {type: 'number', numberType: 'integer'},
-  //'real': {type: 'number', numberType: 'float'},
   'interval': {type: 'string'},
-  //'regtype': {type: 'string'},
-  //'numeric': {type: 'number', numberType: 'float'}, // ?
-  //'bytea': {type: 'string'},
-  //'pg_ndistinct': {type: 'number', numberType: 'integer'},
   'varchar': {type: 'string'},
   'variant': {type: 'json'},
 };
 
 export class DatabricksDialect extends Dialect {
   name = 'databricks';
-  defaultNumberType = 'BIGINT'; // ?
+  defaultNumberType = 'BIGINT';
   defaultDecimalType = 'DECIMAL';
   udfPrefix = 'pg_temp.__udf';
   hasFinalStage = false;
@@ -84,7 +78,7 @@ export class DatabricksDialect extends Dialect {
   supportsSafeCast = false;
   dontUnionIndex = false;
   supportsQualify = false;
-  supportsNesting = true; // temp
+  supportsNesting = true;
   experimental = false;
   readsNestedData = false;
   supportsComplexFilteredSources = false;
@@ -112,7 +106,6 @@ export class DatabricksDialect extends Dialect {
           `\n  ${f.sqlExpression}${
             f.type === 'number' ? `::${this.defaultNumberType}` : ''
           } as ${f.sqlOutputName}`
-        //`${f.sqlExpression} ${f.type} as ${f.sqlOutputName}`
       )
       .join(', ');
   }
@@ -136,10 +129,6 @@ export class DatabricksDialect extends Dialect {
 
     // Parse orderBy if provided to get column and direction
     if (orderBy) {
-      // const orderMatch = orderBy.match(
-      //   /ORDER BY\s+`?([^`\s]+)`?\s*(asc|desc)?/i
-      // );
-      // ORDER BY base.colName asc/desc
       const orderMatch = orderBy.match(
         /ORDER BY\s+(?:(?:[^`\s.]+\.)?`?([^`\s]+)`?)\s*(asc|desc)?/i
       );
@@ -221,7 +210,6 @@ export class DatabricksDialect extends Dialect {
     return expandBlueprintMap(DATABRICKS_DIALECT_FUNCTIONS);
   }
 
-  // UNNEST((select ARRAY((SELECT ROW(gen_random_uuid()::text, state, airport_count) FROM UNNEST(base.by_state) as by_state(state text, airport_count numeric, by_fac_type record[]))))) as by_state(__distinct_key text, state text, airport_count numeric)
   sqlUnnestAlias(
     source: string,
     alias: string,
@@ -244,9 +232,8 @@ export class DatabricksDialect extends Dialect {
   }
 
   sqlSumDistinctHashedKey(sqlDistinctKey: string): string {
-    // return `('x' || MD5(${sqlDistinctKey}::varchar))::bit(64)::bigint::DECIMAL(65,0)  *18446744073709551616 + ('x' || SUBSTR(MD5(${sqlDistinctKey}::varchar),17))::bit(64)::bigint::DECIMAL(65,0)`;
     return `unhex(md5(${sqlDistinctKey}))`;
-  } // todo
+  }
 
   sqlGenerateUUID(): string {
     return 'uuid()';
@@ -255,42 +242,6 @@ export class DatabricksDialect extends Dialect {
   sqlRegexpMatch(df: RegexMatchExpr): string {
     return `${df.kids.expr.sql} RLIKE ${df.kids.regex.sql}`;
   }
-
-  // sqlFieldReference(
-  //   parentAlias: string,
-  //   parentType: FieldReferenceType,
-  //   childName: string,
-  //   childType: string
-  // ): string {
-  //   if (childName === '__row_id') {
-  //     return `${parentAlias}.col`;
-  //   }
-
-  //   // For non-table parents, use dot notation rather than colon
-  //   if (parentType !== 'table') {
-  //     // Use sqlMaybeQuoteIdentifier to properly quote the child name
-  //     const fieldReference = `variant_get(${parentAlias}, '$.${childName}')`;
-  //     let ret = fieldReference;
-
-  //     switch (childType) {
-  //       case 'string':
-  //         break;
-  //       case 'number':
-  //         ret = `CAST(${fieldReference} AS DOUBLE)`;
-  //         break;
-  //       case 'struct':
-  //       case 'record':
-  //       case 'array[record]':
-  //         ret = fieldReference;
-  //         break;
-  //     }
-  //     return ret;
-  //   } else {
-  //     // For table parents, keep using dot notation with proper quoting
-  //     const child = this.sqlMaybeQuoteIdentifier(childName);
-  //     return `${parentAlias}.${child}`;
-  //   }
-  // }
 
   sqlFieldReference(
     parentAlias: string,
@@ -329,17 +280,6 @@ export class DatabricksDialect extends Dialect {
     }
   }
 
-  // sqlLiteralRecord(lit: RecordLiteralNode): string {
-  //   console.log('literal record', lit);
-  //   console.log('typedef', JSON.stringify(lit.typeDef, null, 2));
-  //   const ents: string[] = [];
-  //   for (const [name, val] of Object.entries(lit.kids)) {
-  //     const expr = val.sql || 'internal-error-literal-record';
-  //     ents.push(`"${name}": ${expr}`);
-  //   }
-  //   return `parse_json('{${ents.join(',')}}')`;
-  // }
-
   sqlLiteralRecord(lit: RecordLiteralNode): string {
     // console.log('literal record', lit);
     // console.log('typedef', JSON.stringify(lit.typeDef, null, 2));
@@ -350,15 +290,6 @@ export class DatabricksDialect extends Dialect {
     }
     return `named_struct(${ents.join(',')})`;
   }
-
-  // sqlLiteralRecord(lit: RecordLiteralNode): string {
-  //   const ents: string[] = [];
-  //   for (const [name, val] of Object.entries(lit.kids)) {
-  //     const expr = val.sql || 'internal-error-literal-record';
-  //     ents.push(`'${name}', ${expr}`);
-  //   }
-  //   return `map(${ents.join(',')})`;
-  // }
 
   sqlLiteralArray(lit: ArrayLiteralNode): string {
     const array = lit.kids.values.map(val => val.sql);
@@ -394,9 +325,6 @@ export class DatabricksDialect extends Dialect {
     return `ROW(${alias})`; // todo
   }
 
-  // The simple way to do this is to add a comment on the table
-  //  with the expiration time. https://www.postgresql.org/docs/current/sql-comment.html
-  //  and have a reaper that read comments.
   sqlCreateTableAsSelect(_tableName: string, _sql: string): string {
     throw new Error('Not implemented Yet');
   }

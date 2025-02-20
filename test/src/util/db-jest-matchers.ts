@@ -31,7 +31,7 @@ import {
   LogMessage,
   SingleConnectionRuntime,
   Tag,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import EventEmitter from 'events';
 import {inspect} from 'util';
 
@@ -118,7 +118,6 @@ expect.extend({
     runtime: Runner,
     shouldEqual: ExpectedResult
   ) {
-
     // TODO -- THIS IS NOT OK BUT I AM NOT FIXING IT NOW
     if (querySrc.indexOf('nest:') >= 0) {
       if (

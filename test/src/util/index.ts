@@ -30,8 +30,8 @@ import {
   Runtime,
   Expr,
   composeSQLExpr,
-} from '@malloydata/malloy';
-export * from '@malloydata/malloy/test';
+} from '@datairis/malloy';
+export * from '@datairis/malloy/test';
 
 // these two helper functions are here just to make older hand built models
 // easier to use in the new world were refs are not strings

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Result, ResultJSON, PreparedResult} from '@malloydata/malloy';
+import {Result, ResultJSON, PreparedResult} from '@datairis/malloy';
 import {HTMLView} from '../html/html_view';
 
 export async function renderMalloyResults(

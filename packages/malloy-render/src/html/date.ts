@@ -28,7 +28,7 @@ import {
   Explore,
   Field,
   TimestampTimeframe,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {Renderer} from './renderer';
 import {createErrorElement, createNullElement, timeToString} from './utils';
 import {StyleDefaults, TimeRenderOptions} from './data_styles';

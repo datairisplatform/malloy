@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {DataArray, DataRecord, Field} from '@malloydata/malloy';
+import {DataArray, DataRecord, Field} from '@datairis/malloy';
 import {createMemo, For, Show} from 'solid-js';
 import {applyRenderer} from '../apply-renderer';
 import {useResultContext} from '../result-context';

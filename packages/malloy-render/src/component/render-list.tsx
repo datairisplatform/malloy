@@ -1,4 +1,4 @@
-import {DataRecord, ExploreField} from '@malloydata/malloy';
+import {DataRecord, ExploreField} from '@datairis/malloy';
 import {For} from 'solid-js';
 import {applyRenderer, RendererProps} from './apply-renderer';
 

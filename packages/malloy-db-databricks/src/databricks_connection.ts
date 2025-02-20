@@ -37,39 +37,22 @@ import {
   StreamingConnection,
   StructDef,
   mkArrayDef,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Client} from 'pg';
 import {DBSQLClient} from '@databricks/sql';
 import crypto from 'crypto';
-
-interface DatabricksConnectionConfiguration {
-  host?: string;
-  port?: number;
-  username?: string;
-  password?: string;
-  databaseName?: string;
-  connectionString?: string;
-}
-
-type DatabricksConnectionConfigurationReader =
-  | DatabricksConnectionConfiguration
-  | (() => Promise<DatabricksConnectionConfiguration>);
+import IDBSQLSession from '@databricks/sql/dist/contracts/IDBSQLSession';
 
 const DEFAULT_PAGE_SIZE = 1000;
-// const SCHEMA_PAGE_SIZE = 1000;
 
-const databricks_token = 'todo';
-const server_hostname = 'todo';
-const http_path = 'todo';
 export interface DatabricksConnectionOptions extends ConnectionConfig {
-  host?: string;
-  port?: number;
-  username?: string;
-  password?: string;
-  databaseName?: string;
-  connectionString?: string;
+  host: string;
+  path: string;
+  token?: string;
+  oauthClientId?: string;
+  oauthClientSecret?: string;
 }
 
 export class DatabricksConnection
@@ -78,30 +61,29 @@ export class DatabricksConnection
 {
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
-  private configReader: DatabricksConnectionConfigurationReader = {};
+  private config: DatabricksConnectionOptions = {host: '', path: '', name: ''};
 
   private readonly dialect = new DatabricksDialect();
 
   private client: DBSQLClient | null = null;
-  private session: any | null = null;
+  private session: IDBSQLSession | null = null;
   private connecting: Promise<void>;
 
   constructor(
-    arg: string | DatabricksConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: DatabricksConnectionConfigurationReader
+    name: string,
+    arg?: DatabricksConnectionOptions,
+    queryOptionsReader?: QueryOptionsReader
+  );
+  constructor(
+    name: string,
+    arg: DatabricksConnectionOptions,
+    queryOptionsReader?: QueryOptionsReader
   ) {
     super();
-    if (typeof arg === 'string') {
-      this.name = arg;
-      if (configReader) {
-        this.configReader = configReader;
-      }
-    } else {
-      const {name, ...configReader} = arg;
-      this.name = name;
-      this.configReader = configReader;
-    }
+    this.name = name;
+
+    this.config = arg;
+
     if (queryOptionsReader) {
       this.queryOptionsReader = queryOptionsReader;
     }
@@ -112,11 +94,22 @@ export class DatabricksConnection
 
   private async connect(): Promise<void> {
     this.client = new DBSQLClient();
-    await this.client.connect({
-      token: databricks_token,
-      host: server_hostname,
-      path: http_path,
-    });
+
+    if (this.config.token) {
+      await this.client.connect({
+        token: this.config.token,
+        host: this.config.host,
+        path: this.config.path,
+      });
+    } else {
+      await this.client.connect({
+        authType: 'databricks-oauth',
+        host: this.config.host,
+        path: this.config.path,
+        oauthClientId: this.config.oauthClientId,
+        oauthClientSecret: this.config.oauthClientSecret,
+      });
+    }
     this.session = await this.client.openSession();
   }
 
@@ -127,14 +120,6 @@ export class DatabricksConnection
       return this.queryOptionsReader;
     }
   }
-
-  // protected async readConfig(): Promise<DatabricksConnectionConfiguration> {
-  //   if (this.configReader instanceof Function) {
-  //     return this.configReader();
-  //   } else {
-  //     return this.configReader;
-  //   }
-  // }
 
   get dialectName(): string {
     return 'databricks';
@@ -156,78 +141,17 @@ export class DatabricksConnection
     return true;
   }
 
-  // protected async getClient(): Promise<Client> {
-  //   const {
-  //     username: user,
-  //     password,
-  //     databaseName: database,
-  //     port,
-  //     host,
-  //     connectionString,
-  //   } = await this.readConfig();
-  //   return new Client({
-  //     user,
-  //     password,
-  //     database,
-  //     port,
-  //     host,
-  //     connectionString,
-  //   });
-  // }
-
-  // protected async runPostgresQuery(
-  //   sqlCommand: string,
-  //   _pageSize: number,
-  //   _rowIndex: number,
-  //   deJSON: boolean
-  // ): Promise<MalloyQueryData> {
-  //   const client = await this.getClient();
-  //   await client.connect();
-  //   await this.connectionSetup(client);
-
-  //   let result = await client.query(sqlCommand);
-  //   if (Array.isArray(result)) {
-  //     result = result.pop();
-  //   }
-  //   if (deJSON) {
-  //     for (let i = 0; i < result.rows.length; i++) {
-  //       result.rows[i] = result.rows[i].row;
-  //     }
-  //   }
-  //   await client.end();
-  //   return {
-  //     rows: result.rows as QueryData,
-  //     totalRows: result.rows.length,
-  //   };
-  // }
-
   async fetchSelectSchema(
     sqlRef: SQLSourceDef
   ): Promise<SQLSourceDef | string> {
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
-    // const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
-    // const infoQuery = `
-    //   CREATE OR REPLACE TEMP VIEW temp_schema_view AS
-    //   ${sqlRef.selectStr};
-    //   DESCRIBE TABLE temp_schema_view;
-    // `;
 
     const infoQuery = [
       `CREATE OR REPLACE TEMP VIEW temp_schema_view AS
       ${sqlRef.selectStr};`,
       'DESCRIBE TABLE temp_schema_view;',
     ];
-    // const infoQuery = `
-    //   drop table if exists ${tempTableName};
-    //   create temp table ${tempTableName} as SELECT * FROM (
-    //     ${sqlRef.selectStr}
-    //   ) as x where false;
-    //   SELECT column_name, c.data_type, e.data_type as element_type
-    //   FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-    //     ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-    //       = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-    //   where table_name='${tempTableName}';
-    // `;
+
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
@@ -283,7 +207,9 @@ export class DatabricksConnection
     try {
       await this.schemaFromQuery([infoQuery], structDef);
     } catch (error) {
-      return `Table Error fetching schema for ${tablePath}: ${error.message}`;
+      return `Table Error fetching schema for ${tablePath} with config: ${JSON.stringify(
+        this.config
+      )}: ${error.message}`;
     }
     return structDef;
   }
@@ -366,7 +292,7 @@ export class DatabricksConnection
   ): AsyncIterableIterator<QueryDataRow> {
     const result = await this.runSQL(sqlCommand, {rowLimit});
     for (const row of result.rows) {
-    if (abortSignal?.aborted) break;
+      if (abortSignal?.aborted) break;
       yield row;
     }
   }

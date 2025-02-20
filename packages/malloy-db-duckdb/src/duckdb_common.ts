@@ -36,8 +36,8 @@ import {
   SQLSourceDef,
   TableSourceDef,
   mkFieldDef,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 export interface DuckDBQueryOptions {
   rowLimit: number;

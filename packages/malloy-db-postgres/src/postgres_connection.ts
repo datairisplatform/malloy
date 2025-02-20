@@ -45,8 +45,8 @@ import {
   StreamingConnection,
   StructDef,
   mkArrayDef,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Client, Pool} from 'pg';
 import QueryStream from 'pg-query-stream';
@@ -212,7 +212,7 @@ export class PostgresConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `P Error fetching schema for ${sqlRef.name}: ${error}`;
+      return `Error fetching schema for ${sqlRef.name}: ${error}`;
     }
     return structDef;
   }
@@ -273,7 +273,7 @@ export class PostgresConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `P Error fetching schema for ${tablePath}: ${error.message}`;
+      return `Error fetching schema for ${tablePath}: ${error.message}`;
     }
     return structDef;
   }

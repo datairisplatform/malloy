@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {LogMessage, DocumentRange, DocumentPosition} from '@malloydata/malloy';
+import {LogMessage, DocumentRange, DocumentPosition} from '@datairis/malloy';
 import * as parser from './grammar/malloySQL';
 import {
   MalloySQLStatementConfig,

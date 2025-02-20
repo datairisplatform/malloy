@@ -44,9 +44,9 @@ import {
   TinyParser,
   isRepeatedRecord,
   TestableConnection,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
-import {BaseConnection} from '@malloydata/malloy/connection';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {
   PrestoClient,

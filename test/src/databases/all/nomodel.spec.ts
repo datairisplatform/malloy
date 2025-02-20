@@ -493,7 +493,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
     expect(q.sql.toLowerCase()).not.toContain('distinct');
   });
 
-  it(
+  it.when(runtime.dialect.supportsLeftJoinUnnest)(
     `leafy nested count - ${databaseName}`,
     async () => {
       // in a joined table when the joined is leafiest
@@ -1026,7 +1026,7 @@ SELECT row_to_json(finalStage) as row FROM __stage0 AS finalStage`);
       `).malloyResultMatches(runtime, {x: 30});
   });
 
-  test.when(runtime.dialect.supportsLeftJoinUnnest)(
+  test.when(runtime.supportsNesting && runtime.dialect.supportsArraysInData)(
     `array unnest - ${databaseName}`,
     async () => {
       const splitFN = getSplitFunction(databaseName);

@@ -23,8 +23,8 @@
 
 import * as readline from 'readline';
 import {inspect} from 'util';
-import {Connection, Malloy} from '@malloydata/malloy';
-import {BigQueryConnection} from '@malloydata/db-bigquery';
+import {Connection, Malloy} from '@datairis/malloy';
+import {BigQueryConnection} from '@datairis/db-bigquery';
 import {DuckDBConnection} from '../packages/malloy-db-duckdb';
 import {readFile} from 'fs/promises';
 import {readFileSync} from 'fs';

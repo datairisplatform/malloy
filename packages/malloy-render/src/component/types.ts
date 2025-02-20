@@ -13,7 +13,7 @@ import {
   QueryData,
   QueryDataRow,
   Tag,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {Item, Runtime, Spec, View} from 'vega';
 import {JSX} from 'solid-js';
 import {ResultStore} from './result-store/result-store';

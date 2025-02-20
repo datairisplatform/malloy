@@ -2905,7 +2905,6 @@ export class ModelMaterializer extends FluentState<Model> {
     if (schema.getFieldByNameIfExists('search_index')) {
       indexQuery = 'search_index';
     }
-    // i think: fieldName = col name.
     // find cardinality of all string cols, (num unique values)
     // also nest: each col value, its weight desc
     const searchMapMalloy = `
@@ -2923,7 +2922,6 @@ export class ModelMaterializer extends FluentState<Model> {
           limit: 1000
         }
     `;
-    const sql = await this.loadQuery(searchMapMalloy, options).getSQL();
     const result = await this.loadQuery(searchMapMalloy, options).run({
       rowLimit: 1000,
     });
