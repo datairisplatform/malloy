@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Explore, QueryDataRow, QueryValue} from '@datairis/malloy';
+import {Explore, QueryDataRow, QueryValue} from '@malloydata/malloy';
 import {getBarChartSettings} from './get-bar_chart-settings';
 import {
   ChartTooltipEntry,

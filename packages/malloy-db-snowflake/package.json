@@ -1,5 +1,5 @@
 {
-  "name": "@datairis/db-snowflake",
+  "name": "@malloydata/db-snowflake",
   "version": "0.0.10",
   "license": "MIT",
   "main": "dist/index.js",
@@ -21,7 +21,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@datairis/malloy": "^0.0.10",
+    "@malloydata/malloy": "^0.0.10",
     "generic-pool": "^3.9.0",
     "snowflake-sdk": "2.0.2",
     "toml": "^3.0.0"

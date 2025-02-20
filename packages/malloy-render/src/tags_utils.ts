@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Field} from '@datairis/malloy';
+import {Field} from '@malloydata/malloy';
 
 export function isFieldHidden(field: Field) {
   return field.tagParse().tag.has('hidden');

@@ -40,7 +40,7 @@ import {
   DuckDBValue,
   MDConnection,
 } from '@motherduck/wasm-client';
-import {QueryDataRow, QueryValue} from '@datairis/malloy';
+import {QueryDataRow, QueryValue} from '@malloydata/malloy';
 
 function unwrapMotherDuck(value: DuckDBValue) {
   let result: QueryValue = null;

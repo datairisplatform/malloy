@@ -28,7 +28,7 @@ import {
   DateTimeframe,
   Explore,
   TimestampTimeframe,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 import {timeToString} from './utils';
 
 type FilterItem = {key: string; value: string | undefined};

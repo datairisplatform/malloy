@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Explore, Field} from '@datairis/malloy';
+import {Explore, Field} from '@malloydata/malloy';
 import {HTMLListRenderer} from './list';
 
 export class HTMLListDetailRenderer extends HTMLListRenderer {

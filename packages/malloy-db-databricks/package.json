@@ -1,5 +1,5 @@
 {
-  "name": "@datairis/db-databricks",
+  "name": "@malloydata/db-databricks",
   "version": "0.0.12",
   "license": "MIT",
   "main": "dist/index.js",
@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@databricks/sql": "^1.9.0",
-    "@datairis/malloy": "^0.0.10",
+    "@malloydata/malloy": "^0.0.10",
     "@types/pg": "^8.6.1",
     "pg": "^8.7.1",
     "pg-query-stream": "4.2.3"

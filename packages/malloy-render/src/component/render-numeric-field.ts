@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {AtomicField} from '@datairis/malloy';
+import {AtomicField} from '@malloydata/malloy';
 import {Currency, DurationUnit} from '../html/data_styles';
 import {format} from 'ssf';
 import {getText} from '../html/duration';

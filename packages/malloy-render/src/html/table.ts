@@ -27,7 +27,7 @@ import {
   ExploreField,
   Field,
   SortableField,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 import {StyleDefaults} from './data_styles';
 import {getDrillQuery} from './drill';
 import {ContainerRenderer} from './container';

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {DataArray} from '@datairis/malloy';
+import {DataArray} from '@malloydata/malloy';
 import * as lite from 'vega-lite';
 import {HTMLChartRenderer} from './chart';
 import {formatTitle, getColorScale} from './utils';

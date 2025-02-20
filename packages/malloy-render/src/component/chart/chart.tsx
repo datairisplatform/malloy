@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Explore, ExploreField, QueryData} from '@datairis/malloy';
+import {Explore, ExploreField, QueryData} from '@malloydata/malloy';
 import {VegaChart, ViewInterface} from '../vega/vega-chart';
 import {ChartTooltipEntry, RenderResultMetadata} from '../types';
 import {Tooltip} from '../tooltip/tooltip';

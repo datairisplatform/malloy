@@ -4,7 +4,7 @@ import solidPlugin from 'vite-plugin-solid';
 export default defineConfig({
   plugins: [viteStripMalloyDevToolsPlugin(), solidPlugin()],
   optimizeDeps: {
-    include: ['@datairis/malloy'],
+    include: ['@malloydata/malloy'],
   },
   build: {
     rollupOptions: {

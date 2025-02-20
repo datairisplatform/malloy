@@ -23,10 +23,10 @@
 
 /* eslint-disable no-console */
 
-import {ModelDef, Query, StructDef} from '@datairis/malloy';
+import {ModelDef, Query, StructDef} from '@malloydata/malloy';
 import {describeIfDatabaseAvailable, fStringLike, fToQF} from '../../util';
 
-import * as malloy from '@datairis/malloy';
+import * as malloy from '@malloydata/malloy';
 import {RuntimeList} from '../../runtimes';
 const [describe] = describeIfDatabaseAvailable(['bigquery']);
 

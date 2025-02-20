@@ -1,4 +1,4 @@
-import {AtomicField, DataColumn} from '@datairis/malloy';
+import {AtomicField, DataColumn} from '@malloydata/malloy';
 import {getDynamicValue} from '../html/utils';
 
 export function renderLink(f: AtomicField, data: DataColumn) {

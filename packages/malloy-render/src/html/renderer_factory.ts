@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Explore, Field, Tag} from '@datairis/malloy';
+import {Explore, Field, Tag} from '@malloydata/malloy';
 import {Renderer} from './renderer';
 import {DataRenderOptions, RenderDef, StyleDefaults} from './data_styles';
 import {RendererOptions} from './renderer_types';

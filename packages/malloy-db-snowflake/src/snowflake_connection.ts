@@ -42,8 +42,8 @@ import {
   mkArrayDef,
   AtomicFieldDef,
   ArrayDef,
-} from '@datairis/malloy';
-import {BaseConnection} from '@datairis/malloy/connection';
+} from '@malloydata/malloy';
+import {BaseConnection} from '@malloydata/malloy/connection';
 
 import {SnowflakeExecutor} from './snowflake_executor';
 import {ConnectionOptions} from 'snowflake-sdk';

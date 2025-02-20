@@ -11,7 +11,7 @@ import {
   QueryResult,
   Result,
   Tag,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 import {
   Accessor,
   Show,

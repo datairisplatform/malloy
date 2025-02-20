@@ -37,8 +37,8 @@ import {
   StreamingConnection,
   StructDef,
   mkArrayDef,
-} from '@datairis/malloy';
-import {BaseConnection} from '@datairis/malloy/connection';
+} from '@malloydata/malloy';
+import {BaseConnection} from '@malloydata/malloy/connection';
 
 import {Client} from 'pg';
 import {DBSQLClient} from '@databricks/sql';

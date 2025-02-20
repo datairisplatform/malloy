@@ -19,8 +19,8 @@ import {
   QueryData,
   SQLSourceDef,
   TableSourceDef,
-} from '@datairis/malloy';
-import {BaseConnection} from '@datairis/malloy/connection';
+} from '@malloydata/malloy';
+import {BaseConnection} from '@malloydata/malloy/connection';
 import {randomUUID, createHash} from 'crypto';
 import * as MYSQL from 'mysql2/promise';
 

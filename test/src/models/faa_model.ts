@@ -26,7 +26,7 @@ import {
   StructDef,
   TableSourceDef,
   JoinFieldDef,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 
 import {fStringEq, fToIF, fToQF, fYearEq} from '../util';
 

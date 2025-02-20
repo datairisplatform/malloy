@@ -1,5 +1,5 @@
 {
-  "name": "@datairis/db-trino",
+  "name": "@malloydata/db-trino",
   "version": "0.0.10",
   "license": "MIT",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@datairis/malloy": "^0.0.10",
+    "@malloydata/malloy": "^0.0.10",
     "@prestodb/presto-js-client": "^1.0.0",
     "gaxios": "^4.2.0",
     "trino-client": "^0.2.2"

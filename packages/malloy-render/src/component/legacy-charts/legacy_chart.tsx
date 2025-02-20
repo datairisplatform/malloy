@@ -1,4 +1,4 @@
-import {DataArray} from '@datairis/malloy';
+import {DataArray} from '@malloydata/malloy';
 import {LineChartRendererFactory} from '../../html/line_chart';
 import {createEffect} from 'solid-js';
 import {ScatterChartRendererFactory} from '../../html/scatter_chart';

@@ -22,7 +22,7 @@
  */
 
 import * as lite from 'vega-lite';
-import {DataArray, DataColumn, Explore, Field} from '@datairis/malloy';
+import {DataArray, DataColumn, Explore, Field} from '@malloydata/malloy';
 import usAtlas from 'us-atlas/states-10m.json';
 import {HTMLChartRenderer} from './chart';
 import {formatTitle, getColorScale} from './utils';

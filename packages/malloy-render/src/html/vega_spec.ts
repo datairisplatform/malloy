@@ -22,7 +22,7 @@
  */
 
 import * as lite from 'vega-lite';
-import {DataColumn, Explore, Field} from '@datairis/malloy';
+import {DataColumn, Explore, Field} from '@malloydata/malloy';
 import {HTMLChartRenderer} from './chart';
 
 import {getColorScale} from './utils';

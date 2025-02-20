@@ -22,7 +22,7 @@
  */
 
 import {DatabricksConnection} from './databricks_connection';
-import {describeIfDatabaseAvailable} from '@datairis/malloy/test';
+import {describeIfDatabaseAvailable} from '@malloydata/malloy/test';
 
 const [describe] = describeIfDatabaseAvailable(['postgres']);
 

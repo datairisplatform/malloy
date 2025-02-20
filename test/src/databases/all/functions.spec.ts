@@ -25,7 +25,7 @@
 import {RuntimeList, allDatabases} from '../../runtimes';
 import {booleanResult, brokenIn, databasesFromEnvironmentOr} from '../../util';
 import '../../util/db-jest-matchers';
-import * as malloy from '@datairis/malloy';
+import * as malloy from '@malloydata/malloy';
 
 const runtimes = new RuntimeList(databasesFromEnvironmentOr(allDatabases));
 

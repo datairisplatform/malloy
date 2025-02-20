@@ -1,7 +1,7 @@
 import {createStore, produce, unwrap} from 'solid-js/store';
 import {useResultContext} from '../result-context';
 import {DrillData, RenderResultMetadata, DimensionContextEntry} from '../types';
-import {Explore, Field} from '@datairis/malloy';
+import {Explore, Field} from '@malloydata/malloy';
 
 interface BrushDataBase {
   fieldRefId: string;

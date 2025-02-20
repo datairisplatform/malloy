@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {composeSQLExpr, SourceDef} from '@datairis/malloy';
+import {composeSQLExpr, SourceDef} from '@malloydata/malloy';
 import {fToQF} from '../util';
 
 // will it build?

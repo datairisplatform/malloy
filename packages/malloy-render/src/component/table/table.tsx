@@ -16,7 +16,7 @@ import {
   DataArrayOrRecord,
   DataRecord,
   Field,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 import {getRangeSize, isFirstChild, isLastChild} from '../util';
 import {getTableLayout} from './table-layout';
 import {useResultContext} from '../result-context';

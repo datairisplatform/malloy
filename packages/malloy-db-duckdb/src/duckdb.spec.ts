@@ -23,8 +23,8 @@
 
 import {DuckDBCommon} from './duckdb_common';
 import {DuckDBConnection} from './duckdb_connection';
-import {SQLSourceDef, StructDef, mkArrayDef} from '@datairis/malloy';
-import {describeIfDatabaseAvailable} from '@datairis/malloy/test';
+import {SQLSourceDef, StructDef, mkArrayDef} from '@malloydata/malloy';
+import {describeIfDatabaseAvailable} from '@malloydata/malloy/test';
 
 const [describe] = describeIfDatabaseAvailable(['duckdb']);
 

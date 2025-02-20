@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {DataColumn, Explore, Field} from '@datairis/malloy';
+import {DataColumn, Explore, Field} from '@malloydata/malloy';
 import {HTMLTextRenderer} from './text';
 import {BytesRenderOptions, StyleDefaults} from './data_styles';
 import {RendererOptions} from './renderer_types';

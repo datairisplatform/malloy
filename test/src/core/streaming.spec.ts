@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {CSVWriter, DataRecord, JSONWriter, WriteStream} from '@datairis/malloy';
+import {CSVWriter, DataRecord, JSONWriter, WriteStream} from '@malloydata/malloy';
 import {RuntimeList} from '../runtimes';
 import {describeIfDatabaseAvailable} from '../util';
 

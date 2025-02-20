@@ -29,8 +29,8 @@ import {
   QueryDataRow,
   QueryOptionsReader,
   RunSQLOptions,
-} from '@datairis/malloy';
-import packageJson from '@datairis/malloy/package.json';
+} from '@malloydata/malloy';
+import packageJson from '@malloydata/malloy/package.json';
 
 export interface DuckDBConnectionOptions extends ConnectionConfig {
   additionalExtensions?: string[];

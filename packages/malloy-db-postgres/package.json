@@ -1,5 +1,5 @@
 {
-  "name": "@datairis/db-postgres",
+  "name": "@malloydata/db-postgres",
   "version": "0.0.10",
   "license": "MIT",
   "main": "dist/index.js",
@@ -22,7 +22,7 @@
     "prepublishOnly": "npm run build"
   },
   "dependencies": {
-    "@datairis/malloy": "^0.0.10",
+    "@malloydata/malloy": "^0.0.10",
     "@types/pg": "^8.6.1",
     "pg": "^8.7.1",
     "pg-query-stream": "4.2.3"

@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {DataColumn, Explore, Field} from '@datairis/malloy';
+import {DataColumn, Explore, Field} from '@malloydata/malloy';
 import {HTMLCartesianChartRenderer} from './cartesian_chart';
 import {LineChartRenderOptions, StyleDefaults} from './data_styles';
 import {RendererFactory} from './renderer_factory';

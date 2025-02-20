@@ -21,10 +21,10 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {ModelMaterializer} from '@datairis/malloy';
+import {ModelMaterializer} from '@malloydata/malloy';
 import {RuntimeList, runtimeFor} from '../runtimes';
 import {describeIfDatabaseAvailable} from '../util';
-import {HTMLView} from '@datairis/render';
+import {HTMLView} from '@malloydata/render';
 import {JSDOM} from 'jsdom';
 
 async function runUnsupportedRenderTest(

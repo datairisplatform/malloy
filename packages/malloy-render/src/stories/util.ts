@@ -1,7 +1,7 @@
 import {LoaderFunction, Args} from '@storybook/types';
 import {HtmlRenderer} from '@storybook/html';
-import {SingleConnectionRuntime} from '@datairis/malloy';
-import {DuckDBWASMConnection} from '@datairis/db-duckdb/wasm';
+import {SingleConnectionRuntime} from '@malloydata/malloy';
+import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
 import {HTMLView} from '../html';
 import {RendererOptions} from '../html/renderer_types';
 

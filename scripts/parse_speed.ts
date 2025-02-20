@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {Connection, Malloy} from '@datairis/malloy';
+import {Connection, Malloy} from '@malloydata/malloy';
 import {DuckDBConnection} from '../packages/malloy-db-duckdb';
 import {readFile} from 'fs/promises';
 import {readFileSync} from 'fs';

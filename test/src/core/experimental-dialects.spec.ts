@@ -27,10 +27,10 @@ import {
   MalloyError,
   SQLSourceDef,
   registerDialect,
-} from '@datairis/malloy';
+} from '@malloydata/malloy';
 import {testRuntimeFor} from '../runtimes';
 import '../util/db-jest-matchers';
-import {DuckDBConnection} from '@datairis/db-duckdb';
+import {DuckDBConnection} from '@malloydata/db-duckdb';
 
 const envDatabases = (
   process.env['MALLOY_DATABASES'] ||
