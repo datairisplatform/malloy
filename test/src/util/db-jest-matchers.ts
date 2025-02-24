@@ -118,6 +118,7 @@ expect.extend({
     runtime: Runner,
     shouldEqual: ExpectedResult
   ) {
+
     // TODO -- THIS IS NOT OK BUT I AM NOT FIXING IT NOW
     if (querySrc.indexOf('nest:') >= 0) {
       if (

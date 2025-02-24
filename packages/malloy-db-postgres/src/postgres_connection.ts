@@ -212,7 +212,7 @@ export class PostgresConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `Error fetching schema for ${sqlRef.name}: ${error}`;
+      return `P Error fetching schema for ${sqlRef.name}: ${error}`;
     }
     return structDef;
   }
@@ -273,7 +273,7 @@ export class PostgresConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `Error fetching schema for ${tablePath}: ${error.message}`;
+      return `P Error fetching schema for ${tablePath}: ${error.message}`;
     }
     return structDef;
   }
