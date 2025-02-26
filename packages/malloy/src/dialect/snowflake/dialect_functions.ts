@@ -74,27 +74,27 @@ export const SNOWFLAKE_DIALECT_FUNCTIONS: DefinitionBlueprintMap = {
   string_agg,
   string_agg_distinct,
   stddev: {
-    takes: {'value': {dimension: T}},
+    takes: {'value': 'number'},
     returns: {measure: 'number'},
     impl: {function: 'STDDEV'},
   },
   stddev_pop: {
-    takes: {'value': {dimension: T}},
+    takes: {'value': 'number'},
     returns: {measure: 'number'},
     impl: {function: 'STDDEV_POP'},
   },
   var_pop: {
-    takes: {'value': {dimension: T}},
+    takes: {'value': 'number'},
     returns: {measure: 'number'},
     impl: {function: 'VARIANCE_POP'},
   },
   var_samp: {
-    takes: {'value': {dimension: T}},
+    takes: {'value': 'number'},
     returns: {measure: 'number'},
     impl: {function: 'VARIANCE_SAMP'},
   },
   variance: {
-    takes: {'value': {dimension: T}},
+    takes: {'value': 'number'},
     returns: {measure: 'number'},
     impl: {function: 'VARIANCE'},
   },
