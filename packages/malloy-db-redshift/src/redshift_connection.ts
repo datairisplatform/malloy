@@ -206,17 +206,24 @@ export class RedshiftConnection
   ): Promise<SQLSourceDef | string> {
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
-    const infoQuery = `
-      drop table if exists ${tempTableName};
-      create temp table ${tempTableName} as SELECT * FROM (
-        ${sqlRef.selectStr}
-      ) as x where false;
-      SELECT column_name, c.data_type, e.data_type as element_type
-      FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-        ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-          = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-      where table_name='${tempTableName}';
-    `;
+    const infoQuery = [
+      `DROP TABLE IF EXISTS ${tempTableName};`,
+      `CREATE TEMP TABLE ${tempTableName} AS ${sqlRef.selectStr};`,
+      `SELECT type as "data_type", "column" as "col_name"
+      FROM pg_table_def
+      WHERE tablename = '${tempTableName}';
+      `,
+    ];
+    //   drop table if exists ${tempTableName};
+    //   create temp table ${tempTableName} as SELECT * FROM (
+    //     ${sqlRef.selectStr}
+    //   ) as x where false;
+    //   SELECT column_name, c.data_type, e.data_type as element_type
+    //   FROM information_schema.columns c LEFT JOIN information_schema.element_types e
+    //     ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
+    //       = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
+    //   where table_name='${tempTableName}';
+    // `;
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
@@ -226,10 +233,11 @@ export class RedshiftConnection
   }
 
   private async schemaFromQuery(
-    infoQuery: string,
+    infoQuery: string | string[],
     structDef: StructDef
   ): Promise<void> {
     const {rows, totalRows} = await this.runSQL(infoQuery);
+    console.log('BRIAN schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -285,23 +293,27 @@ export class RedshiftConnection
   }
 
   public async runSQL(
-    sql: string,
+    sql: string | string[],
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    // Redshift
-    // todo make default schema configurable
-    const sqlArray = ['SET search_path TO malloytest;', sql];
+    // add statement in beginning of query to set the default schema/db
+    const sqlArray = ['SET search_path TO malloytest;'];
+    if (Array.isArray(sql)) {
+      sqlArray.push(...sql);
+    } else {
+      sqlArray.push(sql);
+    }
     // Initiate RedshiftData client
     const client = new RedshiftDataClient({region: 'us-west-1'});
 
     try {
       // Execute all SQL statements in batch
       // so they share the same context
-      // if we don't do this, the "SET search_path" won't affect the 2nd query
+      // if we don't do this, the "SET search_path" won't affect the following queries
       const batchExecuteCommand = new BatchExecuteStatementCommand({
-        WorkgroupName: 'default-workgroup', // Replace with your serverless workgroup name
-        Database: 'dev', // Replace with your database name
+        WorkgroupName: 'default-workgroup', //todo make configurable
+        Database: 'dev', // todo make configurable
         SecretArn:
           'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
         Sqls: sqlArray,
@@ -346,7 +358,6 @@ export class RedshiftConnection
           result = await client.send(resultCommand);
         }
       } else {
-        console.log(`Batch query failed with status: ${status}`);
         throw new Error(
           `Batch query did not finish successfully. Status: ${status}`
         );
@@ -375,9 +386,7 @@ export class RedshiftConnection
         totalRows: result?.TotalNumRows ?? 0,
       };
     } catch (error) {
-      console.log('Error executing Redshift batch query:', error);
-      console.log('SQL that caused error:', sqlArray);
-      throw new Error(`Error executing batch query: ${error}`);
+      throw new Error(`Error executing sql: ${sqlArray} batch query: ${error}`);
     }
 
     return {
