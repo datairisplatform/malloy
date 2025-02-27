@@ -230,7 +230,6 @@ export class RedshiftConnection
     structDef: StructDef
   ): Promise<void> {
     const {rows, totalRows} = await this.runSQL(infoQuery);
-    console.log('BRIAN table schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -333,7 +332,7 @@ export class RedshiftConnection
 
       // If the batch finished successfully, fetch the results of the last statement
       if (status === 'FINISHED') {
-        console.log('BRIAN final status check:', statusResponse);
+        // console.log('BRIAN final status check:', statusResponse);
         // Get the last statement's ID from the batch
         const lastStatementId =
           statusResponse.SubStatements?.[
