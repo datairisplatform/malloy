@@ -35,6 +35,7 @@ import {
   PersistSQLResults,
   PooledConnection,
   PostgresDialect,
+  RedshiftDialect,
   QueryData,
   QueryDataRow,
   QueryOptionsReader,
@@ -60,7 +61,7 @@ import {
   BatchExecuteStatementCommand,
 } from '@aws-sdk/client-redshift-data';
 
-interface PostgresConnectionConfiguration {
+interface RedshiftConnectionConfiguration {
   host?: string;
   port?: number;
   username?: string;
@@ -69,16 +70,16 @@ interface PostgresConnectionConfiguration {
   connectionString?: string;
 }
 
-type PostgresConnectionConfigurationReader =
-  | PostgresConnectionConfiguration
-  | (() => Promise<PostgresConnectionConfiguration>);
+type RedshiftConnectionConfigurationReader =
+  | RedshiftConnectionConfiguration
+  | (() => Promise<RedshiftConnectionConfiguration>);
 
 const DEFAULT_PAGE_SIZE = 1000;
 const SCHEMA_PAGE_SIZE = 1000;
 
-export interface PostgresConnectionOptions
+export interface RedshiftConnectionOptions
   extends ConnectionConfig,
-    PostgresConnectionConfiguration {}
+    RedshiftConnectionConfiguration {}
 
 export class RedshiftConnection
   extends BaseConnection
@@ -86,23 +87,23 @@ export class RedshiftConnection
 {
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
-  private configReader: PostgresConnectionConfigurationReader = {};
+  private configReader: RedshiftConnectionConfigurationReader = {};
 
-  private readonly dialect = new PostgresDialect();
+  private readonly dialect = new RedshiftDialect();
 
   constructor(
-    options: PostgresConnectionOptions,
+    options: RedshiftConnectionOptions,
     queryOptionsReader?: QueryOptionsReader
   );
   constructor(
     name: string,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader
   );
   constructor(
-    arg: string | PostgresConnectionOptions,
+    arg: string | RedshiftConnectionOptions,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader
   ) {
     super();
     if (typeof arg === 'string') {
@@ -128,7 +129,7 @@ export class RedshiftConnection
     }
   }
 
-  protected async readConfig(): Promise<PostgresConnectionConfiguration> {
+  protected async readConfig(): Promise<RedshiftConnectionConfiguration> {
     if (this.configReader instanceof Function) {
       return this.configReader();
     } else {
@@ -137,7 +138,7 @@ export class RedshiftConnection
   }
 
   get dialectName(): string {
-    return 'postgres';
+    return 'redshift';
   }
 
   public isPool(): this is PooledConnection {
@@ -444,18 +445,18 @@ export class PooledPostgresConnection
   private _pool: Pool | undefined;
 
   constructor(
-    options: PostgresConnectionOptions,
+    options: RedshiftConnectionOptions,
     queryOptionsReader?: QueryOptionsReader
   );
   constructor(
     name: string,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader
   );
   constructor(
-    arg: string | PostgresConnectionOptions,
+    arg: string | RedshiftConnectionOptions,
     queryOptionsReader?: QueryOptionsReader,
-    configReader?: PostgresConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader
   ) {
     if (typeof arg === 'string') {
       super(arg, queryOptionsReader, configReader);
