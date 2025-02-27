@@ -22,6 +22,6 @@
  */
 
 export {
-  RedshiftConnection as PostgresConnection,
+  RedshiftConnection as RedshiftConnection,
   PooledPostgresConnection,
 } from './redshift_connection';

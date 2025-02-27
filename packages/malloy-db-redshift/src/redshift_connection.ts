@@ -57,6 +57,7 @@ import {
   ExecuteStatementCommand,
   DescribeStatementCommand,
   GetStatementResultCommand,
+  BatchExecuteStatementCommand,
 } from '@aws-sdk/client-redshift-data';
 
 interface PostgresConnectionConfiguration {
@@ -219,7 +220,7 @@ export class RedshiftConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `Error fetching schema for ${sqlRef.name}: ${error}`;
+      return `Error fetching SELECTschema for ${sqlRef.name}: ${error}`;
     }
     return structDef;
   }
@@ -228,12 +229,8 @@ export class RedshiftConnection
     infoQuery: string,
     structDef: StructDef
   ): Promise<void> {
-    const {rows, totalRows} = await this.runPostgresQuery(
-      infoQuery,
-      SCHEMA_PAGE_SIZE,
-      0,
-      false
-    );
+    const {rows, totalRows} = await this.runSQL(infoQuery);
+    console.log('BRIAN table schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -259,7 +256,7 @@ export class RedshiftConnection
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
-      dialect: 'postgres',
+      dialect: 'redshift',
       tablePath,
       connection: this.name,
       fields: [],
@@ -268,19 +265,14 @@ export class RedshiftConnection
     if (table === undefined) {
       return 'Default schema not yet supported in Postgres';
     }
-    const infoQuery = `
-      SELECT column_name, c.data_type, e.data_type as element_type
-      FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-        ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-          = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-        WHERE table_name = '${table}'
-          AND table_schema = '${schema}'
-    `;
+    const infoQuery = `SELECT type as "data_type", "column" as "col_name"
+      FROM pg_table_def
+      WHERE tablename = '${table}';`;
 
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `Error fetching schema for ${tablePath}: ${error.message}`;
+      return `Error fetching TABLE schema for ${tablePath}: ${error.message}`;
     }
     return structDef;
   }
@@ -296,110 +288,103 @@ export class RedshiftConnection
   public async runSQL(
     sql: string,
     {rowLimit}: RunSQLOptions = {},
-    rowIndex = 0
+    _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    //const config = await this.readQueryConfig();
-
     // Redshift
-
+    // todo make default schema configurable
+    const sqlArray = ['SET search_path TO malloytest;', sql];
     // Initiate RedshiftData client
     const client = new RedshiftDataClient({region: 'us-west-1'});
 
     try {
-      console.log('BRIAN Executing query:', sql);
-      // Execute the SQL statement
-      const executeCommand = new ExecuteStatementCommand({
+      // Execute all SQL statements in batch
+      // so they share the same context
+      // if we don't do this, the "SET search_path" won't affect the 2nd query
+      const batchExecuteCommand = new BatchExecuteStatementCommand({
         WorkgroupName: 'default-workgroup', // Replace with your serverless workgroup name
         Database: 'dev', // Replace with your database name
         SecretArn:
           'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
-        Sql: 'SELECT 1', // Your SQL query
+        Sqls: sqlArray,
       });
-      const executeResponse = await client.send(executeCommand);
-      const statementId = executeResponse.Id;
-      console.log('Executing statement with ID:', statementId);
 
-      // Wait for the query to complete
+      const batchResponse = await client.send(batchExecuteCommand);
+      const batchId = batchResponse.Id;
+
+      // Wait for all queries to complete
       let status: string | undefined;
+      let result;
+      let statusResponse;
       do {
         // Pause for 1 second between status checks
         await new Promise(resolve => setTimeout(resolve, 1000));
 
-        const describeCommand = new DescribeStatementCommand({Id: statementId});
-        const statusResponse = await client.send(describeCommand);
+        const describeCommand = new DescribeStatementCommand({
+          Id: batchId,
+        });
+        statusResponse = await client.send(describeCommand);
+
         status = statusResponse.Status;
-        console.log('Current status:', status);
       } while (
         status !== 'FINISHED' &&
         status !== 'FAILED' &&
         status !== 'ABORTED'
       );
 
-      // If the query finished successfully, fetch the results
+      // If the batch finished successfully, fetch the results of the last statement
       if (status === 'FINISHED') {
-        const resultCommand = new GetStatementResultCommand({Id: statementId});
-        const resultResponse = await client.send(resultCommand);
-        console.log('Query results:');
-        resultResponse.Records?.forEach((record, index) => {
-          console.log(`Record ${index + 1}:`, record);
-        });
+        console.log('BRIAN final status check:', statusResponse);
+        // Get the last statement's ID from the batch
+        const lastStatementId =
+          statusResponse.SubStatements?.[
+            statusResponse.SubStatements.length - 1
+          ].Id;
 
-        console.log(
-          'BRIAN resultResponse.ColumnMetadata:',
-          resultResponse.ColumnMetadata
-        );
-
-        // rows:
-        // Redshift's resultResponse.Records format: [ [ { columnType: 1 } ] ]
-        // we need to convert to expected rows format: [ { 'columnName': 1 } ]
-        // the actual columns names are stored separately in resultResponse.ColumnMetadata
-
-        console.log('BRIAN test:', resultResponse.Records?.[0]?.[0]?.longValue);
-
-        return {
-          rows:
-            resultResponse.Records?.map(record => {
-              const row: QueryDataRow = {};
-              record.forEach((field, index) => {
-                // Extract the first non-null value (longValue, stringValue etc)
-                const value =
-                  field.longValue ??
-                  field.stringValue ??
-                  field.doubleValue ??
-                  null;
-                console.log(
-                  'BRIAN curr col: ',
-                  resultResponse.ColumnMetadata?.[index]?.name
-                );
-                let key = resultResponse.ColumnMetadata?.[index]?.name ?? '';
-                if (key === '?column?') {
-                  // this can happen on SELECT 1 when there's no obvious column
-                  key = (index + 1).toString();
-                }
-                row[key] = value;
-              });
-              return row;
-            }) ?? [],
-          totalRows: resultResponse.TotalNumRows ?? 0,
-        };
+        if (lastStatementId) {
+          const resultCommand = new GetStatementResultCommand({
+            Id: lastStatementId,
+          });
+          result = await client.send(resultCommand);
+        }
       } else {
-        console.error('Query did not finish successfully. Status:', status);
+        console.log(`Batch query failed with status: ${status}`);
+        throw new Error(
+          `Batch query did not finish successfully. Status: ${status}`
+        );
       }
+
+      return {
+        rows:
+          result?.Records?.map(record => {
+            const row: QueryDataRow = {};
+            record.forEach((field, index) => {
+              // Extract the first non-null value (longValue, stringValue etc)
+              const value =
+                field.longValue ??
+                field.stringValue ??
+                field.doubleValue ??
+                null;
+              let key = result?.ColumnMetadata?.[index]?.name ?? '';
+              if (key === '?column?') {
+                // this can happen on SELECT 1 when there's no obvious column
+                key = (index + 1).toString();
+              }
+              row[key] = value;
+            });
+            return row;
+          }) ?? [],
+        totalRows: result?.TotalNumRows ?? 0,
+      };
     } catch (error) {
-      console.error('Error executing query:', error);
+      console.log('Error executing Redshift batch query:', error);
+      console.log('SQL that caused error:', sqlArray);
+      throw new Error(`Error executing batch query: ${error}`);
     }
 
     return {
       rows: [{'-1': -1}],
       totalRows: 0,
     };
-
-    // return this.runPostgresQuery(
-    //   sql,
-    //   rowLimit ?? config.rowLimit ?? DEFAULT_PAGE_SIZE,
-    //   rowIndex,
-    //   true
-    // );
   }
 
   public async *runSQLStream(

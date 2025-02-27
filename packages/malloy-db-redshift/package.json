@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/db-postgres",
+  "name": "@malloydata/db-redshift",
   "version": "0.0.236",
   "license": "MIT",
   "main": "dist/index.js",

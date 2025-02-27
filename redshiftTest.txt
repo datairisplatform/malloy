@@ -1,0 +1,187 @@
+
+> malloy@0.0.1 test
+> jest --runInBand nomodel
+
+  console.log
+    BRIAN fianl status check: {
+      '$metadata': {
+        httpStatusCode: 200,
+        requestId: '8500a17a-2673-4ddd-9e96-c4247353509f',
+        extendedRequestId: undefined,
+        cfId: undefined,
+        attempts: 1,
+        totalRetryDelay: 0
+      },
+      CreatedAt: 2025-02-27T01:12:43.949Z,
+      Database: 'dev',
+      Duration: 139786162,
+      HasResultSet: true,
+      Id: '125f3f9d-274d-4d21-bfb5-efe25180075f',
+      RedshiftPid: 1073758311,
+      RedshiftQueryId: 0,
+      ResultFormat: 'json',
+      ResultRows: -1,
+      ResultSize: -1,
+      SecretArn: 'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
+      Status: 'FINISHED',
+      SubStatements: [
+        {
+          CreatedAt: 2025-02-27T01:12:44.084Z,
+          Duration: 45022814,
+          HasResultSet: false,
+          Id: '125f3f9d-274d-4d21-bfb5-efe25180075f:1',
+          QueryString: 'SET search_path TO malloytest;',
+          RedshiftQueryId: 0,
+          ResultRows: 0,
+          ResultSize: 0,
+          Status: 'FINISHED',
+          UpdatedAt: 2025-02-27T01:12:44.436Z
+        },
+        {
+          CreatedAt: 2025-02-27T01:12:44.087Z,
+          Duration: 94763348,
+          HasResultSet: true,
+          Id: '125f3f9d-274d-4d21-bfb5-efe25180075f:2',
+          QueryString: 'SELECT type as "data_type", "column" as "col_name"\n' +
+            '      FROM pg_table_def\n' +
+            "      WHERE tablename = 'aircraft';",
+          RedshiftQueryId: 0,
+          ResultRows: 25,
+          ResultSize: 689,
+          Status: 'FINISHED',
+          UpdatedAt: 2025-02-27T01:12:44.654Z
+        }
+      ],
+      UpdatedAt: 2025-02-27T01:12:44.715Z,
+      WorkgroupName: 'default-workgroup'
+    }
+
+      at _callee10$ (packages/malloy-db-redshift/src/redshift_connection.ts:336:17)
+
+  console.log
+    BRIAN table schema rows: [
+      { data_type: 'bigint', col_name: 'id' },
+      { data_type: 'character varying(256)', col_name: 'tail_num' },
+      { data_type: 'character varying(256)', col_name: 'aircraft_serial' },
+      {
+        data_type: 'character varying(256)',
+        col_name: 'aircraft_model_code'
+      },
+      {
+        data_type: 'character varying(256)',
+        col_name: 'aircraft_engine_code'
+      },
+      { data_type: 'bigint', col_name: 'year_built' },
+      { data_type: 'bigint', col_name: 'aircraft_type_id' },
+      { data_type: 'bigint', col_name: 'aircraft_engine_type_id' },
+      { data_type: 'bigint', col_name: 'registrant_type_id' },
+      { data_type: 'character varying(256)', col_name: 'name' },
+      { data_type: 'character varying(256)', col_name: 'address1' },
+      { data_type: 'character varying(256)', col_name: 'address2' },
+      { data_type: 'character varying(256)', col_name: 'city' },
+      { data_type: 'character varying(256)', col_name: 'state' },
+      { data_type: 'character varying(256)', col_name: 'zip' },
+      { data_type: 'character varying(256)', col_name: 'region' },
+      { data_type: 'character varying(256)', col_name: 'county' },
+      { data_type: 'character varying(256)', col_name: 'country' },
+      { data_type: 'character varying(256)', col_name: 'certification' },
+      { data_type: 'character varying(256)', col_name: 'status_code' },
+      { data_type: 'character varying(256)', col_name: 'mode_s_code' },
+      { data_type: 'character varying(256)', col_name: 'fract_owner' },
+      { data_type: 'date', col_name: 'last_action_date' },
+      { data_type: 'date', col_name: 'cert_issue_date' },
+      { data_type: 'date', col_name: 'air_worth_date' }
+    ]
+
+      at RedshiftTestConnection._callee6$ (packages/malloy-db-redshift/src/redshift_connection.ts:233:13)
+
+FAIL test/src/databases/all/nomodel.spec.ts (14.192 s)
+  ✕ parenthesize output field values - redshift (2065 ms)
+  ○ skipped bug 151 which used to throw unknown dialect is still fixed- redshift
+  ○ skipped refine query from query - redshift
+  ○ skipped source- not -found  - redshift
+  ○ skipped join_many - redshift
+  ○ skipped join_many condition no primary key - redshift
+  ○ skipped join_many filter multiple values - redshift
+  ○ skipped join_one condition no primary key - redshift
+  ○ skipped join_one filter multiple values - redshift
+  ○ skipped join_many cross from  - redshift
+  ○ skipped join_one only  - redshift
+  ○ skipped join_many cross ON  - redshift
+  ○ skipped limit - provided - redshift
+  ○ skipped join inner- redshift
+  ○ skipped join left - redshift
+  ○ skipped join right - redshift
+  ○ skipped join full - redshift
+  ○ skipped leafy count - redshift
+  ○ skipped nest/unnest -basic - redshift
+  ○ skipped count at root should not use distinct key - redshift
+  ○ skipped leafy nested count - redshift
+  ○ skipped basic index - redshift
+  ○ skipped number as null 2 - redshift
+  ○ skipped sql block- redshift
+  ○ skipped avg ignore null- redshift
+  ○ skipped limit - not provided - redshift
+  ○ skipped ungrouped top level - redshift
+  ○ skipped ungrouped top level with nested  - redshift
+  ○ skipped ungrouped - eliminate rows  - redshift
+  ○ skipped ungrouped nested with no grouping above - redshift
+  ○ skipped ungrouped - partial grouping - redshift
+  ○ skipped ungrouped - all nested - redshift
+  ○ skipped ungrouped nested  - redshift
+  ○ skipped ungrouped nested expression  - redshift
+  ○ skipped ungrouped nested group by float  - redshift
+  ○ skipped run simple sql - redshift
+  ○ skipped simple sql is exactly as written - redshift
+  ○ skipped source from query defined as sql query - redshift
+  ○ skipped source from query defined as other query - redshift
+  ○ skipped all with parameters - basic  - redshift
+  ○ skipped all with parameters - nest  - redshift
+  ○ skipped single value to udf - redshift
+  ○ skipped Multi value to udf - redshift
+  ○ skipped Multi value to udf group by - redshift
+  ○ skipped sql as source - redshift
+  ○ skipped sql directly - redshift
+  ○ skipped sql with turducken- redshift
+  ○ skipped local declarations external query - redshift
+  ○ skipped local declarations named query - redshift
+  ○ skipped local declarations refined named query - redshift
+  ○ skipped regexp match- redshift
+  ○ skipped substitution precedence- redshift
+  ○ skipped array unnest - redshift
+  ○ skipped array unnest x 2 - redshift
+  ○ skipped can unnest simply from file - redshift
+  ○ skipped can unnest from file - redshift
+  ○ skipped can double unnest - redshift
+  ○ skipped nest null - redshift
+  ○ skipped Nested pipelines sort properly - redshift
+  ○ skipped number as null- redshift
+  ○ skipped removes surpuflous order_by - solo aggregates - redshift
+  ○ skipped removes surpuflous order_by - pipeline - redshift
+  ○ skipped removes surpuflous order_by - joined_query - redshift
+  ○ skipped removes surpuflous order_by - joined_query pipeline - redshift
+  quoting and strings
+    ○ skipped backslash quote
+    ○ skipped backslash backslash
+    ○ skipped source with reserve word
+    ○ skipped spaces in names
+
+  ● parenthesize output field values - redshift
+
+    Could not prepare query to run: Unknown Dialect redshift
+
+      78 |           zero_paren is 0 - (zero)
+      79 |       }
+    > 80 |     `).malloyResultMatches(runtime, {zero_bare: 0, zero_paren: 0});
+         |        ^
+      81 |   });
+      82 |
+      83 |   // Issue: #151
+
+      at Object.<anonymous> (test/src/databases/all/nomodel.spec.ts:80:8)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 67 skipped, 68 total
+Snapshots:   0 total
+Time:        14.261 s
+Ran all test suites matching /nomodel/i.
