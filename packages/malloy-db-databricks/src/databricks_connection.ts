@@ -276,12 +276,32 @@ export class DatabricksConnection
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    const {rows, totalRows} = await this.runRawSQL(
-      [sql],
-      {rowLimit},
-      _rowIndex
-    );
-    const actualResult = rows.map(row =>
+    const config = await this.readQueryConfig();
+
+    await this.connecting; // Wait for connection to be established
+    if (!this.client || !this.session) {
+      throw new Error('Databricks connection not established');
+    }
+
+    const sqlWithDefaultCatalog = [
+      `USE CATALOG ${this.config.defaultCatalog}`,
+      sql,
+    ];
+
+    let result: QueryDataRow[] = [];
+    for (let i = 0; i < sqlWithDefaultCatalog.length; i++) {
+      const queryOperation = await this.session.executeStatement(
+        sqlWithDefaultCatalog[i],
+        {
+          runAsync: true,
+        }
+      );
+      result = (await queryOperation.fetchAll()) as QueryDataRow[];
+      await queryOperation.close();
+    }
+
+    // Extract actual result from Databricks response
+    const actualResult = result.map(row =>
       row['row'] ? JSON.parse(String(row['row'])) : row
     );
     return {rows: actualResult, totalRows};

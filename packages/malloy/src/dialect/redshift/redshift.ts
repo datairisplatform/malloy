@@ -64,36 +64,33 @@ const inSeconds: Record<string, number> = {
 };
 
 const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
-  'character varying': {type: 'string'},
-  'name': {type: 'string'},
-  'text': {type: 'string'},
-  'date': {type: 'date'},
+  'smallint': {type: 'number', numberType: 'integer'},
   'integer': {type: 'number', numberType: 'integer'},
   'bigint': {type: 'number', numberType: 'integer'},
-  'double precision': {type: 'number', numberType: 'float'},
-  'timestamp without time zone': {type: 'timestamp'}, // maybe not
-  'oid': {type: 'string'},
-  'boolean': {type: 'boolean'},
-  // ARRAY: "string",
-  'timestamp': {type: 'timestamp'},
-  '"char"': {type: 'string'},
-  'character': {type: 'string'},
-  'smallint': {type: 'number', numberType: 'integer'},
-  'xid': {type: 'string'},
+  'decimal': {type: 'number', numberType: 'float'},
   'real': {type: 'number', numberType: 'float'},
-  'interval': {type: 'string'},
-  'inet': {type: 'string'},
-  'regtype': {type: 'string'},
-  'numeric': {type: 'number', numberType: 'float'},
-  'bytea': {type: 'string'},
-  'pg_ndistinct': {type: 'number', numberType: 'integer'},
+  'double precision': {type: 'number', numberType: 'float'},
+  'char': {type: 'string'},
   'varchar': {type: 'string'},
+  'date': {type: 'date'},
+  'time': {type: 'timestamp'}, //?
+  'timetz': {type: 'timestamp'}, //?
+  'timestamp': {type: 'timestamp'},
+  'timestamptz': {type: 'timestamp'}, // maybe not
+  'interval year to month': {type: 'string'}, //?
+  'interval day to second': {type: 'string'}, //?
+  'boolean': {type: 'boolean'},
+  'hllsketch': {type: 'string'}, //?
+  'super': {type: 'string'}, //?
+  'varbyte': {type: 'string'}, //?
+  'geography': {type: 'string'}, //?
+  'geometry': {type: 'string'}, //?
 };
 
 export class RedshiftDialect extends PostgresBase {
   name = 'redshift';
   defaultNumberType = 'DOUBLE PRECISION';
-  defaultDecimalType = 'NUMERIC';
+  defaultDecimalType = 'DECIMAL';
   udfPrefix = 'pg_temp.__udf';
   hasFinalStage = true;
   divisionIsInteger = true;
