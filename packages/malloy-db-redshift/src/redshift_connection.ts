@@ -205,6 +205,7 @@ export class RedshiftConnection
   async fetchSelectSchema(
     sqlRef: SQLSourceDef
   ): Promise<SQLSourceDef | string> {
+    console.log('BRIAN fetching SELECT schema');
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
     const infoQuery = [
@@ -228,7 +229,8 @@ export class RedshiftConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      return `Error fetching SELECTschema for ${sqlRef.name}: ${error}`;
+      const queries = infoQuery.join('\n');
+      return `Error fetching SELECT schema for \n ${queries}: \n ${error}`;
     }
     return structDef;
   }
@@ -261,6 +263,7 @@ export class RedshiftConnection
     tableKey: string,
     tablePath: string
   ): Promise<TableSourceDef | string> {
+    console.log('BRIAN fetching TABLE schema');
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
@@ -427,9 +430,13 @@ export class RedshiftConnection
     const hash = crypto.createHash('md5').update(sqlCommand).digest('hex');
     const tableName = `tt${hash}`;
 
-    const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
-    // console.log(cmd);
-    await this.runPostgresQuery(cmd, 1000, 0, false);
+    const cmd = [
+      `DROP TABLE IF EXISTS ${tableName};`,
+      `CREATE TEMP TABLE ${tableName} AS ${sqlCommand};`,
+    ];
+    // const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
+    console.log(cmd);
+    await this.runSQL(cmd);
     return tableName;
   }
 
