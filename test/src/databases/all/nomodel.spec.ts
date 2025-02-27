@@ -67,7 +67,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
   const q = runtime.getQuoter();
 
   // Issue: #1284
-  it.only(`parenthesize output field values - ${databaseName}`, async () => {
+  it(`parenthesize output field values - ${databaseName}`, async () => {
     await expect(`
       run: ${databaseName}.table('malloytest.aircraft') -> {
         group_by: r is 1.0
