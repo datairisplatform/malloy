@@ -272,13 +272,19 @@ export class DatabricksConnection
       throw new Error('Databricks connection not established');
     }
 
-    const sqlWithDefaultCatalog = [`USE CATALOG ${this.config.defaultCatalog}`, sql]
+    const sqlWithDefaultCatalog = [
+      `USE CATALOG ${this.config.defaultCatalog}`,
+      sql,
+    ];
 
     let result: QueryDataRow[] = [];
     for (let i = 0; i < sqlWithDefaultCatalog.length; i++) {
-      const queryOperation = await this.session.executeStatement(sqlWithDefaultCatalog[i], {
-        runAsync: true,
-      });
+      const queryOperation = await this.session.executeStatement(
+        sqlWithDefaultCatalog[i],
+        {
+          runAsync: true,
+        }
+      );
       result = (await queryOperation.fetchAll()) as QueryDataRow[];
       await queryOperation.close();
     }
