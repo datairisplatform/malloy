@@ -85,6 +85,7 @@ const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'varbyte': {type: 'string'}, //?
   'geography': {type: 'string'}, //?
   'geometry': {type: 'string'}, //?
+  'character varying': {type: 'string'},
 };
 
 export class RedshiftDialect extends PostgresBase {
@@ -92,7 +93,7 @@ export class RedshiftDialect extends PostgresBase {
   defaultNumberType = 'DOUBLE PRECISION';
   defaultDecimalType = 'DECIMAL';
   udfPrefix = 'pg_temp.__udf';
-  hasFinalStage = true;
+  hasFinalStage = false;
   divisionIsInteger = true;
   supportsSumDistinctFunction = false;
   unnestWithNumbers = false;
