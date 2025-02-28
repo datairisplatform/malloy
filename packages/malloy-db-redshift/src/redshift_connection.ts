@@ -205,13 +205,13 @@ export class RedshiftConnection
   async fetchSelectSchema(
     sqlRef: SQLSourceDef
   ): Promise<SQLSourceDef | string> {
-    console.log('BRIAN fetching SELECT schema');
+    //console.log('BRIAN fetching SELECT schema');
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
     const infoQuery = [
       `DROP TABLE IF EXISTS ${tempTableName};`,
       `CREATE TEMP TABLE ${tempTableName} AS ${sqlRef.selectStr};`,
-      `SELECT type as "data_type", "column" as "col_name"
+      `SELECT "column" as "column_name", type as "data_type", null as "comment"
       FROM pg_table_def
       WHERE tablename = '${tempTableName}';
       `,
@@ -240,7 +240,7 @@ export class RedshiftConnection
     structDef: StructDef
   ): Promise<void> {
     const {rows, totalRows} = await this.runSQL(infoQuery);
-    console.log('BRIAN schema rows:', rows);
+    // console.log('BRIAN schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -255,6 +255,7 @@ export class RedshiftConnection
       } else {
         const malloyType = this.dialect.sqlTypeToMalloyType(postgresDataType);
         structDef.fields.push({...malloyType, name});
+        //console.log('BRIAN structDef.fields', structDef.fields);
       }
     }
   }
@@ -263,7 +264,7 @@ export class RedshiftConnection
     tableKey: string,
     tablePath: string
   ): Promise<TableSourceDef | string> {
-    console.log('BRIAN fetching TABLE schema');
+    //console.log('BRIAN fetching TABLE schema');
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
@@ -276,7 +277,7 @@ export class RedshiftConnection
     if (table === undefined) {
       return 'Default schema not yet supported in Postgres';
     }
-    const infoQuery = `SELECT type as "data_type", "column" as "col_name"
+    const infoQuery = `SELECT "column" as "column_name", type as "data_type", null as "comment"
       FROM pg_table_def
       WHERE tablename = '${table}';`;
 
@@ -311,91 +312,78 @@ export class RedshiftConnection
     // Initiate RedshiftData client
     const client = new RedshiftDataClient({region: 'us-west-1'});
 
-    try {
-      // Execute all SQL statements in batch
-      // so they share the same context
-      // if we don't do this, the "SET search_path" won't affect the following queries
-      const batchExecuteCommand = new BatchExecuteStatementCommand({
-        WorkgroupName: 'default-workgroup', //todo make configurable
-        Database: 'dev', // todo make configurable
-        SecretArn:
-          'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
-        Sqls: sqlArray,
+    // Execute all SQL statements in batch
+    // so they share the same context
+    // if we don't do this, the "SET search_path" won't affect the following queries
+    const batchExecuteCommand = new BatchExecuteStatementCommand({
+      WorkgroupName: 'default-workgroup', //todo make configurable
+      Database: 'dev', // todo make configurable
+      SecretArn:
+        'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
+      Sqls: sqlArray,
+    });
+
+    const batchResponse = await client.send(batchExecuteCommand);
+    const batchId = batchResponse.Id;
+
+    // Wait for all queries to complete
+    let status: string | undefined;
+    let result;
+    let statusResponse;
+    do {
+      // Pause for 1 second between status checks
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      const describeCommand = new DescribeStatementCommand({
+        Id: batchId,
       });
+      statusResponse = await client.send(describeCommand);
 
-      const batchResponse = await client.send(batchExecuteCommand);
-      const batchId = batchResponse.Id;
+      status = statusResponse.Status;
+    } while (
+      status !== 'FINISHED' &&
+      status !== 'FAILED' &&
+      status !== 'ABORTED'
+    );
 
-      // Wait for all queries to complete
-      let status: string | undefined;
-      let result;
-      let statusResponse;
-      do {
-        // Pause for 1 second between status checks
-        await new Promise(resolve => setTimeout(resolve, 1000));
+    // If the batch finished successfully, fetch the results of the last statement
+    if (status === 'FINISHED') {
+      // console.log('BRIAN final status check:', statusResponse);
+      // Get the last statement's ID from the batch
+      const lastStatementId =
+        statusResponse.SubStatements?.[statusResponse.SubStatements.length - 1]
+          .Id;
 
-        const describeCommand = new DescribeStatementCommand({
-          Id: batchId,
+      if (lastStatementId) {
+        const resultCommand = new GetStatementResultCommand({
+          Id: lastStatementId,
         });
-        statusResponse = await client.send(describeCommand);
-
-        status = statusResponse.Status;
-      } while (
-        status !== 'FINISHED' &&
-        status !== 'FAILED' &&
-        status !== 'ABORTED'
-      );
-
-      // If the batch finished successfully, fetch the results of the last statement
-      if (status === 'FINISHED') {
-        // console.log('BRIAN final status check:', statusResponse);
-        // Get the last statement's ID from the batch
-        const lastStatementId =
-          statusResponse.SubStatements?.[
-            statusResponse.SubStatements.length - 1
-          ].Id;
-
-        if (lastStatementId) {
-          const resultCommand = new GetStatementResultCommand({
-            Id: lastStatementId,
-          });
-          result = await client.send(resultCommand);
-        }
-      } else {
-        throw new Error(
-          `Batch query did not finish successfully. Status: ${status}`
-        );
+        result = await client.send(resultCommand);
       }
-
-      return {
-        rows:
-          result?.Records?.map(record => {
-            const row: QueryDataRow = {};
-            record.forEach((field, index) => {
-              // Extract the first non-null value (longValue, stringValue etc)
-              const value =
-                field.longValue ??
-                field.stringValue ??
-                field.doubleValue ??
-                null;
-              let key = result?.ColumnMetadata?.[index]?.name ?? '';
-              if (key === '?column?') {
-                // this can happen on SELECT 1 when there's no obvious column
-                key = (index + 1).toString();
-              }
-              row[key] = value;
-            });
-            return row;
-          }) ?? [],
-        totalRows: result?.TotalNumRows ?? 0,
-      };
-    } catch (error) {
-      throw new Error(`Error executing sql: ${sqlArray} batch query: ${error}`);
+    } else {
+      throw new Error(
+        `Batch error: \n${JSON.stringify(statusResponse, null, 2)}`
+      );
     }
 
     return {
-      rows: [{'-1': -1}],
-      totalRows: 0,
+      rows:
+        result?.Records?.map(record => {
+          const row: QueryDataRow = {};
+          record.forEach((field, index) => {
+            // Extract the first non-null value (longValue, stringValue etc)
+            const value =
+              field.longValue ?? field.stringValue ?? field.doubleValue ?? null;
+            let key = result?.ColumnMetadata?.[index]?.name ?? '';
+            if (key === '?column?') {
+              // this can happen on SELECT 1 when there's no obvious column
+              key = (index + 1).toString();
+            }
+            row[key] = value;
+          });
+          return row;
+        }) ?? [],
+      totalRows: result?.TotalNumRows ?? 0,
     };
   }
 
