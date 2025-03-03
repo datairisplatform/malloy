@@ -118,7 +118,23 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   sqlGroupSetTable(groupSetCount: number): string {
-    return `CROSS JOIN GENERATE_SERIES(0,${groupSetCount},1) as group_set`;
+    /*
+      generate_series(0,n) is not supported in redshift, so we need to do a workaround:
+        CROSS JOIN (
+          SELECT 0 AS n
+          UNION ALL SELECT 1
+          UNION ALL SELECT 2
+          UNION ALL SELECT 3
+      ) AS group_set
+    */
+
+    return `CROSS JOIN (
+      SELECT 0 AS group_set
+      ${Array.from(
+        {length: groupSetCount},
+        (_, i) => `UNION ALL SELECT ${i + 1}`
+      ).join('\n      ')}
+    )`;
   }
 
   sqlAnyValue(groupSet: number, fieldName: string): string {
