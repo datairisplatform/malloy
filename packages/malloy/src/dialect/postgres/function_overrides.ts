@@ -22,14 +22,14 @@ export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   ends_with: {
     sql: 'COALESCE(RIGHT(${value}, LENGTH(${suffix})) = ${suffix}, false)',
   },
-  greatest: {sql: greatestOrLeastSQL('GREATEST')},
+  // greatest: {sql: greatestOrLeastSQL('GREATEST')},
   least: {sql: greatestOrLeastSQL('LEAST')},
   // Postgres doesn't have an IFNULL function, so we use COALESCE, which is equivalent.
   ifnull: {sql: 'COALESCE(${value}, ${default})'},
-  is_inf: {
-    sql: "COALESCE(${value} = DOUBLE PRECISION 'Infinity' OR ${value} = DOUBLE PRECISION '-Infinity', false)",
-  },
-  is_nan: {sql: "COALESCE(${value} = NUMERIC 'NaN', false)"},
+  // is_inf: {
+  //   sql: "COALESCE(${value} = DOUBLE PRECISION 'Infinity' OR ${value} = DOUBLE PRECISION '-Infinity', false)",
+  // },
+  // is_nan: {sql: "COALESCE(${value} = NUMERIC 'NaN', false)"},
   // Parameter order is backwards in Postgres.
   log: {sql: 'LOG(${base}, ${value})'},
   rand: {function: 'RANDOM'},

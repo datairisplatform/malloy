@@ -325,7 +325,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
       run: state_facts -> { group_by: state }
     `).malloyResultMatches(runtime, {state: 'CA'});
   });
-  it.only(`default value not passed through extension propagates - ${databaseName}`, async () => {
+  it(`default value not passed through extension propagates - ${databaseName}`, async () => {
     await expect(
       `
         ##! experimental.parameters

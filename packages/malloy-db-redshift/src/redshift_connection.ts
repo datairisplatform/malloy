@@ -362,7 +362,11 @@ export class RedshiftConnection
       }
     } else {
       throw new Error(
-        `Batch error: \n${JSON.stringify(statusResponse, null, 2)}`
+        `Batch error: \n sql: ${sqlArray.join('\n')} \n ${JSON.stringify(
+          statusResponse,
+          null,
+          2
+        )}`
       );
     }
 
