@@ -15,7 +15,7 @@ function greatestOrLeastSQL(name: string) {
   );
 }
 
-export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
+export const REDSHIFT_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   byte_length: {function: 'OCTET_LENGTH'},
   // There's no ENDS_WITH function in Postgres, so we do a hacky check that the last
   // N characters, where N is the length of the suffix, are equal to the suffix.
@@ -37,25 +37,25 @@ export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   replace: {
     // In Postgres we specifically need to say that the replacement should be global.
     regular_expression: {
-      sql: "REGEXP_REPLACE(${value}, ${pattern}, ${replacement}, 'g')",
+      sql: 'REGEXP_REPLACE(${value}, ${pattern}, ${replacement})',
     },
   },
-  // Postgres doesn't let you ROUND a FLOAT to a particular number of decimal places,
-  // so we cast to NUMERIC first...
-  // TODO it would be nice not to have to do this cast if it was already NUMERIC type...
+  // note: this only works with FLOAT8, I've tried NUMERIC and DECIMAL
   round: {
-    to_integer: {sql: 'ROUND((${value})::NUMERIC)'},
-    to_precision: {sql: 'ROUND((${value})::NUMERIC, ${precision})'},
+    to_integer: {sql: 'ROUND((${value})::FLOAT8)'},
+    to_precision: {sql: 'ROUND((${value})::FLOAT8, ${precision})'},
   },
+  floor: {sql: 'FLOOR(${value}::FLOAT8)'},
+  ceil: {sql: 'CEIL(${value}::FLOAT8)'},
   // TODO this is a bit of a hack in order to make the arrayAggUnnest work for Postgres,
   // as we don't currently have a good way of doing this while preserving types
   stddev: {sql: 'STDDEV(${value}::DOUBLE PRECISION)'},
   substr: {
     position_only: {
-      sql: 'SUBSTR(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END)',
+      sql: 'SUBSTRING(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END)',
     },
     with_length: {
-      sql: 'SUBSTR(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END, ${length})',
+      sql: 'SUBSTRING(${value}, CASE WHEN ${position} < 0 THEN LENGTH(${value}) + ${position} + 1 ELSE ${position} END, ${length})',
     },
   },
   // Postgres doesn't let you TRUNC a FLOAT with a precision, so we cast to NUMERIC first
@@ -64,12 +64,16 @@ export const POSTGRES_MALLOY_STANDARD_OVERLOADS: OverrideMap = {
   // TODO Maybe there's a way we don't have to cast to NUMERIC.
   trunc: {
     to_integer: {
-      sql: 'TRUNC(${value}::NUMERIC)',
+      sql: 'TRUNC(${value}::FLOAT8)',
     },
     to_precision: {
-      sql: 'TRUNC((${value}::NUMERIC), ${precision})',
+      sql: 'TRUNC((${value}::FLOAT8), ${precision})',
     },
   },
+  abs: {sql: 'ABS(${value}::FLOAT8)'},
+  sign: {sql: 'SIGN(${value}::FLOAT8)'},
+  div: {sql: '${dividend} / ${divisor}'},
+  starts_with: {sql: 'LEFT(${value}, LENGTH(${prefix})) = ${prefix}'},
   // Aparently the ASCII function also works for unicode code points...
   unicode: {function: 'ASCII'},
 };

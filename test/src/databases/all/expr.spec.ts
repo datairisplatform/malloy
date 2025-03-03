@@ -95,17 +95,6 @@ describe.each(runtimes.runtimeList)('%s', (databaseName, runtime) => {
       seats: 0,
     });
   });
-
-  it.only('join dependencies tracked from annotated references', async () => {
-    await expect(`
-       run: aircraft_models -> {
-        select: seats
-      }
-    `).malloyResultMatches(expressionModel, {
-      seats: 0,
-    });
-  });
-
   // Floor was broken (wouldn't compile because the expression returned isn't an aggregate.)
   it('Floor() -or any function bustage with aggregates', async () => {
     await expect(`

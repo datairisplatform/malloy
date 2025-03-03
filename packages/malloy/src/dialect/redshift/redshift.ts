@@ -43,7 +43,7 @@ import {
 import {DialectFieldList, FieldReferenceType, QueryInfo} from '../dialect';
 import {PostgresBase} from '../pg_impl';
 import {POSTGRES_DIALECT_FUNCTIONS} from './dialect_functions';
-import {POSTGRES_MALLOY_STANDARD_OVERLOADS} from './function_overrides';
+import {REDSHIFT_MALLOY_STANDARD_OVERLOADS} from './function_overrides';
 
 const pgMakeIntervalMap: Record<string, string> = {
   'year': 'years',
@@ -164,7 +164,9 @@ export class RedshiftDialect extends PostgresBase {
     groupSet: number,
     sqlName: string
   ): string {
-    return `(ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL))[1] as ${sqlName}`;
+    return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} AND ${name} IS NOT NULL THEN ${name} END))[1] as ${sqlName}`;
+
+    // return `(ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL))[1] as ${sqlName}`;
   }
 
   sqlCoaleseMeasuresInline(
@@ -234,11 +236,26 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   sqlSumDistinctHashedKey(sqlDistinctKey: string): string {
-    return `('x' || MD5(${sqlDistinctKey}::varchar))::bit(64)::bigint::DECIMAL(65,0)  *18446744073709551616 + ('x' || SUBSTR(MD5(${sqlDistinctKey}::varchar),17))::bit(64)::bigint::DECIMAL(65,0)`;
+    // Convert the key to a string if it isn't already
+    const stringKey = `CAST(${sqlDistinctKey} AS VARCHAR)`;
+
+    // Get MD5 hash of the key as a hex string
+    const md5Hash = `MD5(${stringKey})`;
+
+    // Take first 16 chars of hash for upper part and next 8 chars for lower part
+    const upperPart = `STRTOL(SUBSTRING(${md5Hash}, 1, 15), 16)::DECIMAL(38,0) * 4294967296`;
+    const lowerPart = `STRTOL(SUBSTRING(${md5Hash}, 17, 8), 16)::DECIMAL(38,0)`;
+
+    // Combine parts to create final hash value
+    return `(${upperPart} + ${lowerPart})`;
   }
 
   sqlGenerateUUID(): string {
-    return 'GEN_RANDOM_UUID()';
+    return `SUBSTRING(MD5(RANDOM()::text || current_timestamp::text), 1, 8) || '-' ||
+      SUBSTRING(MD5(RANDOM()::text || current_timestamp::text), 9, 4) || '-' ||
+      SUBSTRING(MD5(RANDOM()::text || current_timestamp::text), 13, 4) || '-' ||
+      SUBSTRING(MD5(RANDOM()::text || current_timestamp::text), 17, 4) || '-' ||
+      SUBSTRING(MD5(RANDOM()::text || current_timestamp::text), 21, 12)`;
   }
 
   sqlFieldReference(
@@ -402,7 +419,7 @@ export class RedshiftDialect extends PostgresBase {
   getDialectFunctionOverrides(): {
     [name: string]: DialectFunctionOverloadDef[];
   } {
-    return expandOverrideMap(POSTGRES_MALLOY_STANDARD_OVERLOADS);
+    return expandOverrideMap(REDSHIFT_MALLOY_STANDARD_OVERLOADS);
   }
 
   getDialectFunctions(): {[name: string]: DialectFunctionOverloadDef[]} {
@@ -410,6 +427,7 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   malloyTypeToSQLType(malloyType: AtomicTypeDef): string {
+    //console.log('BRIAN malloyTypeToSQLType: ', malloyType);
     if (malloyType.type === 'number') {
       if (malloyType.numberType === 'integer') {
         return 'integer';
@@ -425,6 +443,10 @@ export class RedshiftDialect extends PostgresBase {
   sqlTypeToMalloyType(sqlType: string): LeafAtomicTypeDef {
     // Remove trailing params
     const baseSqlType = sqlType.match(/^([\w\s]+)/)?.at(0) ?? sqlType;
+    // console.log(
+    //   'BRIAN converting sqlTypes: ',
+    //   baseSqlType.trim().toLowerCase()
+    // );
     return (
       postgresToMalloyTypes[baseSqlType.trim().toLowerCase()] ?? {
         type: 'sql native',
