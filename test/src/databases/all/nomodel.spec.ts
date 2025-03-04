@@ -457,7 +457,7 @@ runtimes.runtimeMap.forEach((runtime, databaseName) => {
     });
   });
 
-  it.only(`nest/unnest -basic - ${databaseName}`, async () => {
+  it(`nest/unnest -basic - ${databaseName}`, async () => {
     // in a joined table when the joined is leafiest
     //  we need to make sure we don't count rows that
     //  don't match the join.

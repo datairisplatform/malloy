@@ -116,8 +116,8 @@ expressionModels.forEach((x, databaseName) => {
 
     const result = await run();
     testCases.forEach((testCase, i) => {
-      console.log(databaseName, result.sql);
-      console.log(result.data);
+      // console.log(databaseName, result.sql);
+      // console.log(result.data);
       expect(result.data.path(0, `f${i}`).value).toBe(testCase[1]);
     });
   };
@@ -163,7 +163,7 @@ expressionModels.forEach((x, databaseName) => {
   describe('round', () => {
     it(`works - ${databaseName}`, async () => {
       await funcTestMultiple(
-        //['round(1.2)', 1],
+        ['round(1.2)', 1],
         // TODO Remove when we upgrade to DuckDB 0.8.X -- DuckDB has some bugs with rounding
         // that are fixed in 0.8.
         ...(databaseName === 'duckdb_wasm'
@@ -948,13 +948,13 @@ expressionModels.forEach((x, databaseName) => {
         [
           "starts_with('hello world', 'hello')",
           booleanResult(true, databaseName),
-        ]
-        // [
-        //   "starts_with('hello world', 'world')",
-        //   booleanResult(false, databaseName),
-        // ],
-        // ["starts_with(null, 'world')", booleanResult(false, databaseName)],
-        // ["starts_with('hello world', null)", booleanResult(false, databaseName)]
+        ],
+        [
+          "starts_with('hello world', 'world')",
+          booleanResult(false, databaseName),
+        ],
+        ["starts_with(null, 'world')", booleanResult(false, databaseName)],
+        ["starts_with('hello world', null)", booleanResult(false, databaseName)]
       );
     });
   });
