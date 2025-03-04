@@ -21,7 +21,4 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-export {
-  RedshiftConnection as RedshiftConnection,
-  PooledPostgresConnection,
-} from './redshift_connection';
+export {RedshiftConnection as RedshiftConnection} from './redshift_connection';

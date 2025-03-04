@@ -34,7 +34,6 @@ import {
   MalloyQueryData,
   PersistSQLResults,
   PooledConnection,
-  PostgresDialect,
   RedshiftDialect,
   QueryData,
   QueryDataRow,
@@ -62,20 +61,15 @@ import {
 } from '@aws-sdk/client-redshift-data';
 
 interface RedshiftConnectionConfiguration {
-  host?: string;
-  port?: number;
-  username?: string;
-  password?: string;
-  databaseName?: string;
-  connectionString?: string;
+  region?: string;
+  workgroupName?: string;
+  database?: string;
+  schema?: string;
+  // contains username and password for user
+  secretArn?: string;
 }
 
-type RedshiftConnectionConfigurationReader =
-  | RedshiftConnectionConfiguration
-  | (() => Promise<RedshiftConnectionConfiguration>);
-
-const DEFAULT_PAGE_SIZE = 1000;
-const SCHEMA_PAGE_SIZE = 1000;
+type RedshiftConnectionConfigurationReader = RedshiftConnectionConfiguration;
 
 export interface RedshiftConnectionOptions
   extends ConnectionConfig,
@@ -87,34 +81,31 @@ export class RedshiftConnection
 {
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
-  private configReader: RedshiftConnectionConfigurationReader = {};
+  private config: RedshiftConnectionConfigurationReader = {
+    region: 'us-west-1',
+    workgroupName: 'default-workgroup',
+    database: 'dev',
+    schema: 'malloytest',
+    secretArn:
+      'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
+  };
 
   private readonly dialect = new RedshiftDialect();
 
-  constructor(
-    options: RedshiftConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader
-  );
   constructor(
     name: string,
     queryOptionsReader?: QueryOptionsReader,
     configReader?: RedshiftConnectionConfigurationReader
   );
   constructor(
-    arg: string | RedshiftConnectionOptions,
+    name: string,
     queryOptionsReader?: QueryOptionsReader,
     configReader?: RedshiftConnectionConfigurationReader
   ) {
     super();
-    if (typeof arg === 'string') {
-      this.name = arg;
-      if (configReader) {
-        this.configReader = configReader;
-      }
-    } else {
-      const {name, ...configReader} = arg;
-      this.name = name;
-      this.configReader = configReader;
+    this.name = name;
+    if (configReader) {
+      this.config = configReader;
     }
     if (queryOptionsReader) {
       this.queryOptionsReader = queryOptionsReader;
@@ -130,10 +121,10 @@ export class RedshiftConnection
   }
 
   protected async readConfig(): Promise<RedshiftConnectionConfiguration> {
-    if (this.configReader instanceof Function) {
-      return this.configReader();
+    if (this.config instanceof Function) {
+      return this.config();
     } else {
-      return this.configReader;
+      return this.config;
     }
   }
 
@@ -155,51 +146,6 @@ export class RedshiftConnection
 
   public get supportsNesting(): boolean {
     return true;
-  }
-
-  protected async getClient(): Promise<Client> {
-    const {
-      username: user,
-      password,
-      databaseName: database,
-      port,
-      host,
-      connectionString,
-    } = await this.readConfig();
-    return new Client({
-      user,
-      password,
-      database,
-      port,
-      host,
-      connectionString,
-    });
-  }
-
-  protected async runPostgresQuery(
-    sqlCommand: string,
-    _pageSize: number,
-    _rowIndex: number,
-    deJSON: boolean
-  ): Promise<MalloyQueryData> {
-    const client = await this.getClient();
-    await client.connect();
-    await this.connectionSetup(client);
-
-    let result = await client.query(sqlCommand);
-    if (Array.isArray(result)) {
-      result = result.pop();
-    }
-    if (deJSON) {
-      for (let i = 0; i < result.rows.length; i++) {
-        result.rows[i] = result.rows[i].row;
-      }
-    }
-    await client.end();
-    return {
-      rows: result.rows as QueryData,
-      totalRows: result.rows.length,
-    };
   }
 
   async fetchSelectSchema(
@@ -303,23 +249,22 @@ export class RedshiftConnection
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
     // add statement in beginning of query to set the default schema/db
-    const sqlArray = ['SET search_path TO malloytest;'];
+    const sqlArray = [`SET search_path TO ${this.config.schema};`];
     if (Array.isArray(sql)) {
       sqlArray.push(...sql);
     } else {
       sqlArray.push(sql);
     }
     // Initiate RedshiftData client
-    const client = new RedshiftDataClient({region: 'us-west-1'});
+    const client = new RedshiftDataClient({region: this.config.region});
 
     // Execute all SQL statements in batch
     // so they share the same context
     // if we don't do this, the "SET search_path" won't affect the following queries
     const batchExecuteCommand = new BatchExecuteStatementCommand({
-      WorkgroupName: 'default-workgroup', //todo make configurable
-      Database: 'dev', // todo make configurable
-      SecretArn:
-        'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
+      WorkgroupName: this.config.workgroupName, //todo make configurable
+      Database: this.config.database, // todo make configurable
+      SecretArn: this.config.secretArn,
       Sqls: sqlArray,
     });
 
@@ -395,23 +340,11 @@ export class RedshiftConnection
     sqlCommand: string,
     {rowLimit, abortSignal}: RunSQLOptions = {}
   ): AsyncIterableIterator<QueryDataRow> {
-    const query = new QueryStream(sqlCommand);
-    const client = await this.getClient();
-    await client.connect();
-    const rowStream = client.query(query);
-    let index = 0;
-    for await (const row of rowStream) {
-      yield row.row as QueryDataRow;
-      index += 1;
-      if (
-        (rowLimit !== undefined && index >= rowLimit) ||
-        abortSignal?.aborted
-      ) {
-        query.destroy();
-        break;
-      }
+    const result = await this.runSQL(sqlCommand, {rowLimit});
+    for (const row of result.rows) {
+      if (abortSignal?.aborted) break;
+      yield row;
     }
-    await client.end();
   }
 
   public async estimateQueryCost(_: string): Promise<QueryRunStats> {
@@ -427,125 +360,11 @@ export class RedshiftConnection
       `CREATE TEMP TABLE ${tableName} AS ${sqlCommand};`,
     ];
     // const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
-    console.log(cmd);
     await this.runSQL(cmd);
     return tableName;
   }
 
   async close(): Promise<void> {
     return;
-  }
-}
-
-export class PooledPostgresConnection
-  extends RedshiftConnection
-  implements PooledConnection
-{
-  private _pool: Pool | undefined;
-
-  constructor(
-    options: RedshiftConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader
-  );
-  constructor(
-    name: string,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: RedshiftConnectionConfigurationReader
-  );
-  constructor(
-    arg: string | RedshiftConnectionOptions,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: RedshiftConnectionConfigurationReader
-  ) {
-    if (typeof arg === 'string') {
-      super(arg, queryOptionsReader, configReader);
-    } else {
-      super(arg, queryOptionsReader);
-    }
-  }
-
-  public isPool(): this is PooledConnection {
-    return true;
-  }
-
-  public async drain(): Promise<void> {
-    await this._pool?.end();
-  }
-
-  async getPool(): Promise<Pool> {
-    if (!this._pool) {
-      const {
-        username: user,
-        password,
-        databaseName: database,
-        port,
-        host,
-        connectionString,
-      } = await this.readConfig();
-      this._pool = new Pool({
-        user,
-        password,
-        database,
-        port,
-        host,
-        connectionString,
-      });
-      this._pool.on('acquire', client => client.query("SET TIME ZONE 'UTC'"));
-    }
-    return this._pool;
-  }
-
-  protected async runPostgresQuery(
-    sqlCommand: string,
-    _pageSize: number,
-    _rowIndex: number,
-    deJSON: boolean
-  ): Promise<MalloyQueryData> {
-    const pool = await this.getPool();
-    let result = await pool.query(sqlCommand);
-
-    if (Array.isArray(result)) {
-      result = result.pop();
-    }
-    if (deJSON) {
-      for (let i = 0; i < result.rows.length; i++) {
-        result.rows[i] = result.rows[i].row;
-      }
-    }
-    return {
-      rows: result.rows as QueryData,
-      totalRows: result.rows.length,
-    };
-  }
-
-  public async *runSQLStream(
-    sqlCommand: string,
-    {rowLimit, abortSignal}: RunSQLOptions = {}
-  ): AsyncIterableIterator<QueryDataRow> {
-    const query = new QueryStream(sqlCommand);
-    let index = 0;
-    // This is a strange hack... `this.pool.query(query)` seems to return the wrong
-    // type. Because `query` is a `QueryStream`, the result is supposed to be a
-    // `QueryStream` as well, but it's not. So instead, we get a client and call
-    // `client.query(query)`, which does what it's supposed to.
-    const pool = await this.getPool();
-    const client = await pool.connect();
-    const resultStream: QueryStream = client.query(query);
-    for await (const row of resultStream) {
-      yield row.row as QueryDataRow;
-      index += 1;
-      if (
-        (rowLimit !== undefined && index >= rowLimit) ||
-        abortSignal?.aborted
-      ) {
-        query.destroy();
-        break;
-      }
-    }
-    client.release();
-  }
-
-  async close(): Promise<void> {
-    await this.drain();
   }
 }
