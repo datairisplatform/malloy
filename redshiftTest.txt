@@ -3,6 +3,31 @@
 > jest --runInBand nomodel
 
   console.log
+    BRIAN fields:  
+      "popular_name__1" as "popular_name", 
+      "d__1"::DOUBLE PRECISION as "d"
+
+      at RedshiftDialect.sqlAggregateTurtle (packages/malloy/src/dialect/redshift/redshift.ts:170:13)
+
+  console.log
+    BRIAN fieldList:  [
+      {
+        type: 'string',
+        sqlExpression: '"popular_name__1"',
+        rawName: 'popular_name',
+        sqlOutputName: '"popular_name"'
+      },
+      {
+        type: 'number',
+        sqlExpression: '"d__1"',
+        rawName: 'd',
+        sqlOutputName: '"d"'
+      }
+    ]
+
+      at RedshiftDialect.sqlAggregateTurtle (packages/malloy/src/dialect/redshift/redshift.ts:171:13)
+
+  console.log
     Error in SQL:
      WITH __stage0 AS (
       SELECT
@@ -27,11 +52,8 @@
     , __stage1 AS (
       SELECT
         "state__0" as "state",
-        (ARRAY_AGG(CASE WHEN group_set=0 AND "c__0" IS NOT NULL THEN "c__0" END))[1] as "c",
-        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
-          "popular_name__1" as "popular_name", 
-          "d__1"::DOUBLE PRECISION as "d"
-          ) as __x)  ORDER BY  "d__1" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as "p"
+        MAX(CASE WHEN group_set = 0 THEN "c__0" END) AS "c",
+        LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', "popular_name__1",'d', "d__1")) END IGNORE NULLS) as "p"
       FROM __stage0
       GROUP BY 1
     )
@@ -46,8 +68,33 @@
 
       at RedshiftTestConnection.runSQL (test/src/runtimes.ts:148:15)
 
-FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
-  ✕ nest/unnest -basic - redshift (3518 ms)
+  console.log
+    BRIAN fields:  
+      "popular_name__1" as "popular_name", 
+      "d__1"::DOUBLE PRECISION as "d"
+
+      at RedshiftDialect.sqlAggregateTurtle (packages/malloy/src/dialect/redshift/redshift.ts:170:13)
+
+  console.log
+    BRIAN fieldList:  [
+      {
+        type: 'string',
+        sqlExpression: '"popular_name__1"',
+        rawName: 'popular_name',
+        sqlOutputName: '"popular_name"'
+      },
+      {
+        type: 'number',
+        sqlExpression: '"d__1"',
+        rawName: 'd',
+        sqlOutputName: '"d"'
+      }
+    ]
+
+      at RedshiftDialect.sqlAggregateTurtle (packages/malloy/src/dialect/redshift/redshift.ts:171:13)
+
+FAIL test/src/databases/all/nomodel.spec.ts (15.953 s)
+  ✕ nest/unnest -basic - redshift (3584 ms)
   ○ skipped parenthesize output field values - redshift
   ○ skipped bug 151 which used to throw unknown dialect is still fixed- redshift
   ○ skipped refine query from query - redshift
@@ -144,11 +191,8 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
     , __stage1 AS (
       SELECT
         "state__0" as "state",
-        (ARRAY_AGG(CASE WHEN group_set=0 AND "c__0" IS NOT NULL THEN "c__0" END))[1] as "c",
-        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
-          "popular_name__1" as "popular_name", 
-          "d__1"::DOUBLE PRECISION as "d"
-          ) as __x)  ORDER BY  "d__1" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as "p"
+        MAX(CASE WHEN group_set = 0 THEN "c__0" END) AS "c",
+        LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', "popular_name__1",'d', "d__1")) END IGNORE NULLS) as "p"
       FROM __stage0
       GROUP BY 1
     )
@@ -164,17 +208,17 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
      {
       "$metadata": {
         "httpStatusCode": 200,
-        "requestId": "a995cc26-9fab-4612-8ac4-0f4c99697d36",
+        "requestId": "26a70712-5174-4f84-86a2-9c7ae844961c",
         "attempts": 1,
         "totalRetryDelay": 0
       },
-      "CreatedAt": "2025-03-03T20:17:32.862Z",
+      "CreatedAt": "2025-03-04T00:55:08.374Z",
       "Database": "dev",
-      "Duration": 45196364,
-      "Error": "Query #2 failed with ERROR: syntax error at or near \"ORDER\" in context \"as __x)  ORDER\", at line 28, column 18\n  Position: 806",
+      "Duration": 55139263,
+      "Error": "Query #2 failed with ERROR: relation \"base\" does not exist",
       "HasResultSet": false,
-      "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af",
-      "RedshiftPid": 1073848426,
+      "Id": "2a643610-24a6-4166-a199-303d2955c7d1",
+      "RedshiftPid": 1073873010,
       "RedshiftQueryId": 0,
       "ResultFormat": "json",
       "ResultRows": -1,
@@ -183,32 +227,32 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
       "Status": "FAILED",
       "SubStatements": [
         {
-          "CreatedAt": "2025-03-03T20:17:32.976Z",
-          "Duration": 45196364,
+          "CreatedAt": "2025-03-04T00:55:08.492Z",
+          "Duration": 55139263,
           "HasResultSet": false,
-          "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af:1",
+          "Id": "2a643610-24a6-4166-a199-303d2955c7d1:1",
           "QueryString": "SET search_path TO malloytest;",
           "RedshiftQueryId": 0,
           "ResultRows": 0,
           "ResultSize": 0,
           "Status": "FINISHED",
-          "UpdatedAt": "2025-03-03T20:17:33.415Z"
+          "UpdatedAt": "2025-03-04T00:55:08.978Z"
         },
         {
-          "CreatedAt": "2025-03-03T20:17:32.979Z",
+          "CreatedAt": "2025-03-04T00:55:08.495Z",
           "Duration": -1,
-          "Error": "ERROR: syntax error at or near \"ORDER\" in context \"as __x)  ORDER\", at line 28, column 18\n  Position: 806",
+          "Error": "ERROR: relation \"base\" does not exist",
           "HasResultSet": false,
-          "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af:2",
-          "QueryString": "WITH __stage0 AS (\n  SELECT\n    group_set,\n    base.\"state\" as \"state__0\",\n    CASE WHEN group_set=0 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"c__0\",\n    CASE WHEN group_set=1 THEN\n      base.\"popular_name\"\n      END as \"popular_name__1\",\n    CASE WHEN group_set=1 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"d__1\"\n  FROM \"malloytest\".\"state_facts\" as base\n  CROSS JOIN (\n        SELECT 0 AS group_set\n        UNION ALL SELECT 1\n      )\n  GROUP BY 1,2,4\n)\n, __stage1 AS (\n  SELECT\n    \"state__0\" as \"state\",\n    (ARRAY_AGG(CASE WHEN group_set=0 AND \"c__0\" IS NOT NULL THEN \"c__0\" END))[1] as \"c\",\n    COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT \n      \"popular_name__1\" as \"popular_name\", \n      \"d__1\"::DOUBLE PRECISION as \"d\"\n      ) as __x)  ORDER BY  \"d__1\" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as \"p\"\n  FROM __stage0\n  GROUP BY 1\n)\nSELECT \n   base.\"state\" as \"state\",\n   base.\"c\" as \"c\",\n   COALESCE(SUM(JSONB_EXTRACT_PATH_TEXT(p_0,'d')::double precision),0) as \"d\"\nFROM __stage1 as base\nLEFT JOIN JSONB_ARRAY_ELEMENTS(base.\"p\") as p_0 ON true\nGROUP BY 1,2\nORDER BY 3 desc NULLS LAST\n",
+          "Id": "2a643610-24a6-4166-a199-303d2955c7d1:2",
+          "QueryString": "WITH __stage0 AS (\n  SELECT\n    group_set,\n    base.\"state\" as \"state__0\",\n    CASE WHEN group_set=0 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"c__0\",\n    CASE WHEN group_set=1 THEN\n      base.\"popular_name\"\n      END as \"popular_name__1\",\n    CASE WHEN group_set=1 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"d__1\"\n  FROM \"malloytest\".\"state_facts\" as base\n  CROSS JOIN (\n        SELECT 0 AS group_set\n        UNION ALL SELECT 1\n      )\n  GROUP BY 1,2,4\n)\n, __stage1 AS (\n  SELECT\n    \"state__0\" as \"state\",\n    MAX(CASE WHEN group_set = 0 THEN \"c__0\" END) AS \"c\",\n    LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', \"popular_name__1\",'d', \"d__1\")) END IGNORE NULLS) as \"p\"\n  FROM __stage0\n  GROUP BY 1\n)\nSELECT \n   base.\"state\" as \"state\",\n   base.\"c\" as \"c\",\n   COALESCE(SUM(JSONB_EXTRACT_PATH_TEXT(p_0,'d')::double precision),0) as \"d\"\nFROM __stage1 as base\nLEFT JOIN JSONB_ARRAY_ELEMENTS(base.\"p\") as p_0 ON true\nGROUP BY 1,2\nORDER BY 3 desc NULLS LAST\n",
           "RedshiftQueryId": 0,
           "ResultRows": -1,
           "ResultSize": -1,
           "Status": "FAILED",
-          "UpdatedAt": "2025-03-03T20:17:33.415Z"
+          "UpdatedAt": "2025-03-04T00:55:08.978Z"
         }
       ],
-      "UpdatedAt": "2025-03-03T20:17:33.481Z",
+      "UpdatedAt": "2025-03-04T00:55:09.044Z",
       "WorkgroupName": "default-workgroup"
     }
     SQL: WITH __stage0 AS (
@@ -234,11 +278,8 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
     , __stage1 AS (
       SELECT
         "state__0" as "state",
-        (ARRAY_AGG(CASE WHEN group_set=0 AND "c__0" IS NOT NULL THEN "c__0" END))[1] as "c",
-        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
-          "popular_name__1" as "popular_name", 
-          "d__1"::DOUBLE PRECISION as "d"
-          ) as __x)  ORDER BY  "d__1" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as "p"
+        MAX(CASE WHEN group_set = 0 THEN "c__0" END) AS "c",
+        LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', "popular_name__1",'d', "d__1")) END IGNORE NULLS) as "p"
       FROM __stage0
       GROUP BY 1
     )
@@ -276,11 +317,8 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
     , __stage1 AS (
       SELECT
         "state__0" as "state",
-        (ARRAY_AGG(CASE WHEN group_set=0 AND "c__0" IS NOT NULL THEN "c__0" END))[1] as "c",
-        COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT 
-          "popular_name__1" as "popular_name", 
-          "d__1"::DOUBLE PRECISION as "d"
-          ) as __x)  ORDER BY  "d__1" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as "p"
+        MAX(CASE WHEN group_set = 0 THEN "c__0" END) AS "c",
+        LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', "popular_name__1",'d', "d__1")) END IGNORE NULLS) as "p"
       FROM __stage0
       GROUP BY 1
     )
@@ -296,17 +334,17 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
      {
       "$metadata": {
         "httpStatusCode": 200,
-        "requestId": "a995cc26-9fab-4612-8ac4-0f4c99697d36",
+        "requestId": "26a70712-5174-4f84-86a2-9c7ae844961c",
         "attempts": 1,
         "totalRetryDelay": 0
       },
-      "CreatedAt": "2025-03-03T20:17:32.862Z",
+      "CreatedAt": "2025-03-04T00:55:08.374Z",
       "Database": "dev",
-      "Duration": 45196364,
-      "Error": "Query #2 failed with ERROR: syntax error at or near \"ORDER\" in context \"as __x)  ORDER\", at line 28, column 18\n  Position: 806",
+      "Duration": 55139263,
+      "Error": "Query #2 failed with ERROR: relation \"base\" does not exist",
       "HasResultSet": false,
-      "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af",
-      "RedshiftPid": 1073848426,
+      "Id": "2a643610-24a6-4166-a199-303d2955c7d1",
+      "RedshiftPid": 1073873010,
       "RedshiftQueryId": 0,
       "ResultFormat": "json",
       "ResultRows": -1,
@@ -315,32 +353,32 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
       "Status": "FAILED",
       "SubStatements": [
         {
-          "CreatedAt": "2025-03-03T20:17:32.976Z",
-          "Duration": 45196364,
+          "CreatedAt": "2025-03-04T00:55:08.492Z",
+          "Duration": 55139263,
           "HasResultSet": false,
-          "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af:1",
+          "Id": "2a643610-24a6-4166-a199-303d2955c7d1:1",
           "QueryString": "SET search_path TO malloytest;",
           "RedshiftQueryId": 0,
           "ResultRows": 0,
           "ResultSize": 0,
           "Status": "FINISHED",
-          "UpdatedAt": "2025-03-03T20:17:33.415Z"
+          "UpdatedAt": "2025-03-04T00:55:08.978Z"
         },
         {
-          "CreatedAt": "2025-03-03T20:17:32.979Z",
+          "CreatedAt": "2025-03-04T00:55:08.495Z",
           "Duration": -1,
-          "Error": "ERROR: syntax error at or near \"ORDER\" in context \"as __x)  ORDER\", at line 28, column 18\n  Position: 806",
+          "Error": "ERROR: relation \"base\" does not exist",
           "HasResultSet": false,
-          "Id": "91c8d6f1-30f5-43c0-aec2-41f648c9c8af:2",
-          "QueryString": "WITH __stage0 AS (\n  SELECT\n    group_set,\n    base.\"state\" as \"state__0\",\n    CASE WHEN group_set=0 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"c__0\",\n    CASE WHEN group_set=1 THEN\n      base.\"popular_name\"\n      END as \"popular_name__1\",\n    CASE WHEN group_set=1 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"d__1\"\n  FROM \"malloytest\".\"state_facts\" as base\n  CROSS JOIN (\n        SELECT 0 AS group_set\n        UNION ALL SELECT 1\n      )\n  GROUP BY 1,2,4\n)\n, __stage1 AS (\n  SELECT\n    \"state__0\" as \"state\",\n    (ARRAY_AGG(CASE WHEN group_set=0 AND \"c__0\" IS NOT NULL THEN \"c__0\" END))[1] as \"c\",\n    COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT \n      \"popular_name__1\" as \"popular_name\", \n      \"d__1\"::DOUBLE PRECISION as \"d\"\n      ) as __x)  ORDER BY  \"d__1\" desc NULLS LAST ) FILTER (WHERE group_set=1))),'[]'::JSONB) as \"p\"\n  FROM __stage0\n  GROUP BY 1\n)\nSELECT \n   base.\"state\" as \"state\",\n   base.\"c\" as \"c\",\n   COALESCE(SUM(JSONB_EXTRACT_PATH_TEXT(p_0,'d')::double precision),0) as \"d\"\nFROM __stage1 as base\nLEFT JOIN JSONB_ARRAY_ELEMENTS(base.\"p\") as p_0 ON true\nGROUP BY 1,2\nORDER BY 3 desc NULLS LAST\n",
+          "Id": "2a643610-24a6-4166-a199-303d2955c7d1:2",
+          "QueryString": "WITH __stage0 AS (\n  SELECT\n    group_set,\n    base.\"state\" as \"state__0\",\n    CASE WHEN group_set=0 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"c__0\",\n    CASE WHEN group_set=1 THEN\n      base.\"popular_name\"\n      END as \"popular_name__1\",\n    CASE WHEN group_set=1 THEN\n      COALESCE(SUM(base.\"airport_count\"),0)\n      END as \"d__1\"\n  FROM \"malloytest\".\"state_facts\" as base\n  CROSS JOIN (\n        SELECT 0 AS group_set\n        UNION ALL SELECT 1\n      )\n  GROUP BY 1,2,4\n)\n, __stage1 AS (\n  SELECT\n    \"state__0\" as \"state\",\n    MAX(CASE WHEN group_set = 0 THEN \"c__0\" END) AS \"c\",\n    LISTAGG(CASE WHEN group_set=1 THEN JSON_SERIALIZE(OBJECT('popular_name', \"popular_name__1\",'d', \"d__1\")) END IGNORE NULLS) as \"p\"\n  FROM __stage0\n  GROUP BY 1\n)\nSELECT \n   base.\"state\" as \"state\",\n   base.\"c\" as \"c\",\n   COALESCE(SUM(JSONB_EXTRACT_PATH_TEXT(p_0,'d')::double precision),0) as \"d\"\nFROM __stage1 as base\nLEFT JOIN JSONB_ARRAY_ELEMENTS(base.\"p\") as p_0 ON true\nGROUP BY 1,2\nORDER BY 3 desc NULLS LAST\n",
           "RedshiftQueryId": 0,
           "ResultRows": -1,
           "ResultSize": -1,
           "Status": "FAILED",
-          "UpdatedAt": "2025-03-03T20:17:33.415Z"
+          "UpdatedAt": "2025-03-04T00:55:08.978Z"
         }
       ],
-      "UpdatedAt": "2025-03-03T20:17:33.481Z",
+      "UpdatedAt": "2025-03-04T00:55:09.044Z",
       "WorkgroupName": "default-workgroup"
     }
 
@@ -363,5 +401,5 @@ FAIL test/src/databases/all/nomodel.spec.ts (15.782 s)
 Test Suites: 1 failed, 1 total
 Tests:       1 failed, 67 skipped, 68 total
 Snapshots:   0 total
-Time:        15.854 s, estimated 17 s
+Time:        16.025 s, estimated 17 s
 Ran all test suites matching /nomodel/i.
