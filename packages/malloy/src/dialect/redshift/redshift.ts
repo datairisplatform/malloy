@@ -167,11 +167,11 @@ export class RedshiftDialect extends PostgresBase {
     //return `(ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}`;
     // original
     // return `COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT ${fields}\n  ) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}),'[]'::JSONB)`;
-    console.log('BRIAN fields: ', fields);
-    console.log('BRIAN fieldList: ', fieldList);
-    return `LISTAGG(CASE WHEN group_set=${groupSet} THEN JSON_SERIALIZE(OBJECT(${fieldList
+    // console.log('BRIAN fields: ', fields);
+    // console.log('BRIAN fieldList: ', fieldList);
+    return `JSON_PARSE(LISTAGG(CASE WHEN group_set=${groupSet} THEN JSON_SERIALIZE(OBJECT(${fieldList
       .map(f => `'${f.rawName}', ${f.sqlExpression}`)
-      .join(',')})) END IGNORE NULLS)`;
+      .join(',')})) END IGNORE NULLS))`;
   }
 
   sqlAnyValueTurtle(groupSet: number, fieldList: DialectFieldList): string {
@@ -242,6 +242,14 @@ export class RedshiftDialect extends PostgresBase {
     isArray: boolean,
     _isInNestedPipeline: boolean
   ): string {
+    console.log('BRIAN sqlUnnestAlias params:', {
+      source,
+      alias,
+      fieldList,
+      needDistinctKey,
+      isArray,
+      _isInNestedPipeline,
+    });
     if (isArray) {
       if (needDistinctKey) {
         return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_id', row_number() over (), 'value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
@@ -253,7 +261,9 @@ export class RedshiftDialect extends PostgresBase {
       return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_number', row_number() over())|| __xx::jsonb as b FROM  JSONB_ARRAY_ELEMENTS(${source}) __xx ))) as ${alias} ON true`;
     } else {
       // return `CROSS JOIN LATERAL JSONB_ARRAY_ELEMENTS(${source}) as ${alias}`;
-      return `LEFT JOIN JSONB_ARRAY_ELEMENTS(${source}) as ${alias} ON true`;
+      console.log('BRIAN fieldList: ', this.mapFields(fieldList));
+      // can already access data fine so just keep original table
+      return `, __stage1 as ${alias}`;
     }
   }
 
@@ -291,6 +301,7 @@ export class RedshiftDialect extends PostgresBase {
     }
     if (parentType !== 'table') {
       let ret = `JSONB_EXTRACT_PATH_TEXT(${parentAlias},'${childName}')`;
+      ret = `${parentAlias}.${childName}`;
       switch (childType) {
         case 'string':
           break;

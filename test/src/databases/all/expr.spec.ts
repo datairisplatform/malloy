@@ -95,6 +95,7 @@ describe.each(runtimes.runtimeList)('%s', (databaseName, runtime) => {
       seats: 0,
     });
   });
+
   // Floor was broken (wouldn't compile because the expression returned isn't an aggregate.)
   it('Floor() -or any function bustage with aggregates', async () => {
     await expect(`
