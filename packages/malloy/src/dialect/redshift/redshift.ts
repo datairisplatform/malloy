@@ -164,8 +164,14 @@ export class RedshiftDialect extends PostgresBase {
       tail += `[1:${limit}]`;
     }
     const fields = this.mapFields(fieldList);
-    // return `(ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}`;
-    return `COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT ${fields}\n  ) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}),'[]'::JSONB)`;
+    //return `(ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}`;
+    // original
+    // return `COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT ${fields}\n  ) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}),'[]'::JSONB)`;
+    console.log('BRIAN fields: ', fields);
+    console.log('BRIAN fieldList: ', fieldList);
+    return `LISTAGG(CASE WHEN group_set=${groupSet} THEN JSON_SERIALIZE(OBJECT(${fieldList
+      .map(f => `'${f.rawName}', ${f.sqlExpression}`)
+      .join(',')})) END IGNORE NULLS)`;
   }
 
   sqlAnyValueTurtle(groupSet: number, fieldList: DialectFieldList): string {
@@ -180,8 +186,8 @@ export class RedshiftDialect extends PostgresBase {
     groupSet: number,
     sqlName: string
   ): string {
-    return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} AND ${name} IS NOT NULL THEN ${name} END))[1] as ${sqlName}`;
-
+    // return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} AND ${name} IS NOT NULL THEN ${name} END))[1] as ${sqlName}`;
+    return `MAX(CASE WHEN group_set = ${groupSet} THEN ${name} END) AS ${sqlName}`;
     // return `(ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL))[1] as ${sqlName}`;
   }
 
