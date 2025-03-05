@@ -34,7 +34,7 @@ const [describe] = describeIfDatabaseAvailable(['postgres']);
  * and keys uniquely for each test you will see cross test interactions.
  */
 
-describe('PostgresConnection', () => {
+describe('RedshiftConnection', () => {
   let connection: RedshiftConnection;
   let getTableSchema: jest.SpyInstance;
   let getSQLBlockSchema: jest.SpyInstance;

@@ -61,12 +61,11 @@ import {
 } from '@aws-sdk/client-redshift-data';
 
 interface RedshiftConnectionConfiguration {
-  region?: string;
-  workgroupName?: string;
-  database?: string;
-  schema?: string;
-  // contains username and password for user
-  secretArn?: string;
+  host?: string;
+  port?: number;
+  username?: string;
+  password?: string;
+  databaseName?: string;
 }
 
 type RedshiftConnectionConfigurationReader = RedshiftConnectionConfiguration;
@@ -82,12 +81,11 @@ export class RedshiftConnection
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
   private config: RedshiftConnectionConfigurationReader = {
-    region: 'us-west-1',
-    workgroupName: 'default-workgroup',
-    database: 'dev',
-    schema: 'malloytest',
-    secretArn:
-      'arn:aws:secretsmanager:us-west-1:977099028464:secret:redshift-access-secret-4MyGTg',
+    host: 'default-workgroup.977099028464.us-west-1.redshift-serverless.amazonaws.com',
+    port: 5439,
+    username: 'datairis',
+    password: 'Sesame123',
+    databaseName: 'dev',
   };
 
   private readonly dialect = new RedshiftDialect();
@@ -242,98 +240,168 @@ export class RedshiftConnection
   public async connectionSetup(client: Client): Promise<void> {
     await client.query("SET TIME ZONE 'UTC'");
   }
+  protected async getClient(): Promise<Client> {
+    const {
+      username: user,
+      password,
+      databaseName: database,
+      port,
+      host,
+    } = await this.readConfig();
+    console.log('BRIAN getClient() config:', {
+      user,
+      password: password ? '[REDACTED]' : undefined,
+      database,
+      port,
+      host,
+    });
+    const connectionString =
+      'postgres://datairis:Sesame123@default-workgroup.977099028464.us-west-1.redshift-serverless.amazonaws.com:5439/dev?ssl=1';
+    return new Client({
+      connectionString: connectionString,
+    });
+  }
+  protected async runPostgresQuery(
+    sqlCommand: string,
+    _pageSize: number,
+    _rowIndex: number,
+    deJSON: boolean
+  ): Promise<MalloyQueryData> {
+    console.log('BRIAN runPostgresQuery():');
+    const client = await this.getClient();
+    console.log('BRIAN got client, attempting to connect');
+    try {
+      await client.connect();
+    } catch (error) {
+      console.log('BRIAN connection error:', error);
+      throw error;
+    }
+    console.log('BRIAN client connected');
+    //await this.connectionSetup(client);
+
+    let result = await client.query(sqlCommand);
+    console.log('BRIAN result:', result);
+    if (Array.isArray(result)) {
+      result = result.pop();
+    }
+    // if (deJSON) {
+    //   for (let i = 0; i < result.rows.length; i++) {
+    //     result.rows[i] = result.rows[i].row;
+    //   }
+    // }
+    if (result?.rows) {
+      result.rows = result.rows.map(row => {
+        const newRow = {...row};
+        Object.keys(newRow).forEach((key, index) => {
+          if (key === '?column?') {
+            newRow[index + 1] = newRow[key];
+            delete newRow[key];
+          }
+        });
+        return newRow;
+      });
+    }
+    console.log('BRIAN result after deJSON:', result);
+    await client.end();
+    return {
+      rows: result.rows as QueryData,
+      totalRows: result.rows.length,
+    };
+  }
 
   public async runSQL(
     sql: string | string[],
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
+    const sqlToRun = Array.isArray(sql) ? sql[0] : sql;
+    return this.runPostgresQuery(sqlToRun, 10000, 0, true);
     // add statement in beginning of query to set the default schema/db
-    const sqlArray = [`SET search_path TO ${this.config.schema};`];
-    if (Array.isArray(sql)) {
-      sqlArray.push(...sql);
-    } else {
-      sqlArray.push(sql);
-    }
-    // Initiate RedshiftData client
-    const client = new RedshiftDataClient({region: this.config.region});
+    // const sqlArray = [`SET search_path TO ${this.config.schema};`];
+    // if (Array.isArray(sql)) {
+    //   sqlArray.push(...sql);
+    // } else {
+    //   sqlArray.push(sql);
+    // }
+    // // Initiate RedshiftData client
+    // const client = new RedshiftDataClient({region: this.config.region});
 
-    // Execute all SQL statements in batch
-    // so they share the same context
-    // if we don't do this, the "SET search_path" won't affect the following queries
-    const batchExecuteCommand = new BatchExecuteStatementCommand({
-      WorkgroupName: this.config.workgroupName, //todo make configurable
-      Database: this.config.database, // todo make configurable
-      SecretArn: this.config.secretArn,
-      Sqls: sqlArray,
-    });
+    // // Execute all SQL statements in batch
+    // // so they share the same context
+    // // if we don't do this, the "SET search_path" won't affect the following queries
+    // const batchExecuteCommand = new BatchExecuteStatementCommand({
+    //   WorkgroupName: this.config.workgroupName, //todo make configurable
+    //   Database: this.config.database, // todo make configurable
+    //   SecretArn: this.config.secretArn,
+    //   Sqls: sqlArray,
+    // });
 
-    const batchResponse = await client.send(batchExecuteCommand);
-    const batchId = batchResponse.Id;
+    // const batchResponse = await client.send(batchExecuteCommand);
+    // const batchId = batchResponse.Id;
 
-    // Wait for all queries to complete
-    let status: string | undefined;
-    let result;
-    let statusResponse;
-    do {
-      // Pause for 1 second between status checks
-      await new Promise(resolve => setTimeout(resolve, 1000));
+    // // Wait for all queries to complete
+    // let status: string | undefined;
+    // let result;
+    // let statusResponse;
+    // do {
+    //   // Pause for 1 second between status checks
+    //   await new Promise(resolve => setTimeout(resolve, 1000));
 
-      const describeCommand = new DescribeStatementCommand({
-        Id: batchId,
-      });
-      statusResponse = await client.send(describeCommand);
+    //   const describeCommand = new DescribeStatementCommand({
+    //     Id: batchId,
+    //   });
+    //   statusResponse = await client.send(describeCommand);
 
-      status = statusResponse.Status;
-    } while (
-      status !== 'FINISHED' &&
-      status !== 'FAILED' &&
-      status !== 'ABORTED'
-    );
+    //   status = statusResponse.Status;
+    // } while (
+    //   status !== 'FINISHED' &&
+    //   status !== 'FAILED' &&
+    //   status !== 'ABORTED'
+    // );
 
-    // If the batch finished successfully, fetch the results of the last statement
-    if (status === 'FINISHED') {
-      // console.log('BRIAN final status check:', statusResponse);
-      // Get the last statement's ID from the batch
-      const lastStatementId =
-        statusResponse.SubStatements?.[statusResponse.SubStatements.length - 1]
-          .Id;
+    // // If the batch finished successfully, fetch the results of the last statement
+    // if (status === 'FINISHED') {
+    //   // console.log('BRIAN final status check:', statusResponse);
+    //   // Get the last statement's ID from the batch
+    //   const lastStatementId =
+    //     statusResponse.SubStatements?.[statusResponse.SubStatements.length - 1]
+    //       .Id;
 
-      if (lastStatementId) {
-        const resultCommand = new GetStatementResultCommand({
-          Id: lastStatementId,
-        });
-        result = await client.send(resultCommand);
-      }
-    } else {
-      throw new Error(
-        `Batch error: \n sql: ${sqlArray.join('\n')} \n ${JSON.stringify(
-          statusResponse,
-          null,
-          2
-        )}`
-      );
-    }
+    //   if (lastStatementId) {
+    //     const resultCommand = new GetStatementResultCommand({
+    //       Id: lastStatementId,
+    //     });
+    //     result = await client.send(resultCommand);
+    //   }
+    // } else {
+    //   throw new Error(
+    //     `Batch error: \n sql: ${sqlArray.join('\n')} \n ${JSON.stringify(
+    //       statusResponse,
+    //       null,
+    //       2
+    //     )}`
+    //   );
+    // }
 
-    return {
-      rows:
-        result?.Records?.map(record => {
-          const row: QueryDataRow = {};
-          record.forEach((field, index) => {
-            // Extract the first non-null value (longValue, stringValue etc)
-            const value =
-              field.longValue ?? field.stringValue ?? field.doubleValue ?? null;
-            let key = result?.ColumnMetadata?.[index]?.name ?? '';
-            if (key === '?column?') {
-              // this can happen on SELECT 1 when there's no obvious column
-              key = (index + 1).toString();
-            }
-            row[key] = value;
-          });
-          return row;
-        }) ?? [],
-      totalRows: result?.TotalNumRows ?? 0,
-    };
+    // return {
+    //   rows:
+    //     result?.Records?.map(record => {
+    //       const row: QueryDataRow = {};
+    //       record.forEach((field, index) => {
+    //         // Extract the first non-null value (longValue, stringValue etc)
+    //         const value =
+    //           field.longValue ?? field.stringValue ?? field.doubleValue ?? null;
+    //         let key = result?.ColumnMetadata?.[index]?.name ?? '';
+    //         if (key === '?column?') {
+    //           // this can happen on SELECT 1 when there's no obvious column
+    //           key = (index + 1).toString();
+    //         }
+    //         row[key] = value;
+    //       });
+    //       return row;
+    //     }) ?? [],
+    //   totalRows: result?.TotalNumRows ?? 0,
+    // };
   }
 
   public async *runSQLStream(
