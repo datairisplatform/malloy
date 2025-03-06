@@ -49,6 +49,10 @@ import {
 import {BaseConnection} from '@malloydata/malloy/connection';
 
 import {Client, Pool} from 'pg';
+import {types} from 'pg';
+// Override parser for 64-bit integers (OID 20) and standard integers (OID 23)
+types.setTypeParser(20, val => parseInt(val, 10));
+types.setTypeParser(23, val => parseInt(val, 10));
 import QueryStream from 'pg-query-stream';
 import {randomUUID} from 'crypto';
 import AWS from 'aws-sdk';
@@ -66,6 +70,7 @@ interface RedshiftConnectionConfiguration {
   username?: string;
   password?: string;
   databaseName?: string;
+  schema?: string;
 }
 
 type RedshiftConnectionConfigurationReader = RedshiftConnectionConfiguration;
@@ -80,25 +85,19 @@ export class RedshiftConnection
 {
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
-  private config: RedshiftConnectionConfigurationReader = {
-    host: 'default-workgroup.977099028464.us-west-1.redshift-serverless.amazonaws.com',
-    port: 5439,
-    username: 'datairis',
-    password: 'Sesame123',
-    databaseName: 'dev',
-  };
+  private config: RedshiftConnectionConfigurationReader = {};
 
   private readonly dialect = new RedshiftDialect();
 
   constructor(
     name: string,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: RedshiftConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader,
+    queryOptionsReader?: QueryOptionsReader
   );
   constructor(
     name: string,
-    queryOptionsReader?: QueryOptionsReader,
-    configReader?: RedshiftConnectionConfigurationReader
+    configReader?: RedshiftConnectionConfigurationReader,
+    queryOptionsReader?: QueryOptionsReader
   ) {
     super();
     this.name = name;
@@ -208,7 +207,7 @@ export class RedshiftConnection
     tableKey: string,
     tablePath: string
   ): Promise<TableSourceDef | string> {
-    //console.log('BRIAN fetching TABLE schema');
+    console.log('BRIAN fetching TABLE schema');
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
@@ -230,6 +229,7 @@ export class RedshiftConnection
     } catch (error) {
       return `Error fetching TABLE schema for ${tablePath}: ${error.message}`;
     }
+    console.log('BRIAN schema from table:', structDef);
     return structDef;
   }
 
@@ -248,65 +248,79 @@ export class RedshiftConnection
       port,
       host,
     } = await this.readConfig();
-    console.log('BRIAN getClient() config:', {
+
+    return new Client({
       user,
-      password: password ? '[REDACTED]' : undefined,
+      password,
       database,
       port,
       host,
-    });
-    const connectionString =
-      'postgres://datairis:Sesame123@default-workgroup.977099028464.us-west-1.redshift-serverless.amazonaws.com:5439/dev?ssl=1';
-    return new Client({
-      connectionString: connectionString,
+      ssl: {
+        rejectUnauthorized: false, // For production, consider proper SSL validation
+      },
     });
   }
   protected async runPostgresQuery(
-    sqlCommand: string,
+    sql: string | string[],
     _pageSize: number,
     _rowIndex: number,
     deJSON: boolean
   ): Promise<MalloyQueryData> {
-    console.log('BRIAN runPostgresQuery():');
-    const client = await this.getClient();
-    console.log('BRIAN got client, attempting to connect');
-    try {
-      await client.connect();
-    } catch (error) {
-      console.log('BRIAN connection error:', error);
-      throw error;
+    const sqlArray = [`SET search_path TO ${this.config.schema};`];
+    if (Array.isArray(sql)) {
+      sqlArray.push(...sql);
+    } else {
+      sqlArray.push(sql);
     }
-    console.log('BRIAN client connected');
-    //await this.connectionSetup(client);
 
-    let result = await client.query(sqlCommand);
-    console.log('BRIAN result:', result);
-    if (Array.isArray(result)) {
-      result = result.pop();
-    }
-    // if (deJSON) {
-    //   for (let i = 0; i < result.rows.length; i++) {
-    //     result.rows[i] = result.rows[i].row;
-    //   }
-    // }
-    if (result?.rows) {
-      result.rows = result.rows.map(row => {
-        const newRow = {...row};
-        Object.keys(newRow).forEach((key, index) => {
-          if (key === '?column?') {
-            newRow[index + 1] = newRow[key];
-            delete newRow[key];
-          }
+    let client;
+    try {
+      console.log('BRIAN runPostgresQuery():');
+      client = await this.getClient();
+      console.log('BRIAN got client, attempting to connect');
+      await client.connect();
+      //await this.connectionSetup(client);
+
+      // BEGIN and COMMIT are for executing multiple statements in a single transaction
+      // ex: so the SET search_path is applied to all statements
+      await client.query('BEGIN');
+      let result;
+      for (const sqlStatement of sqlArray) {
+        result = await client.query(sqlStatement);
+      }
+      await client.query('COMMIT');
+      if (Array.isArray(result)) {
+        result = result.pop();
+      }
+      // if (deJSON) {
+      //   for (let i = 0; i < result.rows.length; i++) {
+      //     result.rows[i] = result.rows[i].row;
+      //   }
+      // }
+      if (result?.rows) {
+        result.rows = result.rows.map(row => {
+          const newRow = {...row};
+          Object.keys(newRow).forEach((key, index) => {
+            if (key === '?column?') {
+              newRow[index + 1] = newRow[key];
+              delete newRow[key];
+            }
+          });
+          return newRow;
         });
-        return newRow;
-      });
+      }
+      console.log('BRIAN result:', result);
+
+      await client.end();
+      return {
+        rows: result.rows as QueryData,
+        totalRows: result.rows.length,
+      };
+    } catch (error) {
+      throw new Error(`Error executing query: ${error.message}`);
+    } finally {
+      await client.end();
     }
-    console.log('BRIAN result after deJSON:', result);
-    await client.end();
-    return {
-      rows: result.rows as QueryData,
-      totalRows: result.rows.length,
-    };
   }
 
   public async runSQL(
@@ -315,7 +329,7 @@ export class RedshiftConnection
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
     const sqlToRun = Array.isArray(sql) ? sql[0] : sql;
-    return this.runPostgresQuery(sqlToRun, 10000, 0, true);
+    return this.runPostgresQuery(sqlToRun, 100000, 0, true);
     // add statement in beginning of query to set the default schema/db
     // const sqlArray = [`SET search_path TO ${this.config.schema};`];
     // if (Array.isArray(sql)) {

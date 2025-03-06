@@ -476,10 +476,10 @@ export class RedshiftDialect extends PostgresBase {
   sqlTypeToMalloyType(sqlType: string): LeafAtomicTypeDef {
     // Remove trailing params
     const baseSqlType = sqlType.match(/^([\w\s]+)/)?.at(0) ?? sqlType;
-    // console.log(
-    //   'BRIAN converting sqlTypes: ',
-    //   baseSqlType.trim().toLowerCase()
-    // );
+    console.log(
+      'BRIAN converting sqlTypes: ',
+      baseSqlType.trim().toLowerCase()
+    );
     return (
       postgresToMalloyTypes[baseSqlType.trim().toLowerCase()] ?? {
         type: 'sql native',
