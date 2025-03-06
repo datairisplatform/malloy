@@ -151,14 +151,12 @@ export class RedshiftConnection
     //console.log('BRIAN fetching SELECT schema');
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
-    const infoQuery = [
-      `DROP TABLE IF EXISTS ${tempTableName};`,
-      `CREATE TEMP TABLE ${tempTableName} AS ${sqlRef.selectStr};`,
-      `SELECT "column" as "column_name", type as "data_type", null as "comment"
+    const infoQuery = `DROP TABLE IF EXISTS ${tempTableName};
+      CREATE TEMP TABLE ${tempTableName} AS ${sqlRef.selectStr};
+      SELECT "column" as "column_name", type as "data_type", null as "comment"
       FROM pg_table_def
       WHERE tablename = '${tempTableName}';
-      `,
-    ];
+      `;
     //   drop table if exists ${tempTableName};
     //   create temp table ${tempTableName} as SELECT * FROM (
     //     ${sqlRef.selectStr}
@@ -172,7 +170,7 @@ export class RedshiftConnection
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
-      const queries = infoQuery.join('\n');
+      const queries = infoQuery;
       return `Error fetching SELECT schema for \n ${queries}: \n ${error}`;
     }
     return structDef;
@@ -182,8 +180,13 @@ export class RedshiftConnection
     infoQuery: string | string[],
     structDef: StructDef
   ): Promise<void> {
+    console.log(
+      'BRIAN query: ',
+      Array.isArray(infoQuery) ? infoQuery.join('\n') : infoQuery
+    );
     const {rows, totalRows} = await this.runSQL(infoQuery);
-    // console.log('BRIAN schema rows:', rows);
+    console.log('BRIAN rows: ', rows);
+    console.log('BRIAN schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -220,9 +223,10 @@ export class RedshiftConnection
     if (table === undefined) {
       return 'Default schema not yet supported in Postgres';
     }
-    const infoQuery = `SELECT "column" as "column_name", type as "data_type", null as "comment"
-      FROM pg_table_def
-      WHERE tablename = '${table}';`;
+    const infoQuery = `SELECT "column_name", "data_type", "remarks" as "comment"
+      FROM svv_columns
+      WHERE table_schema = '${schema}'
+      AND table_name = '${table}';`;
 
     try {
       await this.schemaFromQuery(infoQuery, structDef);
@@ -266,7 +270,9 @@ export class RedshiftConnection
     _rowIndex: number,
     deJSON: boolean
   ): Promise<MalloyQueryData> {
-    const sqlArray = [`SET search_path TO ${this.config.schema};`];
+    const sqlArray = this.config.schema
+      ? [`SET search_path TO ${this.config.schema};`]
+      : [];
     if (Array.isArray(sql)) {
       sqlArray.push(...sql);
     } else {
@@ -283,12 +289,13 @@ export class RedshiftConnection
 
       // BEGIN and COMMIT are for executing multiple statements in a single transaction
       // ex: so the SET search_path is applied to all statements
-      await client.query('BEGIN');
+      //await client.query('BEGIN');
       let result;
       for (const sqlStatement of sqlArray) {
         result = await client.query(sqlStatement);
       }
-      await client.query('COMMIT');
+      console.log('BRIAN result: ', result);
+      //await client.query('COMMIT');
       if (Array.isArray(result)) {
         result = result.pop();
       }
