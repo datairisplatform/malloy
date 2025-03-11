@@ -34,25 +34,28 @@ import {
   LeafAtomicTypeDef,
   RecordLiteralNode,
   ArrayLiteralNode,
+  TimeLiteralNode,
+  TD,
+  TimeTruncExpr,
 } from '../../model/malloy_types';
 import {
   DialectFunctionOverloadDef,
   expandOverrideMap,
   expandBlueprintMap,
 } from '../functions';
-import {DialectFieldList, FieldReferenceType, QueryInfo} from '../dialect';
+import {DialectFieldList, FieldReferenceType, qtz, QueryInfo} from '../dialect';
 import {PostgresBase} from '../pg_impl';
 import {POSTGRES_DIALECT_FUNCTIONS} from './dialect_functions';
 import {REDSHIFT_MALLOY_STANDARD_OVERLOADS} from './function_overrides';
 
 const pgMakeIntervalMap: Record<string, string> = {
-  'year': 'years',
-  'month': 'months',
-  'week': 'weeks',
-  'day': 'days',
-  'hour': 'hours',
-  'minute': 'mins',
-  'second': 'secs',
+  'year': 'year',
+  'month': 'month',
+  'week': 'week',
+  'day': 'day',
+  'hour': 'hour',
+  'minute': 'minute',
+  'second': 'second',
 };
 
 const inSeconds: Record<string, number> = {
@@ -76,6 +79,7 @@ const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'time': {type: 'timestamp'}, //?
   'timetz': {type: 'timestamp'}, //?
   'timestamp': {type: 'timestamp'},
+  'timestamp without time zone': {type: 'timestamp'},
   'timestamptz': {type: 'timestamp'}, // maybe not
   'interval year to month': {type: 'string'}, //?
   'interval day to second': {type: 'string'}, //?
@@ -368,8 +372,13 @@ export class RedshiftDialect extends PostgresBase {
       timeframe = 'day';
       n = `${n}*7`;
     }
-    const interval = `make_interval(${pgMakeIntervalMap[timeframe]}=>${n})`;
-    return `(${df.kids.base.sql})${df.op}${interval}`;
+    // // const interval = `make_interval(${pgMakeIntervalMap[timeframe]}=>${n})`;
+    // const interval = `interval '${n} ${pgMakeIntervalMap[timeframe]}'`;
+    // return `(${df.kids.base.sql}) ${df.op} ${interval}`;
+
+    return `DATEADD(${pgMakeIntervalMap[timeframe]}, (${n}${
+      df.op === '+' ? '' : '*-1'
+    })::INT, (${df.kids.base.sql})::TIMESTAMP)`;
   }
 
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
@@ -447,6 +456,21 @@ export class RedshiftDialect extends PostgresBase {
 
   sqlLiteralRegexp(literal: string): string {
     return "'" + literal.replace(/'/g, "''") + "'";
+  }
+
+  sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
+    console.log('BRIAN got here');
+    console.log('BRIAN lt.literal: ', lt.literal);
+    if (TD.isDate(lt.typeDef)) {
+      return `DATE '${lt.literal}'`;
+    }
+    const tz = lt.timezone || qtz(qi);
+    console.log('BRIAN tz: ', tz);
+    if (tz) {
+      return `CONVERT_TIMEZONE('${tz}', 'UTC', '${lt.literal}')`;
+    }
+    console.log('BRIAN last timestamp option');
+    return `'${lt.literal}' AT TIME ZONE 'UTC'`;
   }
 
   getDialectFunctionOverrides(): {
