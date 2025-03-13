@@ -206,18 +206,6 @@ export class DatabricksConnection
     await client.query("SET TIME ZONE 'UTC'");
   }
 
-  public async runSQL(
-    sql: string,
-    {rowLimit}: RunSQLOptions = {},
-    _rowIndex = 0
-  ): Promise<MalloyQueryData> {
-    const result = await this.runRawSQL([sql], {rowLimit}, _rowIndex);
-    const actualResult = result.rows.map(row =>
-      row['row'] ? JSON.parse(String(row['row'])) : row
-    );
-    return {rows: actualResult, totalRows: result.totalRows};
-  }
-
   public async runRawSQL(
     sql: string[],
     {rowLimit}: RunSQLOptions = {},
@@ -281,6 +269,18 @@ export class DatabricksConnection
       .catch(error => {
         throw new Error(`Databricks connection / execution error: ${error}`);
       });
+  }
+
+  public async runSQL(
+    sql: string,
+    {rowLimit}: RunSQLOptions = {},
+    _rowIndex = 0
+  ): Promise<MalloyQueryData> {
+    const result = await this.runRawSQL([sql], {rowLimit}, _rowIndex);
+    const actualResult = result.rows.map(row =>
+      row['row'] ? JSON.parse(String(row['row'])) : row
+    );
+    return {rows: actualResult, totalRows: result.totalRows};
   }
 
   public async *runSQLStream(
