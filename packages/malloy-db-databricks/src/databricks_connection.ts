@@ -276,11 +276,11 @@ export class DatabricksConnection
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    const result = await this.runRawSQL([sql], {rowLimit}, _rowIndex);
-    const actualResult = result.rows.map(row =>
+    const {rows, totalRows} = await this.runRawSQL([sql], {rowLimit}, _rowIndex);
+    const actualResult = rows.map(row =>
       row['row'] ? JSON.parse(String(row['row'])) : row
     );
-    return {rows: actualResult, totalRows: result.totalRows};
+    return {rows: actualResult, totalRows};
   }
 
   public async *runSQLStream(
