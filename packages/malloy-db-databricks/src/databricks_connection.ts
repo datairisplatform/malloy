@@ -74,7 +74,6 @@ export class DatabricksConnection
 
   private client: DBSQLClient | null = null;
   private session: IDBSQLSession | null = null;
-  private connecting: Promise<void> = Promise.resolve();
 
   constructor(
     name: string,
@@ -96,30 +95,6 @@ export class DatabricksConnection
     }
 
     this.client = new DBSQLClient();
-    this.connecting = this.connect();
-  }
-
-  private async connect(): Promise<void> {
-    if (!this.client) {
-      this.client = new DBSQLClient();
-    }
-
-    if (this.config.token) {
-      await this.client.connect({
-        token: this.config.token,
-        host: this.config.host,
-        path: this.config.path,
-      });
-    } else {
-      await this.client.connect({
-        authType: 'databricks-oauth',
-        host: this.config.host,
-        path: this.config.path,
-        oauthClientId: this.config.oauthClientId,
-        oauthClientSecret: this.config.oauthClientSecret,
-      });
-    }
-    this.session = await this.client.openSession();
   }
 
   private async readQueryConfig(): Promise<RunSQLOptions> {
