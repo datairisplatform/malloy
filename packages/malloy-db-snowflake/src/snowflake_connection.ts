@@ -343,52 +343,63 @@ export class SnowflakeConnection
       // * remove fields for which we have multiple types
       //   ( requires folding decimal to integer )
       const sampleQuery = `
-WITH base AS (
-  SELECT
-    regexp_replace(path, '\\\\[[0-9]+\\\\]', '[*]') AS norm_path,
-    CASE
-      WHEN typeof(value) = 'INTEGER' THEN 'decimal'
-      WHEN typeof(value) = 'DOUBLE'   THEN 'decimal'
-      ELSE lower(typeof(value))
-    END AS type
-  FROM (
-         SELECT object_construct(*) o
-         FROM ${tablePath}
-         LIMIT 100
-       )
-       , table(flatten(input => o, recursive => true)) AS meta
-  WHERE lower(typeof(value)) != 'null_value'
-),
-agg AS (
-  SELECT
-    norm_path,
-    min(type) AS type,
-    count(distinct type) AS type_count
-  FROM base
-  GROUP BY norm_path
-),
-ambiguous AS (
-  SELECT
-    norm_path,
-    replace(replace(norm_path, '[', '\\['), ']', '\\]') AS esc_norm_path
-  FROM agg
-  WHERE type_count > 1
-)
-SELECT a.norm_path AS path, a.type
-FROM agg a
-WHERE a.type_count = 1
-  -- now only include nodes that are a descendant of an ambiguous node
-  AND NOT EXISTS (
-    SELECT 1
-    FROM ambiguous b
-    WHERE a.norm_path <> b.norm_path
-      AND (
-           a.norm_path LIKE b.esc_norm_path || '.%' ESCAPE '\\\\'
-        OR a.norm_path LIKE b.esc_norm_path || '[%' ESCAPE '\\\\'
-      )
-  )
-ORDER BY a.norm_path;
-      `;
+        WITH base AS (
+          SELECT
+            regexp_replace(path, '\\\\[[0-9]+\\\\]', '[]') AS norm_path,
+            CASE
+              WHEN typeof(value) = 'INTEGER' THEN 'decimal'
+              WHEN typeof(value) = 'DOUBLE' THEN 'decimal'
+              ELSE lower(typeof(value))
+            END AS type
+          FROM
+            (
+              SELECT
+                object_construct() o
+              FROM
+                ${tablePath}
+              LIMIT
+                100
+            ), table(flatten(input = > o, recursive = > true)) AS meta
+          WHERE
+            lower(typeof(value)) != 'null_value'
+        ),
+        agg AS (
+          SELECT
+            norm_path,
+            min(type) AS type,
+            count(distinct type) AS type_count
+          FROM
+            base
+          GROUP BY
+            norm_path
+        ),
+        ambiguous AS (
+          SELECT
+            norm_path,
+          FROM
+            agg
+          WHERE
+            type_count > 1
+        )
+        SELECT
+          a.norm_path AS path,
+          a.type
+        FROM
+          agg a
+        WHERE
+          a.type_count = 1 -- now only include nodes that are a descendant of an ambiguous node
+          AND NOT EXISTS (
+            SELECT
+              1
+            FROM
+              ambiguous b
+            WHERE
+              startswith(a.norm_path, b.norm_path || '.')
+              OR startswith(a.norm_path, b.norm_path || '[')
+          )
+        ORDER BY
+          a.norm_path;
+        `;
       const fieldPathRows = await this.executor.batch(sampleQuery);
 
       // take the schema in list form an convert it into a tree.
