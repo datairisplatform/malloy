@@ -383,7 +383,6 @@ export class SnowflakeConnection
               OR startswith(a.norm_path, b.norm_path || '[')
           )
       ORDER BY a.norm_path;`;
-	console.log("Running", sampleQuery);
       const fieldPathRows = await this.executor.batch(sampleQuery);
 
       // take the schema in list form an convert it into a tree.
