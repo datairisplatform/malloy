@@ -168,11 +168,6 @@ export class RedshiftDialect extends PostgresBase {
       tail += `[1:${limit}]`;
     }
     const fields = this.mapFields(fieldList);
-    //return `(ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}`;
-    // original
-    // return `COALESCE(TO_JSONB((ARRAY_AGG((SELECT TO_JSONB(__x) FROM (SELECT ${fields}\n  ) as __x) ${orderBy} ) FILTER (WHERE group_set=${groupSet}))${tail}),'[]'::JSONB)`;
-    // console.log('BRIAN fields: ', fields);
-    // console.log('BRIAN fieldList: ', fieldList);
     return `JSON_PARSE(LISTAGG(CASE WHEN group_set=${groupSet} THEN JSON_SERIALIZE(OBJECT(${fieldList
       .map(f => `'${f.rawName}', ${f.sqlExpression}`)
       .join(',')})) END IGNORE NULLS))`;
@@ -190,9 +185,7 @@ export class RedshiftDialect extends PostgresBase {
     groupSet: number,
     sqlName: string
   ): string {
-    // return `(ARRAY_AGG(CASE WHEN group_set=${groupSet} AND ${name} IS NOT NULL THEN ${name} END))[1] as ${sqlName}`;
     return `MAX(CASE WHEN group_set = ${groupSet} THEN ${name} END) AS ${sqlName}`;
-    // return `(ARRAY_AGG(${name}) FILTER (WHERE group_set=${groupSet} AND ${name} IS NOT NULL))[1] as ${sqlName}`;
   }
 
   sqlCoaleseMeasuresInline(
@@ -203,41 +196,6 @@ export class RedshiftDialect extends PostgresBase {
     return `TO_JSONB((ARRAY_AGG((SELECT __x FROM (SELECT ${fields}) as __x)) FILTER (WHERE group_set=${groupSet}))[1])`;
   }
 
-  // UNNEST((select ARRAY((SELECT ROW(gen_random_uuid()::text, state, airport_count) FROM UNNEST(base.by_state) as by_state(state text, airport_count numeric, by_fac_type record[]))))) as by_state(__distinct_key text, state text, airport_count numeric)
-
-  // sqlUnnestAlias(
-  //   source: string,
-  //   alias: string,
-  //   fieldList: DialectFieldList,
-  //   needDistinctKey: boolean
-  // ): string {
-  //   const fields = [];
-  //   for (const f of fieldList) {
-  //     let t = undefined;
-  //     switch (f.type) {
-  //       case "string":
-  //         t = "text";
-  //         break;
-  //       case "number":
-  //         t = this.defaultNumberType;
-  //         break;
-  //       case "struct":
-  //         t = "record[]";
-  //         break;
-  //     }
-  //     fields.push(`${f.sqlOutputName} ${t || f.type}`);
-  //   }
-  //   if (needDistinctKey) {
-  //     return `UNNEST((select ARRAY((SELECT ROW(gen_random_uuid()::text, ${fieldList
-  //       .map((f) => f.sqlOutputName)
-  //       .join(", ")}) FROM UNNEST(${source}) as ${alias}(${fields.join(
-  //       ", "
-  //     )}))))) as ${alias}(__distinct_key text, ${fields.join(", ")})`;
-  //   } else {
-  //     return `UNNEST(${source}) as ${alias}(${fields.join(", ")})`;
-  //   }
-  // }
-
   sqlUnnestAlias(
     source: string,
     alias: string,
@@ -246,14 +204,6 @@ export class RedshiftDialect extends PostgresBase {
     isArray: boolean,
     _isInNestedPipeline: boolean
   ): string {
-    console.log('BRIAN sqlUnnestAlias params:', {
-      source,
-      alias,
-      fieldList,
-      needDistinctKey,
-      isArray,
-      _isInNestedPipeline,
-    });
     if (isArray) {
       if (needDistinctKey) {
         return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_id', row_number() over (), 'value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
@@ -261,11 +211,8 @@ export class RedshiftDialect extends PostgresBase {
         return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
       }
     } else if (needDistinctKey) {
-      // return `UNNEST(ARRAY(( SELECT AS STRUCT GENERATE_UUID() as __distinct_key, * FROM UNNEST(${source})))) as ${alias}`;
       return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_number', row_number() over())|| __xx::jsonb as b FROM  JSONB_ARRAY_ELEMENTS(${source}) __xx ))) as ${alias} ON true`;
     } else {
-      // return `CROSS JOIN LATERAL JSONB_ARRAY_ELEMENTS(${source}) as ${alias}`;
-      console.log('BRIAN fieldList: ', this.mapFields(fieldList));
       // can already access data fine so just keep original table
       return `, __stage1 as ${alias}`;
     }
@@ -372,9 +319,6 @@ export class RedshiftDialect extends PostgresBase {
       timeframe = 'day';
       n = `${n}*7`;
     }
-    // // const interval = `make_interval(${pgMakeIntervalMap[timeframe]}=>${n})`;
-    // const interval = `interval '${n} ${pgMakeIntervalMap[timeframe]}'`;
-    // return `(${df.kids.base.sql}) ${df.op} ${interval}`;
 
     return `DATEADD(${pgMakeIntervalMap[timeframe]}, (${n}${
       df.op === '+' ? '' : '*-1'
@@ -414,9 +358,6 @@ export class RedshiftDialect extends PostgresBase {
     )`;
   }
 
-  // TODO this does not preserve the types of the arguments, meaning we have to hack
-  // around this in the definitions of functions that use this to cast back to the correct
-  // type (from text). See the postgres implementation of stddev.
   sqlAggDistinct(
     key: string,
     values: string[],
@@ -459,17 +400,13 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
-    console.log('BRIAN got here');
-    console.log('BRIAN lt.literal: ', lt.literal);
     if (TD.isDate(lt.typeDef)) {
       return `DATE '${lt.literal}'`;
     }
     const tz = lt.timezone || qtz(qi);
-    console.log('BRIAN tz: ', tz);
     if (tz) {
       return `CONVERT_TIMEZONE('${tz}', 'UTC', '${lt.literal}')`;
     }
-    console.log('BRIAN last timestamp option');
     return `'${lt.literal}' AT TIME ZONE 'UTC'`;
   }
 
@@ -484,7 +421,6 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   malloyTypeToSQLType(malloyType: AtomicTypeDef): string {
-    //console.log('BRIAN malloyTypeToSQLType: ', malloyType);
     if (malloyType.type === 'number') {
       if (malloyType.numberType === 'integer') {
         return 'integer';
@@ -500,10 +436,6 @@ export class RedshiftDialect extends PostgresBase {
   sqlTypeToMalloyType(sqlType: string): LeafAtomicTypeDef {
     // Remove trailing params
     const baseSqlType = sqlType.match(/^([\w\s]+)/)?.at(0) ?? sqlType;
-    console.log(
-      'BRIAN converting sqlTypes: ',
-      baseSqlType.trim().toLowerCase()
-    );
     return (
       postgresToMalloyTypes[baseSqlType.trim().toLowerCase()] ?? {
         type: 'sql native',

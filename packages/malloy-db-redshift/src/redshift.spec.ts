@@ -36,8 +36,6 @@ const [describe] = describeIfDatabaseAvailable(['postgres']);
 
 describe('RedshiftConnection', () => {
   let connection: RedshiftConnection;
-  let getTableSchema: jest.SpyInstance;
-  let getSQLBlockSchema: jest.SpyInstance;
 
   beforeAll(async () => {
     connection = new RedshiftConnection('duckdb');
@@ -47,112 +45,8 @@ describe('RedshiftConnection', () => {
     await connection.close();
   });
 
-  beforeEach(async () => {
-    // getTableSchema = jest
-    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    //   .spyOn(PostgresConnection.prototype as any, 'fetchTableSchema')
-    //   .mockResolvedValue({
-    //     type: 'table',
-    //     dialect: 'postgres',
-    //     name: 'name',
-    //     tablePath: 'test',
-    //     connection: 'postgres',
-    //   });
-    // getSQLBlockSchema = jest
-    //   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    //   .spyOn(PostgresConnection.prototype as any, 'fetchSelectSchema')
-    //   .mockResolvedValue({
-    //     type: 'sql select',
-    //     dialect: 'postgres',
-    //     name: 'name',
-    //     selectStr: SQL_BLOCK_1.selectStr,
-    //     connection: 'postgres',
-    //     fields: [],
-    //   });
-  });
-
-  afterEach(() => {
-    // jest.resetAllMocks();
-  });
-
   it('can execute basic SELECT query', async () => {
     const result = await connection.runSQL('SELECT 1');
-    console.log('BRIAN result:', result);
     expect(result.rows).toEqual([{1: 1}]);
   });
-
-  // it('caches table schema', async () => {
-  //   await connection.fetchSchemaForTables({'test1': 'table1'}, {});
-  //   expect(getTableSchema).toBeCalledTimes(1);
-  //   await connection.fetchSchemaForTables({'test1': 'table1'}, {});
-  //   expect(getTableSchema).toBeCalledTimes(1);
-  // });
-
-  // it('refreshes table schema', async () => {
-  //   await connection.fetchSchemaForTables({'test2': 'table2'}, {});
-  //   expect(getTableSchema).toBeCalledTimes(1);
-  //   await connection.fetchSchemaForTables(
-  //     {'test2': 'table2'},
-  //     {refreshTimestamp: Date.now() + 10}
-  //   );
-  //   expect(getTableSchema).toBeCalledTimes(2);
-  // });
-
-  // it('caches sql schema', async () => {
-  //   await connection.fetchSchemaForSQLStruct(SQL_BLOCK_1, {});
-  //   expect(getSQLBlockSchema).toBeCalledTimes(1);
-  //   await connection.fetchSchemaForSQLStruct(SQL_BLOCK_1, {});
-  //   expect(getSQLBlockSchema).toBeCalledTimes(1);
-  // });
-
-  // it('refreshes sql schema', async () => {
-  //   await connection.fetchSchemaForSQLStruct(SQL_BLOCK_2, {});
-  //   expect(getSQLBlockSchema).toBeCalledTimes(1);
-  //   await connection.fetchSchemaForSQLStruct(SQL_BLOCK_2, {
-  //     refreshTimestamp: Date.now() + 10,
-  //   });
-  //   expect(getSQLBlockSchema).toBeCalledTimes(2);
-  // });
 });
-
-const SQL_BLOCK_1: SQLSourceDef = {
-  type: 'sql_select',
-  name: 'block1',
-  dialect: 'postgres',
-  connection: 'postgres',
-  fields: [],
-  selectStr: `
-SELECT
-created_at,
-sale_price,
-inventory_item_id
-FROM 'order_items.parquet'
-SELECT
-id,
-product_department,
-product_category,
-created_at AS inventory_items_created_at
-FROM "inventory_items.parquet"
-`,
-};
-
-const SQL_BLOCK_2: SQLSourceDef = {
-  type: 'sql_select',
-  name: 'block2',
-  dialect: 'postgres',
-  connection: 'postgres',
-  fields: [],
-  selectStr: `
-SELECT
-created_at,
-sale_price,
-inventory_item_id
-FROM read_parquet('order_items2.parquet', arg='value')
-SELECT
-id,
-product_department,
-product_category,
-created_at AS inventory_items_created_at
-FROM read_parquet("inventory_items2.parquet")
-`,
-};

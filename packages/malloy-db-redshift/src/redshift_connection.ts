@@ -48,22 +48,11 @@ import {
 } from '@malloydata/malloy';
 import {BaseConnection} from '@malloydata/malloy/connection';
 
-import {Client, Pool} from 'pg';
-import {types} from 'pg';
+import {Client, types} from 'pg';
 // Override parser for 64-bit integers (OID 20) and standard integers (OID 23)
 types.setTypeParser(20, val => parseInt(val, 10));
 types.setTypeParser(23, val => parseInt(val, 10));
-import QueryStream from 'pg-query-stream';
 import {randomUUID} from 'crypto';
-import AWS from 'aws-sdk';
-import {
-  RedshiftDataClient,
-  ExecuteStatementCommand,
-  DescribeStatementCommand,
-  GetStatementResultCommand,
-  BatchExecuteStatementCommand,
-} from '@aws-sdk/client-redshift-data';
-
 interface RedshiftConnectionConfiguration {
   host?: string;
   port?: number;
@@ -86,7 +75,6 @@ export class RedshiftConnection
   public readonly name: string;
   private queryOptionsReader: QueryOptionsReader = {};
   private config: RedshiftConnectionConfigurationReader = {};
-
   private readonly dialect = new RedshiftDialect();
 
   constructor(
@@ -148,7 +136,6 @@ export class RedshiftConnection
   async fetchSelectSchema(
     sqlRef: SQLSourceDef
   ): Promise<SQLSourceDef | string> {
-    //console.log('BRIAN fetching SELECT schema');
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
     const tempTableName = `tmp${randomUUID()}`.replace(/-/g, '');
     const infoQuery = `DROP TABLE IF EXISTS ${tempTableName};
@@ -157,16 +144,6 @@ export class RedshiftConnection
       FROM pg_table_def
       WHERE tablename = '${tempTableName}';
       `;
-    //   drop table if exists ${tempTableName};
-    //   create temp table ${tempTableName} as SELECT * FROM (
-    //     ${sqlRef.selectStr}
-    //   ) as x where false;
-    //   SELECT column_name, c.data_type, e.data_type as element_type
-    //   FROM information_schema.columns c LEFT JOIN information_schema.element_types e
-    //     ON ((c.table_catalog, c.table_schema, c.table_name, 'TABLE', c.dtd_identifier)
-    //       = (e.object_catalog, e.object_schema, e.object_name, e.object_type, e.collection_type_identifier))
-    //   where table_name='${tempTableName}';
-    // `;
     try {
       await this.schemaFromQuery(infoQuery, structDef);
     } catch (error) {
@@ -180,13 +157,7 @@ export class RedshiftConnection
     infoQuery: string | string[],
     structDef: StructDef
   ): Promise<void> {
-    console.log(
-      'BRIAN query: ',
-      Array.isArray(infoQuery) ? infoQuery.join('\n') : infoQuery
-    );
     const {rows, totalRows} = await this.runSQL(infoQuery);
-    console.log('BRIAN rows: ', rows);
-    console.log('BRIAN schema rows:', rows);
     if (!totalRows) {
       throw new Error('Unable to read schema.');
     }
@@ -201,7 +172,6 @@ export class RedshiftConnection
       } else {
         const malloyType = this.dialect.sqlTypeToMalloyType(postgresDataType);
         structDef.fields.push({...malloyType, name});
-        //console.log('BRIAN structDef.fields', structDef.fields);
       }
     }
   }
@@ -210,7 +180,6 @@ export class RedshiftConnection
     tableKey: string,
     tablePath: string
   ): Promise<TableSourceDef | string> {
-    console.log('BRIAN fetching TABLE schema');
     const structDef: StructDef = {
       type: 'table',
       name: tableKey,
@@ -233,7 +202,6 @@ export class RedshiftConnection
     } catch (error) {
       return `Error fetching TABLE schema for ${tablePath}: ${error.message}`;
     }
-    console.log('BRIAN schema from table:', structDef);
     return structDef;
   }
 
@@ -260,11 +228,11 @@ export class RedshiftConnection
       port,
       host,
       ssl: {
-        rejectUnauthorized: false, // For production, consider proper SSL validation
+        rejectUnauthorized: false,
       },
     });
   }
-  protected async runPostgresQuery(
+  protected async runRedshiftQuery(
     sql: string | string[],
     _pageSize: number,
     _rowIndex: number,
@@ -281,29 +249,15 @@ export class RedshiftConnection
 
     let client;
     try {
-      console.log('BRIAN runPostgresQuery():');
       client = await this.getClient();
-      console.log('BRIAN got client, attempting to connect');
       await client.connect();
-      //await this.connectionSetup(client);
-
-      // BEGIN and COMMIT are for executing multiple statements in a single transaction
-      // ex: so the SET search_path is applied to all statements
-      //await client.query('BEGIN');
       let result;
       for (const sqlStatement of sqlArray) {
         result = await client.query(sqlStatement);
       }
-      console.log('BRIAN result: ', result);
-      //await client.query('COMMIT');
       if (Array.isArray(result)) {
         result = result.pop();
       }
-      // if (deJSON) {
-      //   for (let i = 0; i < result.rows.length; i++) {
-      //     result.rows[i] = result.rows[i].row;
-      //   }
-      // }
       if (result?.rows) {
         result.rows = result.rows.map(row => {
           const newRow = {...row};
@@ -316,7 +270,6 @@ export class RedshiftConnection
           return newRow;
         });
       }
-      console.log('BRIAN result:', result);
 
       await client.end();
       return {
@@ -336,93 +289,7 @@ export class RedshiftConnection
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
     const sqlToRun = Array.isArray(sql) ? sql[0] : sql;
-    return this.runPostgresQuery(sqlToRun, 100000, 0, true);
-    // add statement in beginning of query to set the default schema/db
-    // const sqlArray = [`SET search_path TO ${this.config.schema};`];
-    // if (Array.isArray(sql)) {
-    //   sqlArray.push(...sql);
-    // } else {
-    //   sqlArray.push(sql);
-    // }
-    // // Initiate RedshiftData client
-    // const client = new RedshiftDataClient({region: this.config.region});
-
-    // // Execute all SQL statements in batch
-    // // so they share the same context
-    // // if we don't do this, the "SET search_path" won't affect the following queries
-    // const batchExecuteCommand = new BatchExecuteStatementCommand({
-    //   WorkgroupName: this.config.workgroupName, //todo make configurable
-    //   Database: this.config.database, // todo make configurable
-    //   SecretArn: this.config.secretArn,
-    //   Sqls: sqlArray,
-    // });
-
-    // const batchResponse = await client.send(batchExecuteCommand);
-    // const batchId = batchResponse.Id;
-
-    // // Wait for all queries to complete
-    // let status: string | undefined;
-    // let result;
-    // let statusResponse;
-    // do {
-    //   // Pause for 1 second between status checks
-    //   await new Promise(resolve => setTimeout(resolve, 1000));
-
-    //   const describeCommand = new DescribeStatementCommand({
-    //     Id: batchId,
-    //   });
-    //   statusResponse = await client.send(describeCommand);
-
-    //   status = statusResponse.Status;
-    // } while (
-    //   status !== 'FINISHED' &&
-    //   status !== 'FAILED' &&
-    //   status !== 'ABORTED'
-    // );
-
-    // // If the batch finished successfully, fetch the results of the last statement
-    // if (status === 'FINISHED') {
-    //   // console.log('BRIAN final status check:', statusResponse);
-    //   // Get the last statement's ID from the batch
-    //   const lastStatementId =
-    //     statusResponse.SubStatements?.[statusResponse.SubStatements.length - 1]
-    //       .Id;
-
-    //   if (lastStatementId) {
-    //     const resultCommand = new GetStatementResultCommand({
-    //       Id: lastStatementId,
-    //     });
-    //     result = await client.send(resultCommand);
-    //   }
-    // } else {
-    //   throw new Error(
-    //     `Batch error: \n sql: ${sqlArray.join('\n')} \n ${JSON.stringify(
-    //       statusResponse,
-    //       null,
-    //       2
-    //     )}`
-    //   );
-    // }
-
-    // return {
-    //   rows:
-    //     result?.Records?.map(record => {
-    //       const row: QueryDataRow = {};
-    //       record.forEach((field, index) => {
-    //         // Extract the first non-null value (longValue, stringValue etc)
-    //         const value =
-    //           field.longValue ?? field.stringValue ?? field.doubleValue ?? null;
-    //         let key = result?.ColumnMetadata?.[index]?.name ?? '';
-    //         if (key === '?column?') {
-    //           // this can happen on SELECT 1 when there's no obvious column
-    //           key = (index + 1).toString();
-    //         }
-    //         row[key] = value;
-    //       });
-    //       return row;
-    //     }) ?? [],
-    //   totalRows: result?.TotalNumRows ?? 0,
-    // };
+    return this.runRedshiftQuery(sqlToRun, 100000, 0, true);
   }
 
   public async *runSQLStream(
@@ -448,7 +315,6 @@ export class RedshiftConnection
       `DROP TABLE IF EXISTS ${tableName};`,
       `CREATE TEMP TABLE ${tableName} AS ${sqlCommand};`,
     ];
-    // const cmd = `CREATE TEMPORARY TABLE IF NOT EXISTS ${tableName} AS (${sqlCommand});`;
     await this.runSQL(cmd);
     return tableName;
   }
