@@ -379,9 +379,9 @@ export class RedshiftDialect extends PostgresBase {
         sample = this.defaultSampling;
       }
       if (isSamplingRows(sample)) {
-        return `(SELECT * FROM ${tableSQL} TABLESAMPLE SYSTEM_ROWS(${sample.rows}))`;
+        return `(SELECT * FROM ${tableSQL} ORDER BY RANDOM() LIMIT ${sample.rows})`;
       } else if (isSamplingPercent(sample)) {
-        return `(SELECT * FROM ${tableSQL} TABLESAMPLE SYSTEM (${sample.percent}))`;
+        return `(SELECT * FROM ${tableSQL} WHERE RANDOM() < ${sample.percent})`;
       }
     }
     return tableSQL;
