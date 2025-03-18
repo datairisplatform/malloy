@@ -126,7 +126,6 @@ export class RedshiftConnection
     });
 
     // Connect immediately and throw if connection fails
-    console.log('connecting to redshift');
     this.client.connect().catch(error => {
       throw new Error(`Failed to connect to Redshift: ${error.message}`);
     });
@@ -294,9 +293,7 @@ export class RedshiftConnection
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    console.log('runSql: ', Array.isArray(sql) ? sql.join('\n') : sql);
     const result = await this.runRedshiftQuery(sql, 100000, 0, true);
-    console.log('BRIAN runSql result: ', result);
     return result;
   }
 
@@ -332,7 +329,6 @@ export class RedshiftConnection
   }
 
   async close(): Promise<void> {
-    console.log('closing connection');
     if (this.client) {
       await this.client.end();
     }
