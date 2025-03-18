@@ -25,7 +25,6 @@
     "@aws-sdk/client-redshift-data": "^3.750.0",
     "@malloydata/malloy": "^0.0.236",
     "@types/pg": "^8.6.1",
-    "aws-sdk": "^2.1692.0",
     "pg": "^8.7.1",
     "pg-query-stream": "4.2.3"
   }
