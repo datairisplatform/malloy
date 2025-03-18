@@ -76,6 +76,7 @@ export class RedshiftConnection
   private queryOptionsReader: QueryOptionsReader = {};
   private config: RedshiftConnectionConfigurationReader = {};
   private readonly dialect = new RedshiftDialect();
+  private client: Client;
 
   constructor(
     name: string,
@@ -95,6 +96,40 @@ export class RedshiftConnection
     if (queryOptionsReader) {
       this.queryOptionsReader = queryOptionsReader;
     }
+
+    // Synchronously get config
+    let config;
+    if (this.config instanceof Function) {
+      config = this.config();
+    } else {
+      config = this.config;
+    }
+
+    const {
+      username: user,
+      password,
+      databaseName: database,
+      port,
+      host,
+    } = config;
+
+    // Create client synchronously
+    this.client = new Client({
+      user,
+      password,
+      database,
+      port,
+      host,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
+
+    // Connect immediately and throw if connection fails
+    console.log('connecting to redshift');
+    this.client.connect().catch(error => {
+      throw new Error(`Failed to connect to Redshift: ${error.message}`);
+    });
   }
 
   private async readQueryConfig(): Promise<RunSQLOptions> {
@@ -209,29 +244,6 @@ export class RedshiftConnection
     await this.runSQL('SELECT 1');
   }
 
-  public async connectionSetup(client: Client): Promise<void> {
-    await client.query("SET TIME ZONE 'UTC'");
-  }
-  protected async getClient(): Promise<Client> {
-    const {
-      username: user,
-      password,
-      databaseName: database,
-      port,
-      host,
-    } = await this.readConfig();
-
-    return new Client({
-      user,
-      password,
-      database,
-      port,
-      host,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-    });
-  }
   protected async runRedshiftQuery(
     sql: string | string[],
     _pageSize: number,
@@ -247,13 +259,10 @@ export class RedshiftConnection
       sqlArray.push(sql);
     }
 
-    let client;
     try {
-      client = await this.getClient();
-      await client.connect();
       let result;
       for (const sqlStatement of sqlArray) {
-        result = await client.query(sqlStatement);
+        result = await this.client.query(sqlStatement);
       }
       if (Array.isArray(result)) {
         result = result.pop();
@@ -271,15 +280,12 @@ export class RedshiftConnection
         });
       }
 
-      await client.end();
       return {
         rows: result.rows as QueryData,
         totalRows: result.rows.length,
       };
     } catch (error) {
       throw new Error(`Error executing query: ${error.message}`);
-    } finally {
-      await client.end();
     }
   }
 
@@ -288,8 +294,10 @@ export class RedshiftConnection
     {rowLimit}: RunSQLOptions = {},
     _rowIndex = 0
   ): Promise<MalloyQueryData> {
-    const sqlToRun = Array.isArray(sql) ? sql[0] : sql;
-    return this.runRedshiftQuery(sqlToRun, 100000, 0, true);
+    console.log('runSql: ', Array.isArray(sql) ? sql.join('\n') : sql);
+    const result = await this.runRedshiftQuery(sql, 100000, 0, true);
+    console.log('BRIAN runSql result: ', result);
+    return result;
   }
 
   public async *runSQLStream(
@@ -312,6 +320,10 @@ export class RedshiftConnection
     const tableName = `tt${hash}`;
 
     const cmd = [
+      // redshift turns camelcase into all lowercase
+      // this doesn't actually matter for prod,
+      // but temp table tests do expect the original case
+      'SET enable_case_sensitive_identifier TO true;',
       `DROP TABLE IF EXISTS ${tableName};`,
       `CREATE TEMP TABLE ${tableName} AS ${sqlCommand};`,
     ];
@@ -320,6 +332,10 @@ export class RedshiftConnection
   }
 
   async close(): Promise<void> {
+    console.log('closing connection');
+    if (this.client) {
+      await this.client.end();
+    }
     return;
   }
 }

@@ -324,7 +324,7 @@ export class RedshiftDialect extends PostgresBase {
       df.op === '+' ? '' : '*-1'
     })::INT, (${df.kids.base.sql})::TIMESTAMP)`;
   }
-
+  // todo
   sqlCast(qi: QueryInfo, cast: TypecastExpr): string {
     if (cast.safe) {
       throw new Error("Postgres dialect doesn't support Safe Cast");
