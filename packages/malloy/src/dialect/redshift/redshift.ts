@@ -413,8 +413,10 @@ export class RedshiftDialect extends PostgresBase {
       return `DATE '${lt.literal}'`;
     }
     const tz = lt.timezone || qtz(qi);
+
+    // malloy default timezone is UTC
     if (tz) {
-      return `CONVERT_TIMEZONE('${tz}', 'UTC', '${lt.literal}')`;
+      return `CONVERT_TIMEZONE('${tz}', 'UTC', '${lt.literal}') AT TIME ZONE 'UTC'`;
     }
     return `'${lt.literal}' AT TIME ZONE 'UTC'`;
   }
