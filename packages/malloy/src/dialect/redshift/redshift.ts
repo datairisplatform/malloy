@@ -329,7 +329,16 @@ export class RedshiftDialect extends PostgresBase {
     if (cast.safe) {
       throw new Error("Postgres dialect doesn't support Safe Cast");
     }
-    return super.sqlCast(qi, cast);
+    const {op, srcTypeDef, dstTypeDef, dstSQLType} = this.sqlCastPrep(cast);
+
+    if (op === 'boolean::string') {
+      const expr = cast.e.sql || '';
+      return `CASE WHEN ${expr} THEN 'true' ELSE 'false' END`;
+    }
+
+    const result = super.sqlCast(qi, cast);
+
+    return result;
   }
 
   sqlMeasureTimeExpr(df: MeasureTimeExpr): string {
