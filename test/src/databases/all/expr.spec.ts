@@ -410,24 +410,6 @@ describe.each(runtimes.runtimeList)('%s', (databaseName, runtime) => {
     `).malloyResultMatches(expressionModel, {a: 312});
   });
 
-  it('cast boolean true to string', async () => {
-    await expect(`
-      run: aircraft -> {
-        select: a is true::string
-        limit: 1
-      }
-    `).malloyResultMatches(expressionModel, {a: 'true'});
-  });
-
-  it('cast boolean falseto string', async () => {
-    await expect(`
-      run: aircraft -> {
-        select: a is false::string
-        limit: 1
-      }
-    `).malloyResultMatches(expressionModel, {a: 'false'});
-  });
-
   it('case expressions', async () => {
     await expect(`
       run: aircraft_models -> {

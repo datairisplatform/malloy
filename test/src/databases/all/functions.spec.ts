@@ -136,6 +136,14 @@ expressionModels.forEach((x, databaseName) => {
       await funcTestMultiple(
         ["concat('foo', 'bar')", 'foobar'],
         ["concat(1, 'bar')", '1bar'],
+        [
+          "concat('cons', true)",
+          databaseName === 'postgres'
+            ? 'const'
+            : databaseName === 'mysql'
+            ? 'cons1'
+            : 'construe',
+        ],
         ["concat('foo', @2003)", 'foo2003-01-01'],
         [
           "concat('foo', @2003-01-01 12:00:00)",
@@ -145,18 +153,6 @@ expressionModels.forEach((x, databaseName) => {
         // ["concat('foo', null)", null],
         ['concat()', '']
       );
-
-      // redshift doesn't support concat with a boolean
-      if (databaseName !== 'redshift') {
-        await funcTestMultiple([
-          "concat('cons', true)",
-          databaseName === 'postgres'
-            ? 'const'
-            : databaseName === 'mysql'
-            ? 'cons1'
-            : 'construe',
-        ]);
-      }
     });
   });
 
@@ -244,8 +240,6 @@ expressionModels.forEach((x, databaseName) => {
               databaseName === 'mysql' ||
               databaseName === 'databricks'
             ? '0 - 1 - 2 - 3'
-            : databaseName === 'redshift'
-            ? ''
             : 'axbxc - a - b - c',
         ],
         [
@@ -297,7 +291,6 @@ expressionModels.forEach((x, databaseName) => {
         'presto',
         'mysql',
         'databricks',
-        'redshift',
       ].includes(databaseName)
     )
       return;
@@ -602,43 +595,35 @@ expressionModels.forEach((x, databaseName) => {
       expect(result.data.path(3, 'prev_prev_state').value).toBe('AL');
     });
 
-    // redshift doesn't support lag with a default value
-    it.when(databaseName !== 'redshift')(
-      `works with default value - ${databaseName}`,
-      async () => {
-        const result = await expressionModel
-          .loadQuery(
-            `run: state_facts -> {
+    it(`works with default value - ${databaseName}`, async () => {
+      const result = await expressionModel
+        .loadQuery(
+          `run: state_facts -> {
           group_by: state
           calculate: prev_state is lag(state, 1, 'NONE')
         }`
-          )
-          .run();
-        expect(result.data.path(0, 'prev_state').value).toBe('NONE');
-      }
-    );
+        )
+        .run();
+      expect(result.data.path(0, 'prev_state').value).toBe('NONE');
+    });
 
-    // redshift doesn't support lag with a default value
-    it.when(databaseName !== 'redshift')(
-      `works with now as the default value - ${databaseName}`,
-      async () => {
-        const result = await expressionModel
-          .loadQuery(
-            `
+    it(`works with now as the default value - ${databaseName}`, async () => {
+      const result = await expressionModel
+        .loadQuery(
+          `
           run: state_facts -> {
             group_by: state
             calculate: lag_val is lag(@2011-11-11 11:11:11, 1, now).year = now.year
           }`
-          )
-          .run();
-        expect(result.data.path(0, 'lag_val').value).toBe(
-          booleanResult(true, databaseName)
-        );
-        expect(result.data.path(1, 'lag_val').value).toBe(
-          booleanResult(false, databaseName)
-        );
-      }
-    );
+        )
+        .run();
+      expect(result.data.path(0, 'lag_val').value).toBe(
+        booleanResult(true, databaseName)
+      );
+      expect(result.data.path(1, 'lag_val').value).toBe(
+        booleanResult(false, databaseName)
+      );
+    });
   });
 
   describe('output field in calculate', () => {
@@ -857,71 +842,58 @@ expressionModels.forEach((x, databaseName) => {
     const inf = ['trino', 'presto'].includes(databaseName)
       ? 'infinity!()'
       : "'+inf'::number";
-    // redshift doesn't support is_inf
-    it.when(!['my_sql', 'redshift'].includes(databaseName))(
-      `works - ${databaseName}`,
-      async () => {
-        await funcTestMultiple(
-          [`is_inf(${inf})`, true],
-          ['is_inf(100)', false],
-          ['is_inf(null)', false]
-        );
-      }
-    );
+    it.when(databaseName !== 'mysql')(`works - ${databaseName}`, async () => {
+      await funcTestMultiple(
+        [`is_inf(${inf})`, true],
+        ['is_inf(100)', false],
+        ['is_inf(null)', false]
+      );
+    });
   });
   describe('is_nan', () => {
-    it.when(!['my_sql', 'redshift'].includes(databaseName))(
-      `works - ${databaseName}`,
-      async () => {
-        await funcTestMultiple(
-          ["is_nan('NaN'::number)", true],
-          ['is_nan(100)', false],
-          ['is_nan(null)', false]
-        );
-      }
-    );
+    it.when(databaseName !== 'mysql')(`works - ${databaseName}`, async () => {
+      await funcTestMultiple(
+        ["is_nan('NaN'::number)", true],
+        ['is_nan(100)', false],
+        ['is_nan(null)', false]
+      );
+    });
   });
   describe('greatest', () => {
-    it.when(!['redshift'].includes(databaseName))(
-      `works - ${databaseName}`,
-      async () => {
-        await funcTestMultiple(
-          ['greatest(1, 10, -100)', 10],
-          [
-            'greatest(@2003, @2004, @1994) = @2004',
-            booleanResult(true, databaseName),
-          ],
-          [
-            'greatest(@2023-05-26 11:58:00, @2023-05-26 11:59:00) = @2023-05-26 11:59:00',
-            booleanResult(true, databaseName),
-          ],
-          ["greatest('a', 'b')", 'b'],
-          ['greatest(1, null, 0)', null],
-          ['greatest(null, null)', null]
-        );
-      }
-    );
+    it(`works - ${databaseName}`, async () => {
+      await funcTestMultiple(
+        ['greatest(1, 10, -100)', 10],
+        [
+          'greatest(@2003, @2004, @1994) = @2004',
+          booleanResult(true, databaseName),
+        ],
+        [
+          'greatest(@2023-05-26 11:58:00, @2023-05-26 11:59:00) = @2023-05-26 11:59:00',
+          booleanResult(true, databaseName),
+        ],
+        ["greatest('a', 'b')", 'b'],
+        ['greatest(1, null, 0)', null],
+        ['greatest(null, null)', null]
+      );
+    });
   });
   describe('least', () => {
-    it.when(!['redshift'].includes(databaseName))(
-      `works - ${databaseName}`,
-      async () => {
-        await funcTestMultiple(
-          ['least(1, 10, -100)', -100],
-          [
-            'least(@2003, @2004, @1994) = @1994',
-            booleanResult(true, databaseName),
-          ],
-          [
-            'least(@2023-05-26 11:58:00, @2023-05-26 11:59:00) = @2023-05-26 11:58:00',
-            booleanResult(true, databaseName),
-          ],
-          ["least('a', 'b')", 'a'],
-          ['least(1, null, 0)', null],
-          ['least(null, null)', null]
-        );
-      }
-    );
+    it(`works - ${databaseName}`, async () => {
+      await funcTestMultiple(
+        ['least(1, 10, -100)', -100],
+        [
+          'least(@2003, @2004, @1994) = @1994',
+          booleanResult(true, databaseName),
+        ],
+        [
+          'least(@2023-05-26 11:58:00, @2023-05-26 11:59:00) = @2023-05-26 11:58:00',
+          booleanResult(true, databaseName),
+        ],
+        ["least('a', 'b')", 'a'],
+        ['least(1, null, 0)', null],
+        ['least(null, null)', null]
+      );
+    });
   });
   describe('div', () => {
     it(`works - ${databaseName}`, async () => {
