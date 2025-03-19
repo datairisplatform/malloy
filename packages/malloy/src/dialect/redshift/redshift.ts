@@ -95,7 +95,8 @@ const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
 export class RedshiftDialect extends PostgresBase {
   name = 'redshift';
   defaultNumberType = 'DOUBLE PRECISION';
-  defaultDecimalType = 'DECIMAL';
+  // Use the max 38 digits of precision and reserve 10 digits for decimals
+  defaultDecimalType = 'DECIMAL(38,10)';
   udfPrefix = 'pg_temp.__udf';
   hasFinalStage = false;
   divisionIsInteger = true;
@@ -108,7 +109,7 @@ export class RedshiftDialect extends PostgresBase {
   supportsSafeCast = false;
   dontUnionIndex = false;
   supportsQualify = false;
-  supportsNesting = true;
+  supportsNesting = false;
   experimental = false;
   readsNestedData = false;
   supportsComplexFilteredSources = false;
@@ -226,8 +227,9 @@ export class RedshiftDialect extends PostgresBase {
     const md5Hash = `MD5(${stringKey})`;
 
     // Take first 16 chars of hash for upper part and next 8 chars for lower part
-    const upperPart = `STRTOL(SUBSTRING(${md5Hash}, 1, 15), 16)::DECIMAL(38,0) * 4294967296`;
-    const lowerPart = `STRTOL(SUBSTRING(${md5Hash}, 17, 8), 16)::DECIMAL(38,0)`;
+    const upperPart = `STRTOL(SUBSTRING(${md5Hash}, 1, 15), 16)::DECIMAL(38,0)`;
+    // correctly getting the next 8 chars of the hash
+    const lowerPart = `STRTOL(SUBSTRING(${md5Hash}, 16, 8), 16)::DECIMAL(38,0)`;
 
     // Combine parts to create final hash value
     return `(${upperPart} + ${lowerPart})`;
