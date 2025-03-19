@@ -403,7 +403,9 @@ export class RedshiftDialect extends PostgresBase {
   }
 
   sqlLiteralString(literal: string): string {
-    return "'" + literal.replace(/'/g, "''") + "'";
+    // escape backslash literals
+    const noVirgule = literal.replace(/\\/g, '\\\\');
+    return "'" + noVirgule.replace(/'/g, "''") + "'";
   }
 
   sqlLiteralRegexp(literal: string): string {
