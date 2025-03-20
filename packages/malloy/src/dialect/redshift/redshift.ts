@@ -336,6 +336,12 @@ export class RedshiftDialect extends PostgresBase {
     if (op === 'boolean::string') {
       const expr = cast.e.sql || '';
       return `CASE WHEN ${expr} THEN 'true' ELSE 'false' END`;
+    } else if (dstSQLType === 'timestamp') {
+      // malloy default timezone is UTC
+      const tz = qtz(qi);
+      if (tz) {
+        return `CONVERT_TIMEZONE('${tz}', 'UTC', ${cast.e.sql}::TIMESTAMP) AT TIME ZONE 'UTC'`;
+      }
     }
 
     const result = super.sqlCast(qi, cast);
@@ -410,6 +416,28 @@ export class RedshiftDialect extends PostgresBase {
 
   sqlLiteralRegexp(literal: string): string {
     return "'" + literal.replace(/'/g, "''") + "'";
+  }
+
+  sqlTruncExpr(qi: QueryInfo, df: TimeTruncExpr): string {
+    // adjusting for monday/sunday weeks
+    const week = df.units === 'week';
+    const truncThis = week ? `${df.e.sql} + INTERVAL '1' DAY` : df.e.sql;
+    if (TD.isTimestamp(df.e.typeDef)) {
+      const tz = qtz(qi);
+      if (tz) {
+        const civilSource = `(${truncThis}::TIMESTAMPTZ AT TIME ZONE '${tz}')`;
+        let civilTrunc = `DATE_TRUNC('${df.units}', ${civilSource})`;
+        // MTOY todo ... only need to do this if this is a date ...
+        civilTrunc = `${civilTrunc}::TIMESTAMP`;
+        const truncTsTz = `${civilTrunc} AT TIME ZONE '${tz}'`;
+        return `(${truncTsTz})::TIMESTAMP AT TIME ZONE 'UTC'`;
+      }
+    }
+    let result = `DATE_TRUNC('${df.units}', ${truncThis})`;
+    if (week) {
+      result = `(${result} - INTERVAL '1' DAY)`;
+    }
+    return result;
   }
 
   sqlLiteralTime(qi: QueryInfo, lt: TimeLiteralNode): string {
