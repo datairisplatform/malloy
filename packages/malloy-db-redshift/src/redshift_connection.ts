@@ -252,6 +252,10 @@ export class RedshiftConnection
     const sqlArray = this.config.schema
       ? [`SET search_path TO ${this.config.schema};`]
       : [];
+    // redshift turns camelcase into all lowercase
+    // this doesn't actually matter for prod,
+    // but index and temp table tests do expect the original case
+    sqlArray.push('SET enable_case_sensitive_identifier TO true;');
     if (Array.isArray(sql)) {
       sqlArray.push(...sql);
     } else {
@@ -317,10 +321,6 @@ export class RedshiftConnection
     const tableName = `tt${hash}`;
 
     const cmd = [
-      // redshift turns camelcase into all lowercase
-      // this doesn't actually matter for prod,
-      // but temp table tests do expect the original case
-      'SET enable_case_sensitive_identifier TO true;',
       `DROP TABLE IF EXISTS ${tableName};`,
       `CREATE TEMP TABLE ${tableName} AS ${sqlCommand};`,
     ];
