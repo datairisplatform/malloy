@@ -48,7 +48,7 @@ import {
 } from '@malloydata/malloy';
 import {BaseConnection} from '@malloydata/malloy/connection';
 
-import {Client, types} from 'pg';
+import {Client, Pool, types} from 'pg';
 // Override parser for 64-bit integers (OID 20) and standard integers (OID 23)
 types.setTypeParser(20, val => parseInt(val, 10));
 types.setTypeParser(23, val => parseInt(val, 10));
@@ -77,7 +77,7 @@ export class RedshiftConnection
   private config: RedshiftConnectionConfigurationReader = {};
   private readonly dialect = new RedshiftDialect();
   private client: Client;
-
+  private pool: Pool;
   constructor(
     name: string,
     configReader?: RedshiftConnectionConfigurationReader,
@@ -112,6 +112,17 @@ export class RedshiftConnection
       port,
       host,
     } = config;
+
+    this.pool = new Pool({
+      user,
+      password,
+      database,
+      port,
+      host,
+      ssl: {
+        rejectUnauthorized: false,
+      },
+    });
 
     // Create client synchronously
     this.client = new Client({
@@ -258,10 +269,16 @@ export class RedshiftConnection
       sqlArray.push(sql);
     }
 
+    let client;
     try {
+      // get client from pool
+      client = await this.pool.connect();
+
       let result;
       for (const sqlStatement of sqlArray) {
-        result = await this.client.query(sqlStatement);
+        console.log('running with pool client');
+        result = await client.query(sqlStatement);
+        // result = await this.client.query(sqlStatement);
       }
       if (Array.isArray(result)) {
         result = result.pop();
@@ -285,6 +302,8 @@ export class RedshiftConnection
       };
     } catch (error) {
       throw new Error(`Error executing query: ${error.message}`);
+    } finally {
+      if (client) client.release();
     }
   }
 
@@ -331,6 +350,9 @@ export class RedshiftConnection
   async close(): Promise<void> {
     if (this.client) {
       await this.client.end();
+    }
+    if (this.pool) {
+      await this.pool.end();
     }
     return;
   }
