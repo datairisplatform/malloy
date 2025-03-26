@@ -48,7 +48,7 @@ import {
 } from '@malloydata/malloy';
 import {BaseConnection} from '@malloydata/malloy/connection';
 
-import {Client, Pool, types} from 'pg';
+import {Pool, types} from 'pg';
 // Override parser for 64-bit integers (OID 20) and standard integers (OID 23)
 types.setTypeParser(20, val => parseInt(val, 10));
 types.setTypeParser(23, val => parseInt(val, 10));
@@ -73,10 +73,8 @@ export class RedshiftConnection
   implements Connection, StreamingConnection, PersistSQLResults
 {
   public readonly name: string;
-  private queryOptionsReader: QueryOptionsReader = {};
   private config: RedshiftConnectionConfigurationReader = {};
   private readonly dialect = new RedshiftDialect();
-  private client: Client;
   private pool: Pool;
   constructor(
     name: string,
@@ -92,9 +90,6 @@ export class RedshiftConnection
     this.name = name;
     if (configReader) {
       this.config = configReader;
-    }
-    if (queryOptionsReader) {
-      this.queryOptionsReader = queryOptionsReader;
     }
 
     // Synchronously get config
@@ -123,31 +118,6 @@ export class RedshiftConnection
         rejectUnauthorized: false,
       },
     });
-
-    // Create client synchronously
-    this.client = new Client({
-      user,
-      password,
-      database,
-      port,
-      host,
-      ssl: {
-        rejectUnauthorized: false,
-      },
-    });
-
-    // Connect immediately and throw if connection fails
-    this.client.connect().catch(error => {
-      throw new Error(`Failed to connect to Redshift: ${error.message}`);
-    });
-  }
-
-  private async readQueryConfig(): Promise<RunSQLOptions> {
-    if (this.queryOptionsReader instanceof Function) {
-      return this.queryOptionsReader();
-    } else {
-      return this.queryOptionsReader;
-    }
   }
 
   protected async readConfig(): Promise<RedshiftConnectionConfiguration> {
@@ -276,9 +246,7 @@ export class RedshiftConnection
 
       let result;
       for (const sqlStatement of sqlArray) {
-        console.log('running with pool client');
         result = await client.query(sqlStatement);
-        // result = await this.client.query(sqlStatement);
       }
       if (Array.isArray(result)) {
         result = result.pop();
@@ -348,9 +316,6 @@ export class RedshiftConnection
   }
 
   async close(): Promise<void> {
-    if (this.client) {
-      await this.client.end();
-    }
     if (this.pool) {
       await this.pool.end();
     }
