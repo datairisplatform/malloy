@@ -522,7 +522,8 @@ class QueryField extends QueryNode {
     overload: FunctionOverloadDef,
     args: Expr[],
     orderBy: string | undefined,
-    limit: string | undefined
+    limit: string | undefined,
+    tl_function: string | undefined
   ) {
     function withCommas(es: Expr[]): SQLExprElement[] {
       const ret: SQLExprElement[] = [];
@@ -535,6 +536,18 @@ class QueryField extends QueryNode {
       }
       return ret;
     }
+    function withConcatOperator(es: Expr[]): SQLExprElement[] {
+      const ret: SQLExprElement[] = [];
+      for (let i = 0; i < es.length; ) {
+        ret.push(es[i]);
+        i += 1;
+        if (i < es.length) {
+          ret.push(' || ');
+        }
+      }
+      return ret;
+    }
+
     const paramMap = this.getParameterMap(overload, args.length);
     if (overload.dialect[dialect] === undefined) {
       throw new Error(`Function is not defined for '${dialect}' dialect`);
@@ -552,6 +565,9 @@ class QueryField extends QueryNode {
           return fragment;
         }
         const spread = entry.argIndexes.map(argIndex => args[argIndex]);
+        if (dialect === 'redshift' && tl_function === 'concat') {
+          return composeSQLExpr(withConcatOperator(spread));
+        }
         return composeSQLExpr(withCommas(spread));
       } else if (fragment.node === 'function_parameter') {
         const entry = paramMap.get(fragment.name);
@@ -723,7 +739,8 @@ class QueryField extends QueryNode {
             overload,
             newArgs,
             orderBySQL,
-            aggregateLimit
+            aggregateLimit,
+            frag.name
           );
           return this.exprToSQL(resultSet, context, funcCall, state);
         }
@@ -768,7 +785,8 @@ class QueryField extends QueryNode {
         overload,
         mappedArgs,
         orderBySql,
-        aggregateLimit
+        aggregateLimit,
+        frag.name
       );
 
       if (expressionIsAnalytic(overload.returnType.expressionType)) {
