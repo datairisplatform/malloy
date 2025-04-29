@@ -1367,6 +1367,19 @@ expressionModels.forEach((x, databaseName) => {
     );
   });
 
+  describe('redshift btrim', () => {
+    it.when(databaseName === 'redshift')(
+      `works - ${databaseName}`,
+      async () => {
+        await funcTestMultiple(
+          ["btrim('  keep this  ')", 'keep this'],
+          ["btrim('__keep_this__', '_')", 'keep_this'],
+          ["btrim(' keep everything ', '')", ' keep everything ']
+        );
+      }
+    );
+  });
+
   describe('snowflake_statistical_functions', () => {
     const isSnowflake = databaseName === 'snowflake';
 
