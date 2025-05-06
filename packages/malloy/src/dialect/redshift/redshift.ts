@@ -214,8 +214,20 @@ export class RedshiftDialect extends PostgresBase {
     } else if (needDistinctKey) {
       return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_number', row_number() over())|| __xx::jsonb as b FROM  JSONB_ARRAY_ELEMENTS(${source}) __xx ))) as ${alias} ON true`;
     } else {
-      // can already access data fine so just keep original table
-      return `, __stage1 as ${alias}`;
+      /*
+        during multi-layered unnesting, source is = everything before the deepest key.
+        Ex: If we're trying to read nested data feedback_json.feedback.label,
+        source = "base.feedback_json.feedback"
+
+        appending `, ${source} as ${alias}` to the query will result in:
+
+        SELECT
+          feedback_0.label as "label"
+        FROM "volkscience_analytics"."volkscience_profile_feedback" as base
+        , base.feedback_json.feedback as feedback_0   <--- (already does most of the unnesting)
+        LIMIT 10
+      */
+      return `, ${source} as ${alias}`;
     }
   }
 
@@ -265,7 +277,7 @@ export class RedshiftDialect extends PostgresBase {
         case 'array':
         case 'record':
         case 'array[record]':
-          ret = `JSONB_EXTRACT_PATH(${parentAlias},'${childName}')`;
+          ret = `${parentAlias}.${childName}`;
           break;
       }
       return ret;
