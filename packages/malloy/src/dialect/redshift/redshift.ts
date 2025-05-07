@@ -216,15 +216,15 @@ export class RedshiftDialect extends PostgresBase {
     } else {
       /*
         during multi-layered unnesting, source is = everything before the deepest key.
-        Ex: If we're trying to read nested data feedback_json.feedback.label,
-        source = "base.feedback_json.feedback"
+        Ex: If we're trying to read nested data reviews_json.reviews.label,
+        source = "base.reviews_json.reviews"
 
         appending `, ${source} as ${alias}` to the query will result in:
 
         SELECT
-          feedback_0.label as "label"
-        FROM "volkscience_analytics"."volkscience_profile_feedback" as base
-        , base.feedback_json.feedback as feedback_0   <--- (already does most of the unnesting)
+          reviews_0.label as "label"
+        FROM "cookieStore_analytics"."cookieStore_profile_reviews" as base
+        , base.reviews_json.reviews as reviews_0   <--- (already does most of the unnesting)
         LIMIT 10
       */
       return `, ${source} as ${alias}`;

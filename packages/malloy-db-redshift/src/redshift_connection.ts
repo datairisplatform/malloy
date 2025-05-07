@@ -498,8 +498,9 @@ export class RedshiftConnection
     if (path.length === 0) return;
 
     const currentPathSegment = path[0];
-    let fieldName = currentPathSegment;
+    const remainingPath = path.slice(1);
 
+    let fieldName = currentPathSegment;
     // case we're processing the children of an array
     if (currentPathSegment.endsWith('[*]')) {
       fieldName = currentPathSegment.slice(0, -3);
@@ -516,7 +517,7 @@ export class RedshiftConnection
           join: 'many',
           name: fieldName,
           // technically this can also be atomic type,
-          // but bracket notation should work the same in redshft
+          // but bracket notation should work the same in redshift
           elementTypeDef: {type: 'record_element'},
           fields: [],
         };
@@ -540,7 +541,6 @@ export class RedshiftConnection
     }
     // recursively update the remaining path segments into the structDef
     if (path.length > 1 && 'fields' in field) {
-      const remainingPath = path.slice(1);
       this.addFieldToStructDef(field.fields, remainingPath, fieldType);
     }
   }
@@ -589,7 +589,7 @@ export class RedshiftConnection
     const sampleQuery = `
         SELECT ${superCols
           .map(s => `JSON_SERIALIZE(${s}) as ${s}`)
-          .join(',')} FROM ${tablePath} LIMIT 10;
+          .join(',')} FROM ${tablePath} LIMIT 100;
       `;
 
     const {rows, totalRows} = await this.runSQL(sampleQuery); // Apply formatting
@@ -598,12 +598,12 @@ export class RedshiftConnection
     /*
       example resulting pathToType map:
       Map(6) {
-        'feedback_json.timestamp' => 'decimal',
-        'feedback_json.feedback' => 'array',
-        'feedback_json.feedback[*].question_id' => 'decimal',
-        'feedback_json.feedback[*].label' => 'varchar',
-        'feedback_json.feedback[*].other_option' => 'varchar',
-        'feedback_json.foo.bar' => 'varchar'
+        'reviews_json.timestamp' => 'decimal',
+        'reviews_json.reviews' => 'array',
+        'reviews_json.reviews[*].question_id' => 'decimal',
+        'reviews_json.reviews[*].label' => 'varchar',
+        'reviews_json.reviews[*].other_option' => 'varchar',
+        'reviews_json.foo.bar' => 'varchar'
       }
     */
 
