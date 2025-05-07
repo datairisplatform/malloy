@@ -185,17 +185,20 @@ export class RedshiftConnection
     }
   }
 
-  // Helper function to update the path-to-type map
+  // Updates the inputted path into the path-to-dataType map.
+  // Uses the inputted dataType if provided, else figures out the dataType.
+  // Returns false if the path has ambiguous types, indicating that
+  // we shouldn't recursively proceed with the current path
   private updatePathType(
     path: string,
     value: unknown,
     pathToType: Map<string, string>,
     pathsWithAmbiguousTypes: Set<string>,
     explicitType?: 'object' | 'array'
-  ) {
-    // If path is already known to be mixed, do nothing
+  ): boolean {
+    // If path is already known to be mixed, do nothing further and signal not to continue
     if (pathsWithAmbiguousTypes.has(path)) {
-      return;
+      return false;
     }
 
     // use explicit type if provided, else figure out the type
@@ -216,13 +219,13 @@ export class RedshiftConnection
         // Mixed types detected - remove the path and mark as mixed.
         pathToType.delete(path);
         pathsWithAmbiguousTypes.add(path);
+        return false; // Became ambiguous, return false
       }
-    } else {
+    } else if (!isNullFallback) {
       // Path not seen before. Set the type, unless it's a null fallback.
-      if (!isNullFallback) {
-        pathToType.set(path, newType);
-      }
+      pathToType.set(path, newType);
     }
+    return true; // Not ambiguous, return true
   }
 
   private async runQueriesForSchema(
@@ -402,90 +405,128 @@ export class RedshiftConnection
 
   // traverse the current superJson and fill out pathToType map
   private processNestedJson(
-    superJson: Record<string, unknown>,
-    columnName: string,
+    // super value can be object, array, or primitive data type
+    superValue: Record<string, unknown> | unknown[] | unknown | null,
+    currentPath: string,
     pathToType: Map<string, string>,
     pathsWithAmbiguousTypes: Set<string>
   ): void {
-    for (const [key, value] of Object.entries(superJson)) {
-      const path = columnName ? `${columnName}.${key}` : key;
+    if (superValue === null) {
+      return;
+      // handle object
+    } else if (typeof superValue === 'object' && !Array.isArray(superValue)) {
+      for (const [key, value] of Object.entries(superValue)) {
+        const path = currentPath ? `${currentPath}.${key}` : key;
 
-      // Check if path is already marked as mixed type before proceeding deeper
-      if (pathsWithAmbiguousTypes.has(path)) {
-        continue;
-      }
-
-      if (Array.isArray(value)) {
-        // Track current path as an array
-        this.updatePathType(
-          path,
-          value,
-          pathToType,
-          pathsWithAmbiguousTypes,
-          'array'
-        );
-
-        // If the array path itself is ambiguous type
+        // Check if path is already marked as mixed type before proceeding deeper
         if (pathsWithAmbiguousTypes.has(path)) {
           continue;
         }
-
-        // process each element of the array
-        const arrayElementPath = `${path}[*]`;
-        for (const element of value) {
-          if (pathsWithAmbiguousTypes.has(arrayElementPath)) {
-            break;
+        // object contains another object
+        if (
+          value !== null &&
+          typeof value === 'object' &&
+          !Array.isArray(value)
+        ) {
+          // track current path as an object
+          const shouldProceed = this.updatePathType(
+            path,
+            value,
+            pathToType,
+            pathsWithAmbiguousTypes,
+            'object'
+          );
+          if (!shouldProceed) {
+            continue;
           }
-
-          if (
-            element !== null &&
-            typeof element === 'object' &&
-            !Array.isArray(element)
-          ) {
-            // Element is an object: Recurse using element path.
-            // Call recursively using 'this' as it's now a class method
-            this.processNestedJson(
-              element as Record<string, unknown>,
-              arrayElementPath,
-              pathToType,
-              pathsWithAmbiguousTypes
-            );
-          } else {
-            // Element is primitive or null
-            this.updatePathType(
-              arrayElementPath,
-              element,
-              pathToType,
-              pathsWithAmbiguousTypes
-            );
+          // recurse into object
+          this.processNestedJson(
+            value as Record<string, unknown>,
+            path,
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
+        }
+        // object contains array
+        else if (Array.isArray(value)) {
+          // Track current path as an array
+          const shouldProceed = this.updatePathType(
+            path,
+            value,
+            pathToType,
+            pathsWithAmbiguousTypes,
+            'array'
+          );
+          if (!shouldProceed) {
+            continue;
           }
+          // Recursively process the array contents
+          this.processNestedJson(
+            value as unknown[], // The array itself
+            path, // The path *to* this array, this becomes the columnName for the recursive call
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
         }
-      } else if (value !== null && typeof value === 'object') {
-        // track current path as an object
-        this.updatePathType(
-          path,
-          value,
-          pathToType,
-          pathsWithAmbiguousTypes,
-          'object'
-        );
-
-        if (pathsWithAmbiguousTypes.has(path)) {
-          continue;
+        // object contains primitive type
+        else {
+          this.processNestedJson(
+            value as typeof superValue,
+            path,
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
         }
-
-        // 2. Recurse into object
-        // Call recursively using 'this'
-        this.processNestedJson(
-          value as Record<string, unknown>,
-          path, // Pass object path (e.g., 'user')
-          pathToType,
-          pathsWithAmbiguousTypes
-        );
-      } else {
-        // Leaf node
-        this.updatePathType(path, value, pathToType, pathsWithAmbiguousTypes);
       }
+    }
+    // Handle array
+    else if (Array.isArray(superValue)) {
+      const arrayElementPath = `${currentPath}[*]`;
+
+      for (const element of superValue) {
+        if (pathsWithAmbiguousTypes.has(arrayElementPath)) {
+          break;
+        }
+
+        // array element is object
+        if (
+          element !== null &&
+          typeof element === 'object' &&
+          !Array.isArray(element)
+        ) {
+          this.processNestedJson(
+            element as Record<string, unknown>,
+            arrayElementPath,
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
+          // array element is array
+        } else if (Array.isArray(element)) {
+          this.processNestedJson(
+            element,
+            arrayElementPath,
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
+        } else {
+          // array element is primitive
+          this.processNestedJson(
+            element as typeof superValue,
+            arrayElementPath,
+            pathToType,
+            pathsWithAmbiguousTypes
+          );
+        }
+      }
+    }
+    // Handle leaf node (primitive or null)
+    else {
+      this.updatePathType(
+        currentPath,
+        superValue,
+        pathToType,
+        pathsWithAmbiguousTypes
+      );
     }
   }
 
@@ -545,6 +586,23 @@ export class RedshiftConnection
     }
   }
 
+  /**
+   * Creates a map of paths to their data types by parsing JSON from super columns.
+   *
+   * example resulting pathToType map:
+   * Map(6) {
+   *   'reviews_json.timestamp' => 'decimal',
+   *   'reviews_json.reviews' => 'array',
+   *   'reviews_json.reviews[*].question_id' => 'decimal',
+   *   'reviews_json.reviews[*].label' => 'varchar',
+   *   'reviews_json.reviews[*].other_option' => 'varchar',
+   *   'reviews_json.foo.bar' => 'varchar'
+   * }
+   *
+   * @param rows the rows to parse
+   * @param superCols the columns of type 'super' to parse
+   * @returns a map of paths to their data types
+   */
   private createPathToTypeMap(
     rows: Record<string, unknown>[],
     superCols: string[]
@@ -558,13 +616,9 @@ export class RedshiftConnection
         if (superCols.includes(key) && typeof value === 'string') {
           try {
             const jsonValue = JSON.parse(value);
-            if (
-              jsonValue !== null &&
-              typeof jsonValue === 'object' &&
-              !Array.isArray(jsonValue)
-            ) {
+            if (jsonValue !== null) {
               this.processNestedJson(
-                jsonValue as Record<string, unknown>,
+                jsonValue,
                 key,
                 pathToType,
                 pathsWithAmbiguousTypes
@@ -580,6 +634,15 @@ export class RedshiftConnection
     return pathToType;
   }
 
+  /**
+   * Samples JSON data from super columns in a Redshift table to infer their schema structure.
+   * For each super column, it queries a sample of rows, parses the JSON, and builds a map of
+   * paths to their data types. These paths and types are then added to the main structDef.
+   *
+   * @param superCols the columns of type 'super' to sample
+   * @param structDef the struct that fetchTableSchema returns
+   * @param tablePath the table to query
+   */
   private async runSuperColsSchemaQuery(
     superCols: string[],
     structDef: StructDef,
@@ -594,18 +657,6 @@ export class RedshiftConnection
 
     const {rows, totalRows} = await this.runSQL(sampleQuery); // Apply formatting
     const pathToType = this.createPathToTypeMap(rows, superCols);
-
-    /*
-      example resulting pathToType map:
-      Map(6) {
-        'reviews_json.timestamp' => 'decimal',
-        'reviews_json.reviews' => 'array',
-        'reviews_json.reviews[*].question_id' => 'decimal',
-        'reviews_json.reviews[*].label' => 'varchar',
-        'reviews_json.reviews[*].other_option' => 'varchar',
-        'reviews_json.foo.bar' => 'varchar'
-      }
-    */
 
     // Add each path to type pair into the structDef
     for (const [path, type] of pathToType.entries()) {
