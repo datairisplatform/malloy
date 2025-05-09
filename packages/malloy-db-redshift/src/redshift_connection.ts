@@ -296,7 +296,7 @@ export class RedshiftConnection
     try {
       await this.runQueriesForSchema(basicSchemaQuery, structDef, tablePath);
     } catch (error) {
-      return `Error fetching TABLE schema for ${tablePath}: ${error.message}`;
+      return `Error fetching TABLE schema for ${tablePath}: ${error}`;
     }
     return structDef;
   }
@@ -354,7 +354,7 @@ export class RedshiftConnection
         totalRows: result.rows.length,
       };
     } catch (error) {
-      throw new Error(`Error executing query: ${error.message}`);
+      throw new Error(`Error executing query: ${error}`);
     } finally {
       if (client) client.release();
     }
@@ -649,10 +649,16 @@ export class RedshiftConnection
     tablePath: string
   ): Promise<void> {
     // query to sample the jsons in the super columns
+    // WHERE clause is needed because Redshift
+    // type varchar (string) cannot hold more than 65535 bytes
     const sampleQuery = `
-        SELECT ${superCols
-          .map(s => `JSON_SERIALIZE(${s}) as ${s}`)
-          .join(',')} FROM ${tablePath} LIMIT 100;
+        SELECT ${superCols.map(s => `JSON_SERIALIZE(${s}) as ${s}`).join(',')}
+        FROM ${tablePath}
+        WHERE
+          ${superCols
+            .map(col => `JSON_SIZE(${col}) < 65535`)
+            .join('\n          AND ')}
+        LIMIT 100;
       `;
 
     const {rows, totalRows} = await this.runSQL(sampleQuery); // Apply formatting

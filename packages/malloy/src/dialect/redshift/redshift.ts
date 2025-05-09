@@ -265,13 +265,18 @@ export class RedshiftDialect extends PostgresBase {
       return `(${parentAlias}->>'__row_id')`;
     }
     if (parentType !== 'table') {
-      let ret = `JSONB_EXTRACT_PATH_TEXT(${parentAlias},'${childName}')`;
-      ret = `${parentAlias}.${childName}`;
+      let ret = `${parentAlias}.${childName}`;
       switch (childType) {
         case 'string':
+          // these explicit casts are needed when trying to put
+          // result of super unnest into string function
+          ret = `${ret}::varchar`;
           break;
         case 'number':
           ret = `${ret}::double precision`;
+          break;
+        case 'boolean':
+          ret = `${ret}::boolean`;
           break;
         case 'struct':
         case 'array':
