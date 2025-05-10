@@ -66,7 +66,7 @@ const inSeconds: Record<string, number> = {
   'week': 7 * 24 * 3600,
 };
 
-const postgresToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
+const redshiftToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
   'smallint': {type: 'number', numberType: 'integer'},
   'integer': {type: 'number', numberType: 'integer'},
   'bigint': {type: 'number', numberType: 'integer'},
@@ -497,7 +497,7 @@ export class RedshiftDialect extends PostgresBase {
     // Remove trailing params
     const baseSqlType = sqlType.match(/^([\w\s]+)/)?.at(0) ?? sqlType;
     return (
-      postgresToMalloyTypes[baseSqlType.trim().toLowerCase()] ?? {
+      redshiftToMalloyTypes[baseSqlType.trim().toLowerCase()] ?? {
         type: 'sql native',
         rawType: sqlType,
       }

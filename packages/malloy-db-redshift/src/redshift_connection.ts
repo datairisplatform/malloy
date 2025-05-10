@@ -45,6 +45,8 @@ import {
   StreamingConnection,
   StructDef,
   FieldDef,
+  ArrayDef,
+  Expr,
 } from '@malloydata/malloy';
 import {BaseConnection} from '@malloydata/malloy/connection';
 
@@ -415,6 +417,17 @@ export class RedshiftConnection
       return;
       // handle object
     } else if (typeof superValue === 'object' && !Array.isArray(superValue)) {
+      // track current path as an object
+      const shouldProceed = this.updatePathType(
+        currentPath,
+        superValue,
+        pathToType,
+        pathsWithAmbiguousTypes,
+        'object'
+      );
+      if (!shouldProceed) {
+        return;
+      }
       for (const [key, value] of Object.entries(superValue)) {
         const path = currentPath ? `${currentPath}.${key}` : key;
 
@@ -428,17 +441,6 @@ export class RedshiftConnection
           typeof value === 'object' &&
           !Array.isArray(value)
         ) {
-          // track current path as an object
-          const shouldProceed = this.updatePathType(
-            path,
-            value,
-            pathToType,
-            pathsWithAmbiguousTypes,
-            'object'
-          );
-          if (!shouldProceed) {
-            continue;
-          }
           // recurse into object
           this.processNestedJson(
             value as Record<string, unknown>,
@@ -449,17 +451,6 @@ export class RedshiftConnection
         }
         // object contains array
         else if (Array.isArray(value)) {
-          // Track current path as an array
-          const shouldProceed = this.updatePathType(
-            path,
-            value,
-            pathToType,
-            pathsWithAmbiguousTypes,
-            'array'
-          );
-          if (!shouldProceed) {
-            continue;
-          }
           // Recursively process the array contents
           this.processNestedJson(
             value as unknown[], // The array itself
@@ -481,6 +472,18 @@ export class RedshiftConnection
     }
     // Handle array
     else if (Array.isArray(superValue)) {
+      // Track current path as an array
+      const shouldProceed = this.updatePathType(
+        currentPath,
+        superValue,
+        pathToType,
+        pathsWithAmbiguousTypes,
+        'array'
+      );
+      if (!shouldProceed) {
+        return;
+      }
+
       const arrayElementPath = `${currentPath}[*]`;
 
       for (const element of superValue) {
@@ -543,46 +546,80 @@ export class RedshiftConnection
 
     let fieldName = currentPathSegment;
     // case we're processing the children of an array
+    let isArrayElement = false;
     if (currentPathSegment.endsWith('[*]')) {
       fieldName = currentPathSegment.slice(0, -3);
+      isArrayElement = true;
     }
 
     // Determine if current FieldDef[] contains a definition for the current path
-    let field = parentFields.find(f => f.name === fieldName);
+    let field: FieldDef | undefined = parentFields.find(
+      f => f.name === fieldName
+    );
 
     // Create new FieldDef if it doesn't exist
+    // if the currentPathSegement is an array element, this would be its parent array
     if (!field) {
-      if (fieldType === 'array') {
-        field = {
-          type: 'array',
-          join: 'many',
-          name: fieldName,
-          // technically this can also be atomic type,
-          // but bracket notation should work the same in redshift
-          elementTypeDef: {type: 'record_element'},
-          fields: [],
-        };
-        // leaf node - use the actual type
-      } else if (path.length === 1) {
-        field = {
-          ...this.dialect.sqlTypeToMalloyType(fieldType),
-          name: fieldName,
-        };
-      }
-      // object type
-      else {
-        field = {
-          type: 'record',
-          name: fieldName,
-          fields: [],
-          join: 'one',
-        };
-      }
+      field = this.getFieldDef(fieldName, fieldType);
       parentFields.push(field);
     }
+
+    // for scalar arrays, we need to add extra info for .each operator to work
+    if (
+      isArrayElement &&
+      fieldType !== 'object' &&
+      path.length == 1 &&
+      // Ensures current field is specifically an ArrayDef
+      field &&
+      field.type === 'array'
+    ) {
+      this.handleScalarArrayElementPopulation(field as ArrayDef, fieldType);
+    }
+
     // recursively update the remaining path segments into the structDef
     if (path.length > 1 && 'fields' in field) {
       this.addFieldToStructDef(field.fields, remainingPath, fieldType);
+    }
+  }
+
+  private handleScalarArrayElementPopulation(
+    arrayField: ArrayDef,
+    elementType: string
+  ): void {
+    // the following is needed for malloy's .each notation to access array elements
+    arrayField.elementTypeDef = this.dialect.sqlTypeToMalloyType(elementType);
+    const arrayElem = this.getFieldDef('value', elementType);
+    const eachField = {
+      ...arrayElem,
+      name: 'each',
+      e: {node: 'field', path: ['value']} as Expr,
+    };
+    arrayField.fields.push(arrayElem);
+    arrayField.fields.push(eachField as FieldDef);
+  }
+
+  private getFieldDef(fieldName: string, fieldType: string): FieldDef {
+    if (fieldType === 'object') {
+      return {
+        type: 'record',
+        name: fieldName,
+        fields: [],
+        join: 'one',
+      };
+    } else if (fieldType === 'array') {
+      return {
+        type: 'array',
+        join: 'many',
+        name: fieldName,
+        elementTypeDef: {type: 'record_element'},
+        fields: [],
+      };
+      // leaf node - use the actual type
+    } else {
+      return {
+        ...this.dialect.sqlTypeToMalloyType(fieldType),
+        name: fieldName,
+      };
     }
   }
 
