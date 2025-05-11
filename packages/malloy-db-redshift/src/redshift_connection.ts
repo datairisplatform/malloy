@@ -428,46 +428,15 @@ export class RedshiftConnection
       if (!shouldProceed) {
         return;
       }
+      // recurse for each key value pair in object
       for (const [key, value] of Object.entries(superValue)) {
         const path = currentPath ? `${currentPath}.${key}` : key;
-
-        // Check if path is already marked as mixed type before proceeding deeper
-        if (pathsWithAmbiguousTypes.has(path)) {
-          continue;
-        }
-        // object contains another object
-        if (
-          value !== null &&
-          typeof value === 'object' &&
-          !Array.isArray(value)
-        ) {
-          // recurse into object
-          this.processNestedJson(
-            value as Record<string, unknown>,
-            path,
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-        }
-        // object contains array
-        else if (Array.isArray(value)) {
-          // Recursively process the array contents
-          this.processNestedJson(
-            value as unknown[], // The array itself
-            path, // The path *to* this array, this becomes the columnName for the recursive call
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-        }
-        // object contains primitive type
-        else {
-          this.processNestedJson(
-            value as typeof superValue,
-            path,
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-        }
+        this.processNestedJson(
+          value,
+          path,
+          pathToType,
+          pathsWithAmbiguousTypes
+        );
       }
     }
     // Handle array
@@ -486,40 +455,14 @@ export class RedshiftConnection
 
       const arrayElementPath = `${currentPath}[*]`;
 
+      // recurse for each element in array
       for (const element of superValue) {
-        if (pathsWithAmbiguousTypes.has(arrayElementPath)) {
-          break;
-        }
-
-        // array element is object
-        if (
-          element !== null &&
-          typeof element === 'object' &&
-          !Array.isArray(element)
-        ) {
-          this.processNestedJson(
-            element as Record<string, unknown>,
-            arrayElementPath,
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-          // array element is array
-        } else if (Array.isArray(element)) {
-          this.processNestedJson(
-            element,
-            arrayElementPath,
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-        } else {
-          // array element is primitive
-          this.processNestedJson(
-            element as typeof superValue,
-            arrayElementPath,
-            pathToType,
-            pathsWithAmbiguousTypes
-          );
-        }
+        this.processNestedJson(
+          element,
+          arrayElementPath,
+          pathToType,
+          pathsWithAmbiguousTypes
+        );
       }
     }
     // Handle leaf node (primitive or null)

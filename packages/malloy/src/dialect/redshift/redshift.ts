@@ -205,30 +205,7 @@ export class RedshiftDialect extends PostgresBase {
     isArray: boolean,
     _isInNestedPipeline: boolean
   ): string {
-    if (isArray) {
-      if (needDistinctKey) {
-        return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_id', row_number() over (), 'value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
-      } else {
-        return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('value', v) FROM JSONB_ARRAY_ELEMENTS(TO_JSONB(${source})) as v))) as ${alias} ON true`;
-      }
-    } else if (needDistinctKey) {
-      return `LEFT JOIN UNNEST(ARRAY((SELECT jsonb_build_object('__row_number', row_number() over())|| __xx::jsonb as b FROM  JSONB_ARRAY_ELEMENTS(${source}) __xx ))) as ${alias} ON true`;
-    } else {
-      /*
-        during multi-layered unnesting, source is = everything before the deepest key.
-        Ex: If we're trying to read nested data reviews_json.reviews.label,
-        source = "base.reviews_json.reviews"
-
-        appending `, ${source} as ${alias}` to the query will result in:
-
-        SELECT
-          reviews_0.label as "label"
-        FROM "cookieStore_analytics"."cookieStore_profile_reviews" as base
-        , base.reviews_json.reviews as reviews_0   <--- (already does most of the unnesting)
-        LIMIT 10
-      */
-      return `, ${source} as ${alias}`;
-    }
+    return `, ${source} as ${alias}`;
   }
 
   sqlSumDistinctHashedKey(sqlDistinctKey: string): string {
@@ -266,6 +243,13 @@ export class RedshiftDialect extends PostgresBase {
     }
     if (parentType !== 'table') {
       let ret = `${parentAlias}.${childName}`;
+
+      // trying to unnest scalar array
+      if (parentType.startsWith('array') && childName === 'value') {
+        // no need for 'value' field, Redshift will auto unnest the array
+        // in the FROM clause
+        ret = parentAlias;
+      }
       switch (childType) {
         case 'string':
           // these explicit casts are needed when trying to put
