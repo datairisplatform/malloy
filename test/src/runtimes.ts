@@ -229,7 +229,9 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
         connection = new DatabricksTestConnection(dbName);
         break;
       case 'redshift':
-        connection = new RedshiftTestConnection(dbName);
+        connection = new RedshiftTestConnection(dbName, {
+          enableCaseSensitiveIdentifier: true
+        });
         break;
       case 'duckdb':
         connection = new DuckDBTestConnection(
