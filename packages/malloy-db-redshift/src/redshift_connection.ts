@@ -62,6 +62,7 @@ interface RedshiftConnectionConfiguration {
   password?: string;
   databaseName?: string;
   schema?: string;
+  enableCaseSensitiveIdentifier?: boolean;
 }
 
 type RedshiftConnectionConfigurationReader = RedshiftConnectionConfiguration;
@@ -330,7 +331,13 @@ export class RedshiftConnection
     // redshift turns camelcase into all lowercase
     // this doesn't actually matter for prod,
     // but index and temp table tests do expect the original case
-    sqlArray.push('SET enable_case_sensitive_identifier TO true;');
+
+    // This line causes the following error when using row level security:
+    // error: RLS protected relation does not support session level config on case sensitivity being different from its default value.
+    // Only enable for testing to avoid RLS issues in production
+    if (this.config.enableCaseSensitiveIdentifier) {
+      sqlArray.push('SET enable_case_sensitive_identifier TO true;');
+    }
     if (Array.isArray(sql)) {
       sqlArray.push(...sql);
     } else {
