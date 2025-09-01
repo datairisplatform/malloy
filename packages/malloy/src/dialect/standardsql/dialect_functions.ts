@@ -91,12 +91,50 @@ const min_by: DefinitionBlueprint = {
   isSymmetric: true,
 };
 
+const array_agg: DefinitionBlueprint = {
+  takes: {x: T},
+  generic: {'T': ['any']},
+  returns: {measure: {array: T}},
+  supportsOrderBy: true,
+  supportsLimit: true,
+  impl: {sql: 'ARRAY_AGG(${x}${order_by:}${limit:})'},
+  isSymmetric: true,
+};
+
+const array_agg_distinct: DefinitionBlueprint = {
+  takes: {x: T},
+  generic: {'T': ['any']},
+  returns: {measure: {array: T}},
+  supportsOrderBy: 'only_default',
+  supportsLimit: true,
+  impl: {
+    sql: 'ARRAY_AGG(DISTINCT ${x}${order_by:}${limit:})',
+    defaultOrderByArgIndex: 0,
+  },
+  isSymmetric: true,
+};
+
+const percentile_cont: DefinitionBlueprint = {
+  takes: {
+    'value': {dimension: 'number'},
+    'percentile': {literal: 'number'},
+  },
+  returns: {calculation: 'number'},
+  impl: {
+    sql: 'PERCENTILE_CONT(${value}, ${percentile}) OVER(ORDER BY ${value})',
+    needsWindowOrderBy: false,
+  },
+};
+
 export const STANDARDSQL_DIALECT_FUNCTIONS: DefinitionBlueprintMap = {
   date_from_unix_date,
   string_agg,
   string_agg_distinct,
   max_by,
   min_by,
+  array_agg,
+  array_agg_distinct,
+  percentile_cont,
   hll_accumulate: {
     default: {
       takes: {'value': {dimension: T}},
