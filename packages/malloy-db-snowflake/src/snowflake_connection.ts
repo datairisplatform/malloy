@@ -135,9 +135,12 @@ class SnowObject extends SnowField {
           field.walk(path.next, fieldType);
           return;
         }
-        throw new Error(
-          'SNOWFLAKE SCHEMA PARSER ERROR: Walk through undefined'
-        );
+        // This happens if there is a field but we don't
+        // have the parent. Don't throw an error -- it can
+        // happen if the parent fields are not all the same.
+        // throw new Error(
+        //   'SNOWFLAKE SCHEMA PARSER ERROR: Walk through undefined'
+        // );
       } else {
         // If we get multiple type for a field, ignore them, should
         // which will do until we support viarant data
@@ -242,7 +245,6 @@ export class SnowflakeConnection
     super();
     let connOptions = options?.connOptions;
     if (connOptions === undefined) {
-      // try to get connection options from ~/.snowflake/connections.toml
       connOptions = SnowflakeExecutor.getConnectionOptionsFromToml();
     }
     this.executor = new SnowflakeExecutor(connOptions, options?.poolOptions);
@@ -290,11 +292,13 @@ export class SnowflakeConnection
     options: RunSQLOptions = {}
   ): Promise<MalloyQueryData> {
     const rowLimit = options?.rowLimit ?? this.queryOptions?.rowLimit;
-    let rows = await this.executor.batch(sql, options, this.timeoutMs);
+    const resp = await this.executor.batch(sql, options, this.timeoutMs);
+    let {rows} = resp;
+    const {runStats} = resp;
     if (rowLimit !== undefined && rows.length > rowLimit) {
       rows = rows.slice(0, rowLimit);
     }
-    return {rows, totalRows: rows.length};
+    return {rows, totalRows: rows.length, runStats};
   }
 
   public async *runSQLStream(
@@ -323,7 +327,7 @@ export class SnowflakeConnection
     structDef: StructDef
   ): Promise<void> {
     const infoQuery = `DESCRIBE TABLE ${tablePath}`;
-    const rows = await this.executor.batch(infoQuery);
+    const {rows} = await this.executor.batch(infoQuery);
     const variants: string[] = [];
     const notVariant = new Map<string, boolean>();
     for (const row of rows) {
@@ -347,25 +351,47 @@ export class SnowflakeConnection
       // * remove fields for which we have multiple types
       //   ( requires folding decimal to integer )
       const sampleQuery = `
-        select path, min(type) as type
-        from (
-          select
-            regexp_replace(path, '\\\\[[0-9]+\\\\]', '[*]') as path,
-            case
-              when typeof(value) = 'INTEGER' then 'decimal'
-              when typeof(value) = 'DOUBLE' then 'decimal'
-            else lower(typeof(value)) end as type
-          from
-            (select object_construct(*) o from ${tablePath} limit 100)
-              ,table(flatten(input => o, recursive => true)) as meta
-          group by 1,2
+        WITH base AS (
+          SELECT
+            regexp_replace(path, '\\\\[[0-9]+\\\\]', '[*]') AS norm_path,
+            CASE
+              WHEN typeof(value) = 'INTEGER' THEN 'decimal'
+              WHEN typeof(value) = 'DOUBLE' THEN 'decimal'
+              ELSE lower(typeof(value))
+            END AS type
+          FROM
+            (
+              SELECT object_construct(*) o FROM ${tablePath} LIMIT 100
+            ), table(flatten(input => o, recursive => true)) AS meta
+          WHERE
+            lower(typeof(value)) != 'null_value'
+        ),
+        agg AS (
+          SELECT
+            norm_path,
+            min(type) AS type,
+            count(distinct type) AS type_count
+          FROM base
+          GROUP BY norm_path
+        ),
+        ambiguous AS (
+          SELECT norm_path,
+          FROM agg
+          WHERE type_count > 1
         )
-        where type != 'null_value'
-        group BY 1
-        having count(*) <=1
-        order by path;
-      `;
-      const fieldPathRows = await this.executor.batch(sampleQuery);
+        SELECT a.norm_path AS path, a.type
+        FROM agg a
+        WHERE
+          a.type_count = 1
+          AND NOT EXISTS (
+            SELECT 1
+            FROM ambiguous b
+            WHERE
+              startswith(a.norm_path, b.norm_path || '.')
+              OR startswith(a.norm_path, b.norm_path || '[')
+          )
+      ORDER BY a.norm_path;`;
+      const {rows: fieldPathRows} = await this.executor.batch(sampleQuery);
 
       // take the schema in list form an convert it into a tree.
 

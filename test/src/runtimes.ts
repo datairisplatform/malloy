@@ -40,6 +40,8 @@ import {DuckDBConnection} from '@malloydata/db-duckdb';
 import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
 import {SnowflakeConnection} from '@malloydata/db-snowflake';
 import {PooledPostgresConnection} from '@malloydata/db-postgres';
+import {DatabricksConnection} from '@malloydata/db-databricks';
+import {RedshiftConnection} from '@malloydata/db-redshift';
 import {TrinoConnection, TrinoExecutor} from '@malloydata/db-trino';
 import {SnowflakeExecutor} from '@malloydata/db-snowflake/src/snowflake_executor';
 import {PrestoConnection} from '@malloydata/db-trino/src/trino_connection';
@@ -99,6 +101,42 @@ export class MySQLTestConnection extends MySQLConnection {
 }
 
 export class PostgresTestConnection extends PooledPostgresConnection {
+  // we probably need a better way to do this.
+
+  public async runSQL(
+    sqlCommand: string,
+    options?: RunSQLOptions
+  ): Promise<MalloyQueryData> {
+    try {
+      return await super.runSQL(sqlCommand, options);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log(`Error in SQL:\n ${sqlCommand}`);
+      throw e;
+    }
+  }
+}
+
+export class DatabricksTestConnection extends DatabricksConnection {
+  // we probably need a better way to do this.
+
+  public async runSQL(
+    sqlCommand: string,
+    options?: RunSQLOptions
+  ): Promise<MalloyQueryData> {
+    try {
+      return await super.runSQL(sqlCommand, options);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log(`Exeption when running SQL:\n ${sqlCommand}`);
+      // eslint-disable-next-line no-console
+      console.log(`Exception: ${e}`);
+      throw e;
+    }
+  }
+}
+
+export class RedshiftTestConnection extends RedshiftConnection {
   // we probably need a better way to do this.
 
   public async runSQL(
@@ -189,6 +227,12 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
       case 'postgres':
         connection = new PostgresTestConnection(dbName);
         break;
+      case 'databricks':
+        connection = new DatabricksTestConnection(dbName);
+        break;
+      case 'redshift':
+        connection = new RedshiftTestConnection(dbName);
+        break;
       case 'duckdb':
         connection = new DuckDBTestConnection(
           dbName,
@@ -267,6 +311,8 @@ export const allDatabases = [
   'snowflake',
   'trino',
   'mysql',
+  'databricks',
+  'redshift',
 ];
 
 type RuntimeDatabaseNames = (typeof allDatabases)[number];
