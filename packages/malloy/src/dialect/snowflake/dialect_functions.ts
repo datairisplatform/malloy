@@ -10,8 +10,6 @@ import type {
   DefinitionBlueprintMap,
   OverloadedDefinitionBlueprint,
   TypeDescBlueprint,
-  arg as a,
-  sql,
   DefinitionBlueprint,
 } from '../functions/util';
 import {def, arg as a, sql} from '../functions/util';
