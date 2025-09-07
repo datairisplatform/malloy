@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type {DocumentRange} from '@malloydata/malloy';
+import type {DocumentRange} from '@datairis/malloy';
 
 export interface MalloySQLParseErrorExpected {
   type: string;

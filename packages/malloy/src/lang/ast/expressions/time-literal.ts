@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {DateTime as LuxonDateTime} from 'luxon';
 
 import type {

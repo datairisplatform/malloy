@@ -6,7 +6,7 @@
  */
 
 import {malloyToQuery} from '../malloy-to-stable-query';
-import * as Malloy from '@malloydata/malloy-interfaces';
+import * as Malloy from '@datairis/malloy-interfaces';
 
 type QueryAndLogs = {query?: Malloy.Query; logs: Partial<Malloy.LogMessage>[]};
 

@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import * as Malloy from '@malloydata/malloy-interfaces';
+import * as Malloy from '@datairis/malloy-interfaces';
 import type {
   AtomicTypeDef,
   DateUnit,
@@ -35,7 +35,7 @@ import {
   getResultStructDefForView,
 } from './model';
 import {annotationToTaglines} from './annotation';
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 
 export function sourceDefToSourceInfo(sourceDef: SourceDef): Malloy.SourceInfo {
   const parameters: Malloy.ParameterInfo[] | undefined =

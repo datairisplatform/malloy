@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import {annotationToTaglines} from '../annotation';
 import type {
   InfoConnection as LegacyInfoConnection,
@@ -25,7 +25,7 @@ import {
   writeLiteralToTag,
 } from '../to_stable';
 import type {Connection, InfoConnection} from './connection';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {DateTime} from 'luxon';
 import type {LogMessage} from '../lang';
 

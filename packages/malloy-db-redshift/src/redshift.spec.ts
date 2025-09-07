@@ -22,8 +22,8 @@
  */
 
 import {RedshiftConnection} from './redshift_connection';
-import {SQLSourceDef} from '@malloydata/malloy';
-import {describeIfDatabaseAvailable} from '@malloydata/malloy/test';
+import {SQLSourceDef} from '@datairis/malloy';
+import {describeIfDatabaseAvailable} from '@datairis/malloy/test';
 
 const [describe] = describeIfDatabaseAvailable(['postgres']);
 

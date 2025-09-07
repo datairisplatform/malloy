@@ -10,13 +10,13 @@ import type {
   NumberFilter,
   StringFilter,
   TemporalFilter,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import {
   BooleanFilterExpression,
   NumberFilterExpression,
   StringFilterExpression,
   TemporalFilterExpression,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import type {MalloyElement} from './ast';
 import type {
   FieldUsage,

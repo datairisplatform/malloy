@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {DataRenderOptions, RenderDef, StyleDefaults} from './data_styles';
 import type {Renderer} from './renderer';
 import type {RendererFactory} from './renderer_factory';

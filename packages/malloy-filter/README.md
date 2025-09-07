@@ -15,7 +15,7 @@ output of the parser, or look at the parser tests in [`src/test/`](src/test/) fo
 of parser output.
 
 ```TypeScript
-import {StringFilterExpression, StringClause} from '@malloydata/malloy-filter'
+import {StringFilterExpression, StringClause} from '@datairis/malloy-filter'
 
 // or ...
 // NumberFilterExpression, NumberClause

@@ -75,7 +75,7 @@ import {
   locationContainsPosition,
   rangeFromContext,
 } from './utils';
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import type {MalloyParseInfo} from './malloy-parse-info';
 import {walkForModelAnnotation} from './parse-tree-walkers/model-annotation-walker';
 import {walkForTablePath} from './parse-tree-walkers/find-table-path-walker';

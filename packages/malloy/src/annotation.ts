@@ -1,5 +1,5 @@
-import type {TagError} from '@malloydata/malloy-tag';
-import {Tag} from '@malloydata/malloy-tag';
+import type {TagError} from '@datairis/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import type {Annotation, Note} from './model';
 import type {LogMessage} from './lang';
 

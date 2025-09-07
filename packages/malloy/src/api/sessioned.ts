@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import * as Malloy from '@malloydata/malloy-interfaces';
+import * as Malloy from '@datairis/malloy-interfaces';
 import * as Core from './core';
 import {v4 as uuidv4} from 'uuid';
 import {Timer} from '../timing';

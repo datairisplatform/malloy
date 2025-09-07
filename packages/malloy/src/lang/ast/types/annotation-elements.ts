@@ -22,7 +22,7 @@
  */
 
 import type {Note} from '../../../model/malloy_types';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {MessageLogger} from '../../parse-log';
 import type {Document, DocStatement} from './malloy-element';
 import {MalloyElement} from './malloy-element';

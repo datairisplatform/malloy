@@ -39,7 +39,7 @@ import {
 } from './malloy_types';
 import type {EventStream} from '../runtime_types';
 import {annotationToTag} from '../annotation';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {Dialect, FieldReferenceType} from '../dialect';
 import {getDialect} from '../dialect';
 import {exprMap} from './utils';

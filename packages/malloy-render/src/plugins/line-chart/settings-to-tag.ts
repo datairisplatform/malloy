@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import type {LineChartSettings} from './line-chart-settings';
 import {defaultLineChartSettings} from './line-chart-settings';
 

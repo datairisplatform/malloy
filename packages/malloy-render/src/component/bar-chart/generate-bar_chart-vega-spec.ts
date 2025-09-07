@@ -38,7 +38,7 @@ import {getMarkName} from '../vega/vega-utils';
 import type {CellValue, RecordCell, RepeatedRecordField} from '../../data_tree';
 import {Field} from '../../data_tree';
 import {NULL_SYMBOL, renderTimeString} from '../../util';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {RenderMetadata} from '../render-result-metadata';
 import {convertLegacyToVizTag} from '../tag-utils';
 

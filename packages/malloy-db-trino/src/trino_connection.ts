@@ -40,7 +40,7 @@ import type {
   FieldDef,
   TestableConnection,
   SQLSourceRequest,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {
   TrinoDialect,
   mkFieldDef,
@@ -48,9 +48,9 @@ import {
   TinyParser,
   isRepeatedRecord,
   sqlKey,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
-import {BaseConnection} from '@malloydata/malloy/connection';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import type {PrestoClientConfig, PrestoQuery} from '@prestodb/presto-js-client';
 import {PrestoClient} from '@prestodb/presto-js-client';

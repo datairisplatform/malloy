@@ -49,16 +49,16 @@ import type {
   StructDef,
   SQLSourceDef,
   SQLSourceRequest,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {
   mkArrayDef,
   Malloy,
   StandardSQLDialect,
   toAsyncGenerator,
   sqlKey,
-} from '@malloydata/malloy';
-import type {TableMetadata} from '@malloydata/malloy/connection';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import type {TableMetadata} from '@datairis/malloy/connection';
+import {BaseConnection} from '@datairis/malloy/connection';
 // eslint-disable-next-line no-restricted-imports
 
 export interface BigQueryManagerOptions {

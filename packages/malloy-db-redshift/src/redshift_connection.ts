@@ -49,8 +49,8 @@ import {
   Expr,
   SQLSourceRequest,
   sqlKey,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Pool, types} from 'pg';
 // Override parser for 64-bit integers (OID 20) and standard integers (OID 23)

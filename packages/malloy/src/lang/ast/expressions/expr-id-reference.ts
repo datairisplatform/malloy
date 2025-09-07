@@ -27,7 +27,7 @@ import type {ExprValue} from '../types/expr-value';
 import type {FieldReference} from '../query-items/field-references';
 import type {FieldSpace} from '../types/field-space';
 import {ExpressionDef} from '../types/expression-def';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 
 export class ExprIdReference extends ExpressionDef {
   elementType = 'ExpressionIdReference';

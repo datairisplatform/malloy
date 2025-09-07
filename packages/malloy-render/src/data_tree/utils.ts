@@ -1,6 +1,6 @@
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import {tagFromAnnotations} from '../util';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {
   BooleanFieldInfo,
   DateFieldInfo,
@@ -29,7 +29,7 @@ import {
 } from './fields';
 import {convertLegacyToVizTag, VIZ_CHART_TYPES} from '../component/tag-utils';
 import type {FieldBase} from './fields/base';
-import {extractMalloyObjectFromTag} from '@malloydata/malloy';
+import {extractMalloyObjectFromTag} from '@datairis/malloy';
 
 export function isArrayFieldInfo(
   field: Malloy.DimensionInfo

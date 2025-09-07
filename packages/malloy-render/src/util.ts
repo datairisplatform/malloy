@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
-import {Tag} from '@malloydata/malloy-tag';
+import type * as Malloy from '@datairis/malloy-interfaces';
+import {Tag} from '@datairis/malloy-tag';
 import {DurationUnit, isDurationUnit} from './html/data_styles';
 import {format} from 'ssf';
 import type {Cell, NestField} from './data_tree';

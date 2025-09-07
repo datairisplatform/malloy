@@ -4,8 +4,8 @@ import {
   shouldRenderAs,
   extractExpressionFromTag,
 } from '../utils';
-import * as Malloy from '@malloydata/malloy-interfaces';
-import type {Tag} from '@malloydata/malloy-tag';
+import * as Malloy from '@datairis/malloy-interfaces';
+import type {Tag} from '@datairis/malloy-tag';
 import {renderTagFromAnnotations, NULL_SYMBOL, notUndefined} from '../../util';
 import type {
   Field,

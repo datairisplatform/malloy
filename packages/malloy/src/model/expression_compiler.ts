@@ -32,13 +32,13 @@ import type {
 import type {
   FilterParserResponse,
   FilterExpression,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import {
   StringFilterExpression,
   NumberFilterExpression,
   BooleanFilterExpression,
   TemporalFilterExpression,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import {
   sqlFullChildReference,
   type FieldInstanceResult,

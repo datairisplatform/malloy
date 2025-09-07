@@ -12,7 +12,7 @@ import type {
   RenderProps,
 } from '@/api/plugin-types';
 import {type Field, FieldType} from '@/data_tree';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 
 interface DummyPluginMetadata {
   type: 'dummy';

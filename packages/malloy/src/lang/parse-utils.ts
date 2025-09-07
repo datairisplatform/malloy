@@ -28,7 +28,7 @@ import type {
   SqlStringContext,
   IdContext,
 } from './lib/Malloy/MalloyParser';
-import {ParseUtil} from '@malloydata/malloy-tag';
+import {ParseUtil} from '@datairis/malloy-tag';
 
 /**
  * Take the text of a matched string, including the matching quote

@@ -15,7 +15,7 @@ import type {
   FieldDef,
   Expr,
   SQLSourceRequest,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 const runtimes = new RuntimeList(databasesFromEnvironmentOr(allDatabases));
 

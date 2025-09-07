@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {ExprValue} from '../types/expr-value';
 import {literalExprValue} from '../types/expr-value';
 import type {FieldSpace} from '../types/field-space';

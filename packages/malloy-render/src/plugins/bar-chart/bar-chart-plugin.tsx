@@ -11,7 +11,7 @@ import type {
   CoreVizPluginInstance,
 } from '@/api/plugin-types';
 import {type Field, FieldType, type NestField} from '@/data_tree';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {JSXElement} from 'solid-js';
 import {ChartV2} from '@/component/chart/chart-v2';
 import {

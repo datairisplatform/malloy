@@ -5,7 +5,7 @@
  *  LICENSE file in the root directory of this source tree.
  */
 
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {Channel} from '../types';
 import type {RepeatedRecordField} from '../../data_tree';
 import {walkFields} from '../../util';

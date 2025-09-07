@@ -6,7 +6,7 @@
  */
 
 import type {JSXElement} from 'solid-js';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {Field, NestField, NestCell, FieldType, Cell} from '../data_tree';
 import type {
   RenderMetadata,

@@ -6,7 +6,7 @@
  */
 
 import {compileModel, compileQuery, runQuery} from './asynchronous';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {Connection, InfoConnection, LookupConnection} from './connection';
 import type {URLReader} from '../runtime_types';
 

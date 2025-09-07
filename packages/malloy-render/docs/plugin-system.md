@@ -98,7 +98,7 @@ type CoreVizPluginInstance = SolidJSRenderPluginInstance & CoreVizPluginMethods;
 ```typescript
 import type { RenderPluginFactory, SolidJSRenderPluginInstance } from '@/api/plugin-types';
 import { Field, FieldType } from '@/data_tree';
-import type { Tag } from '@malloydata/malloy-tag';
+import type { Tag } from '@datairis/malloy-tag';
 
 const MyPluginFactory: RenderPluginFactory<SolidJSRenderPluginInstance> = {
   name: 'my_plugin',
@@ -211,7 +211,7 @@ const AdvancedVizFactory: RenderPluginFactory<CoreVizPluginInstance> = {
 ### 1. Register Plugins with Renderer
 
 ```typescript
-import { MalloyRenderer } from '@malloydata/malloy-render';
+import { MalloyRenderer } from '@datairis/malloy-render';
 
 const renderer = new MalloyRenderer({
   plugins: [

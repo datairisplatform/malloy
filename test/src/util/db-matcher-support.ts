@@ -12,9 +12,9 @@ import type {
   QueryMaterializer,
   LogMessage,
   Dialect,
-} from '@malloydata/malloy';
-import {API, MalloyError} from '@malloydata/malloy';
-import type {Tag} from '@malloydata/malloy-tag';
+} from '@datairis/malloy';
+import {API, MalloyError} from '@datairis/malloy';
+import type {Tag} from '@datairis/malloy-tag';
 
 type JestMatcherResult = {
   pass: boolean;

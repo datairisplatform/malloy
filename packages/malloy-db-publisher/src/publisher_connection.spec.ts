@@ -5,8 +5,8 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import * as malloy from '@malloydata/malloy';
-import {describeIfDatabaseAvailable} from '@malloydata/malloy/test';
+import * as malloy from '@datairis/malloy';
+import {describeIfDatabaseAvailable} from '@datairis/malloy/test';
 import {PublisherConnection} from './publisher_connection';
 import {fileURLToPath} from 'url';
 import * as util from 'util';
@@ -19,7 +19,7 @@ import type {
   SQLSourceDef,
   MalloyQueryData,
   QueryDataRow,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 
 // mocks client code for testing
 jest.mock('./client', () => {

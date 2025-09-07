@@ -25,7 +25,7 @@ import startCase from 'lodash/startCase';
 import type {RenderDef} from './data_styles';
 import type {RendererOptions} from './renderer_types';
 import {DateTime} from 'luxon';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {Field} from '../data_tree';
 
 export function getColorScale(

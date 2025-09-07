@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {tagFromAnnotations, renderTagFromAnnotations} from './util';
 
 describe('renderTagFromAnnotations namespace support', () => {

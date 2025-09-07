@@ -33,8 +33,8 @@ import * as toml from 'toml';
 import * as fs from 'fs';
 import * as path from 'path';
 import type {Readable} from 'stream';
-import type {QueryData, QueryDataRow, RunSQLOptions} from '@malloydata/malloy';
-import {toAsyncGenerator} from '@malloydata/malloy';
+import type {QueryData, QueryDataRow, RunSQLOptions} from '@datairis/malloy';
+import {toAsyncGenerator} from '@datairis/malloy';
 
 export interface ConnectionConfigFile {
   // a toml file with snowflake connection settings

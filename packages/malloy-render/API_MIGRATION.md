@@ -2,14 +2,14 @@
 
 ## Overview
 
-This document describes the migration from the web component-based API to the new JavaScript API for `@malloydata/render`.
+This document describes the migration from the web component-based API to the new JavaScript API for `@datairis/render`.
 
 ## New JavaScript API
 
 ### Basic Usage
 
 ```javascript
-import {MalloyRenderer} from '@malloydata/render';
+import {MalloyRenderer} from '@datairis/render';
 
 // Set up a global renderer with options
 const renderer = new MalloyRenderer({
@@ -108,7 +108,7 @@ interface MalloyRendererOptions {
 ### After (JavaScript API)
 
 ```javascript
-import {MalloyRenderer} from '@malloydata/render';
+import {MalloyRenderer} from '@datairis/render';
 
 const renderer = new MalloyRenderer(globalRenderOptions);
 
@@ -167,7 +167,7 @@ The old exports are still available for existing code:
 
 ```javascript
 // Legacy exports still work
-import {HTMLView, JSONView, getDataTree} from '@malloydata/render';
+import {HTMLView, JSONView, getDataTree} from '@datairis/render';
 ```
 
 ## Implementation Details

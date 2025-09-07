@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {DataStyles, RenderDef, StyleDefaults} from './data_styles';
 import type {ChildRenderers, Renderer} from './renderer';
 import type {RendererOptions} from './renderer_types';
@@ -30,7 +30,7 @@ import {HTMLTableRenderer} from './table';
 import {ContainerRenderer} from './container';
 import {createErrorElement} from './utils';
 import {MainRendererFactory} from './main_renderer_factory';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {Cell, Field, RecordOrRepeatedRecordField} from '../data_tree';
 import {getDataTree} from '../data_tree';
 import {HTMLDashboardRenderer} from './dashboard';

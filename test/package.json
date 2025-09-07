@@ -1,5 +1,5 @@
 {
-  "name": "@malloydata/malloy-tests",
+  "name": "@datairis/malloy-tests",
   "license": "MIT",
   "engines": {
     "node": ">=20"
@@ -21,16 +21,16 @@
   },
   "dependencies": {
     "@jest/globals": "^29.4.3",
-    "@malloydata/db-bigquery": "0.0.309",
-    "@malloydata/db-duckdb": "0.0.309",
-    "@malloydata/db-postgres": "0.0.309",
-    "@malloydata/db-snowflake": "0.0.309",
-    "@malloydata/db-databricks": "^0.0.309",
-    "@malloydata/db-redshift": "^0.0.309",
-    "@malloydata/db-trino": "0.0.309",
-    "@malloydata/malloy": "0.0.309",
-    "@malloydata/malloy-tag": "0.0.309",
-    "@malloydata/render": "0.0.309",
+    "@datairis/db-bigquery": "0.0.30918",
+    "@datairis/db-duckdb": "0.0.30918",
+    "@datairis/db-postgres": "0.0.30918",
+    "@datairis/db-snowflake": "0.0.30918",
+    "@datairis/db-databricks": "^0.0.30918",
+    "@datairis/db-redshift": "^0.0.30918",
+    "@datairis/db-trino": "0.0.30918",
+    "@datairis/malloy": "0.0.30918",
+    "@datairis/malloy-tag": "0.0.30918",
+    "@datairis/render": "0.0.30918",
     "events": "^3.3.0",
     "jsdom": "^22.1.0",
     "luxon": "^2.4.0",
@@ -40,5 +40,5 @@
     "@types/jsdom": "^21.1.1",
     "@types/luxon": "^2.4.0"
   },
-  "version": "0.0.309"
+  "version": "0.0.30918"
 }

@@ -1,4 +1,4 @@
-import * as Malloy from '@malloydata/malloy-interfaces';
+import * as Malloy from '@datairis/malloy-interfaces';
 import {valueToMalloy} from '../util';
 import type {Cell, RecordCell} from './cells';
 import type {DrillEntry, DrillValue} from './types';

@@ -5,9 +5,9 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import {compileModel, compileQuery, compileSource} from './stateless';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {extractMalloyObjectFromTag} from '../to_stable';
 
 type DeepPartial<T> = T extends object

@@ -9,7 +9,7 @@ import type {
   RenderFieldRegistry,
 } from '@/registry/types';
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 
 export type OnPluginCreateError = (
   error: Error,

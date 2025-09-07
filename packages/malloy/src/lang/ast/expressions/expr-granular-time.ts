@@ -33,7 +33,7 @@ import type {FieldSpace} from '../types/field-space';
 import type {GranularResult} from '../types/granular-result';
 import {ExprTime} from './expr-time';
 import {Range} from './range';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 
 /**
  * GranularTime is a moment in time which ALSO has a "granularity"

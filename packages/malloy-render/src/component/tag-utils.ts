@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 
 // Legacy chart tags that need to be converted
 const LEGACY_CHART_TAGS = ['bar_chart', 'line_chart'];

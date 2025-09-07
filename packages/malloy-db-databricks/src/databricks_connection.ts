@@ -39,8 +39,8 @@ import {
   mkArrayDef,
   SQLSourceRequest,
   sqlKey,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Client} from 'pg';
 import {DBSQLClient} from '@databricks/sql';

@@ -91,7 +91,7 @@ import type {
   LookupConnection,
 } from './connection/types';
 import {DateTime} from 'luxon';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {Dialect} from './dialect';
 import {getDialect} from './dialect';
 import type {PathInfo} from './lang/parse-tree-walkers/find-table-path-walker';

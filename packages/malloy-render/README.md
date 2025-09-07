@@ -7,13 +7,13 @@ The Malloy Renderer is a web component for rendering Malloy query results. It is
 1. Install the renderer package
 
 ```bash
-$ npm i @malloydata/render
+$ npm i @datairis/render
 ```
 
 2. Import the web component somewhere in your project. This will automatically register the `<malloy-render>` web component on your document.
 
 ```javascript
-import '@malloydata/render/webcomponent';
+import '@datairis/render/webcomponent';
 ```
 
 3. Use the web component in your app by creating a `<malloy-render>` node and passing it Malloy query results:
@@ -33,10 +33,10 @@ malloyRenderElement.modelDef = myModelDef;
 
 ### Explicitly registering the web component
 
-In some situations, such as using Malloy Render with a mock DOM like JSDOM, you may want to explicitly register the web component on a document. This can be done using the `@malloydata/render/webcomponent/register` import like so:
+In some situations, such as using Malloy Render with a mock DOM like JSDOM, you may want to explicitly register the web component on a document. This can be done using the `@datairis/render/webcomponent/register` import like so:
 
 ```javascript
-import registerMalloyRender from '@malloydata/malloy-render/webcomponent/register';
+import registerMalloyRender from '@datairis/malloy-render/webcomponent/register';
 
 const {window} = new JSDOM(`...`);
 

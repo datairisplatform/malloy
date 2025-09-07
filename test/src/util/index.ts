@@ -26,8 +26,8 @@ import type {
   Result,
   Runtime,
   SingleConnectionRuntime,
-} from '@malloydata/malloy';
-export * from '@malloydata/malloy/test';
+} from '@datairis/malloy';
+export * from '@datairis/malloy/test';
 
 interface InitValues {
   sql?: string;

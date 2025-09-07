@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import type {
   Expr,
   TimestampUnit,
@@ -59,7 +59,7 @@ import {
   StringFilterExpression,
   TemporalFilterExpression,
   isFilterable,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 
 class TypeMismatch extends Error {}
 

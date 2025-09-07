@@ -40,14 +40,14 @@ import type {
   AtomicFieldDef,
   ArrayDef,
   SQLSourceRequest,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import {
   SnowflakeDialect,
   TinyParser,
   mkArrayDef,
   sqlKey,
-} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {SnowflakeExecutor} from './snowflake_executor';
 import type {ConnectionOptions} from 'snowflake-sdk';
@@ -135,6 +135,11 @@ class SnowObject extends SnowField {
           field.walk(path.next, fieldType);
           return;
         }
+        console.log(
+          'Snowflake Schema Debug: Walk through undefined',
+          path.name,
+          fieldType
+        );
         // This happens if there is a field but we don't
         // have the parent. Don't throw an error -- it can
         // happen if the parent fields are not all the same.
@@ -393,6 +398,10 @@ export class SnowflakeConnection
       ORDER BY a.norm_path;`;
       const {rows: fieldPathRows} = await this.executor.batch(sampleQuery);
 
+      console.log(
+        'Snowflake Schema Debug: fieldPathRows',
+        JSON.stringify(fieldPathRows)
+      );
       // take the schema in list form an convert it into a tree.
 
       const rootObject = new SnowObject('__root__', this.dialect);

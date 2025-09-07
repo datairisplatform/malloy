@@ -1,4 +1,4 @@
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {RootCell} from './cells';
 import {RenderFieldMetadata} from '../render-field-metadata';
 

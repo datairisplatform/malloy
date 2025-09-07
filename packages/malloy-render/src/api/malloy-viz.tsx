@@ -13,7 +13,7 @@ import type {
 } from '@/api/plugin-types';
 import {MalloyRender} from '@/component/render';
 import type {MalloyRenderProps} from '@/component/render';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {RenderFieldMetadata} from '@/render-field-metadata';
 import {ErrorPlugin} from '@/plugins/error/error-plugin';
 

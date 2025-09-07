@@ -5,7 +5,7 @@
  * LICENSE file in the root directory of this source tree.
  */
 
-import * as Malloy from '@malloydata/malloy-interfaces';
+import * as Malloy from '@datairis/malloy-interfaces';
 import type {LogMessage} from '../lang';
 import {MalloyTranslator} from '../lang';
 import type {ParseUpdate} from '../lang/parse-malloy';
@@ -23,7 +23,7 @@ import {modelDefToModelInfo, writeLiteralToTag} from '../to_stable';
 import {sqlKey} from '../model/sql_block';
 import type {SQLSourceRequest} from '../lang/translate-response';
 import {annotationToTaglines} from '../annotation';
-import {Tag} from '@malloydata/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
 import {DEFAULT_LOG_RANGE, mapLogs, nodeToLiteralValue} from './util';
 import {Timer} from '../timing';
 

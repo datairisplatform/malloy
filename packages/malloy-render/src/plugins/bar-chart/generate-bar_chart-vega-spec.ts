@@ -43,7 +43,7 @@ import {Field} from '@/data_tree';
 import {NULL_SYMBOL} from '@/util';
 import {convertLegacyToVizTag} from '@/component/tag-utils';
 import type {RenderMetadata} from '@/component/render-result-metadata';
-import type {Tag} from '@malloydata/malloy-tag';
+import type {Tag} from '@datairis/malloy-tag';
 import type {BarChartPluginInstance} from './bar-chart-plugin';
 
 type BarDataRecord = {

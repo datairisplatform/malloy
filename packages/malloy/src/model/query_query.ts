@@ -71,7 +71,7 @@ import {
   FieldInstanceResultRoot,
   sqlFullChildReference,
 } from './field_instance';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import {shouldMaterialize} from './materialization/utils';
 
 function pathToCol(path: string[]): string {
@@ -1571,12 +1571,12 @@ export class QueryQuery extends QueryField {
     };
     this.generateStage0Fields(this.rootResult, f, stageWriter);
 
-    if (
-      this.firstSegment.type === 'project' &&
-      !this.parent.modelCompilerFlags().has('unsafe_complex_select_query')
-    ) {
-      throw new Error('PROJECT cannot be used on queries with turtles');
-    }
+    // if (
+    //   this.firstSegment.type === 'project' &&
+    //   !this.parent.modelCompilerFlags().has('unsafe_complex_select_query')
+    // ) {
+    //   throw new Error('PROJECT cannot be used on queries with turtles');
+    // }
 
     const groupBy = 'GROUP BY ' + f.dimensionIndexes.join(',') + '\n';
 

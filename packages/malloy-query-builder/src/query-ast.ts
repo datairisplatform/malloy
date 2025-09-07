@@ -4,10 +4,10 @@
  * This source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
-import * as Malloy from '@malloydata/malloy-interfaces';
-import type {TagSetValue} from '@malloydata/malloy-tag';
-import {Tag} from '@malloydata/malloy-tag';
-import * as Filter from '@malloydata/malloy-filter';
+import * as Malloy from '@datairis/malloy-interfaces';
+import type {TagSetValue} from '@datairis/malloy-tag';
+import {Tag} from '@datairis/malloy-tag';
+import * as Filter from '@datairis/malloy-filter';
 
 export type ParsedFilter =
   | {kind: 'string'; parsed: Filter.StringFilter | null}

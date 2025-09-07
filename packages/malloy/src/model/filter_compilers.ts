@@ -15,13 +15,13 @@ import type {
   TemporalFilter,
   TemporalLiteral,
   TemporalUnit,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import {
   isNumberFilter,
   isStringFilter,
   isTemporalFilter,
   isBooleanFilter,
-} from '@malloydata/malloy-filter';
+} from '@datairis/malloy-filter';
 import type {Dialect} from '../dialect';
 import type {
   TimeLiteralNode,

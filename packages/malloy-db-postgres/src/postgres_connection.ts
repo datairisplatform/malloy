@@ -44,9 +44,9 @@ import type {
   StreamingConnection,
   StructDef,
   SQLSourceRequest,
-} from '@malloydata/malloy';
-import {PostgresDialect, mkArrayDef, sqlKey} from '@malloydata/malloy';
-import {BaseConnection} from '@malloydata/malloy/connection';
+} from '@datairis/malloy';
+import {PostgresDialect, mkArrayDef, sqlKey} from '@datairis/malloy';
+import {BaseConnection} from '@datairis/malloy/connection';
 
 import {Client, Pool} from 'pg';
 import type {FieldDef} from 'pg';

@@ -9,7 +9,7 @@ import {ParserRuleContext} from 'antlr4ts';
 import type {ParseTree, TerminalNode} from 'antlr4ts/tree';
 import {AbstractParseTreeVisitor} from 'antlr4ts/tree/AbstractParseTreeVisitor';
 import type {MalloyParserVisitor} from './lib/Malloy/MalloyParserVisitor';
-import type * as Malloy from '@malloydata/malloy-interfaces';
+import type * as Malloy from '@datairis/malloy-interfaces';
 import * as parse from './lib/Malloy/MalloyParser';
 import type {
   LogMessageOptions,

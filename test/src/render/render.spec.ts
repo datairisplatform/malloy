@@ -21,7 +21,7 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-import {API, type ModelMaterializer, type Result} from '@malloydata/malloy';
+import {API, type ModelMaterializer, type Result} from '@datairis/malloy';
 import {RuntimeList, runtimeFor} from '../runtimes';
 import {describeIfDatabaseAvailable} from '../util';
 import {JSDOM} from 'jsdom';
@@ -76,7 +76,7 @@ describe.skip('rendering results', () => {
     // @ts-ignore
     global.window = global.document.defaultView;
     global.navigator = global.window.navigator;
-    HTMLView = (await import('@malloydata/render')).HTMLView;
+    HTMLView = (await import('@datairis/render')).HTMLView;
   });
 
   afterAll(() => {

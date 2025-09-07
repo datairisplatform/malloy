@@ -32,7 +32,7 @@ import type {
   ConnectionConfig,
   TableSourceDef,
   SQLSourceRequest,
-} from '@malloydata/malloy';
+} from '@datairis/malloy';
 import type {StructRow, Table} from 'apache-arrow';
 import {DuckDBCommon} from './duckdb_common';
 
