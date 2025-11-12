@@ -18,6 +18,9 @@
       "path": "../packages/malloy-db-bigquery"
     },
     {
+      "path": "../packages/malloy-db-athena"
+    },
+    {
       "path": "../packages/malloy-db-postgres"
     },
     {

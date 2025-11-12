@@ -36,10 +36,9 @@ import {
   StructDef,
   TableSourceDef,
   SQLSourceDef,
-  AtomicTypeDef,
+  BasicAtomicTypeDef,
   mkFieldDef,
   TestableConnection,
-  LeafAtomicTypeDef,
 } from '@malloydata/malloy';
 
 import {BaseConnection} from '@malloydata/malloy/connection';
@@ -56,7 +55,7 @@ export interface AthenaConnectionConfiguration {
 export type AthenaConnectionOptions = ConnectionConfig &
   AthenaConnectionConfiguration;
 
-const athenaToMalloyTypes: {[key: string]: LeafAtomicTypeDef} = {
+const athenaToMalloyTypes: {[key: string]: BasicAtomicTypeDef} = {
   'varchar': {type: 'string'},
   'char': {type: 'string'},
   'string': {type: 'string'},
@@ -289,11 +288,11 @@ export class AthenaConnection
     return malloyRows;
   }
 
-  private athenaTypeToMalloyType(athenaType: string | null): AtomicTypeDef {
+  private athenaTypeToMalloyType(athenaType: string | null): BasicAtomicTypeDef {
     if (!athenaType) {
       return {type: 'sql native', rawType: 'unknown'};
     }
-    const baseSqlType = athenaType.match(/^(\w+)/)?.at(0) ?? athenaType;
+    const baseSqlType = athenaType.match(/^(\w+)/)?.[0] ?? athenaType;
     const lowerType = baseSqlType.toLowerCase();
     return (
       athenaToMalloyTypes[lowerType] ?? {
@@ -383,7 +382,7 @@ export class AthenaConnection
     if (schemaResult.rows.length > 0) {
       const firstDataRow = schemaResult.rows[0];
       for (const [fieldName, value] of Object.entries(firstDataRow)) {
-        let fieldType: AtomicTypeDef;
+        let fieldType: BasicAtomicTypeDef;
         if (typeof value === 'number') {
           fieldType = Number.isInteger(value)
             ? {type: 'number', numberType: 'integer'}
