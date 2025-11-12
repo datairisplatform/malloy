@@ -49,6 +49,7 @@ import {
   MySQLConnection,
   MySQLExecutor,
 } from '@malloydata/db-mysql/src/mysql_connection';
+import {AthenaConnection} from '@malloydata/db-athena';
 import {EventEmitter} from 'events';
 
 export class SnowflakeTestConnection extends SnowflakeConnection {
@@ -187,6 +188,23 @@ export class DuckDBWASMTestConnection extends DuckDBWASMConnection {
   }
 }
 
+export class AthenaTestConnection extends AthenaConnection {
+  // we probably need a better way to do this.
+
+  public async runSQL(
+    sqlCommand: string,
+    options?: RunSQLOptions
+  ): Promise<MalloyQueryData> {
+    try {
+      return await super.runSQL(sqlCommand, options);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log(`Error in SQL:\n ${sqlCommand}`);
+      throw e;
+    }
+  }
+}
+
 export class TestCacheManager extends CacheManager {
   constructor(readonly _modelCache: ModelCache) {
     super(_modelCache);
@@ -278,6 +296,17 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
           {},
           TrinoExecutor.getConnectionOptionsFromEnv(dbName) // they share configs.
         );
+        break;
+      case 'athena':
+        // insert test credentials here
+        connection = new AthenaTestConnection({
+          name: dbName,
+          region: '',
+          accessKeyId: '',
+          secretAccessKey: '',
+          database: '',
+          outputLocation: '',
+        });
         break;
       default:
         throw new Error(`Unknown runtime "${dbName}`);
