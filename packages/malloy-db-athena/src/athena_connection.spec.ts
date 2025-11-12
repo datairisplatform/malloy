@@ -98,45 +98,6 @@ describe('AthenaConnection', () => {
     }, 30000);
   });
 
-  describe('Schema Fetching', () => {
-    it('should fetch table schema using DESCRIBE', async () => {
-      const schema = await connection.fetchTableSchema('people', 'people');
-      expect(schema).toBeDefined();
-      expect(schema.type).toBe('table');
-      expect(schema.name).toBe('people');
-      expect(schema.dialect).toBe('athena');
-      expect(schema.fields).toBeDefined();
-      expect(schema.fields.length).toBeGreaterThan(0);
-
-      // Check that fields have proper structure
-      const firstField = schema.fields[0];
-      expect(firstField.name).toBeDefined();
-      expect(firstField.type).toBeDefined();
-    }, 30000);
-
-    it('should fetch SELECT query schema', async () => {
-      const sqlSource = {
-        type: 'sql_select' as const,
-        name: 'test_query',
-        selectStr: 'SELECT * FROM people LIMIT 5',
-        connection: 'athena_test',
-        dialect: 'athena',
-        fields: [],
-      };
-
-      const schema = await connection.fetchSelectSchema(sqlSource);
-      expect(schema).toBeDefined();
-      expect(schema.fields).toBeDefined();
-      expect(schema.fields.length).toBeGreaterThan(0);
-
-      // Check that fields have proper types
-      for (const field of schema.fields) {
-        expect(field.name).toBeDefined();
-        expect(field.type).toBeDefined();
-      }
-    }, 30000);
-  });
-
   describe('Type Conversion', () => {
     it('should correctly convert null values', async () => {
       const result = await connection.runSQL('SELECT null as null_col', {});

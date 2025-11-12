@@ -33,7 +33,6 @@ import {
   MalloyQueryData,
   QueryDataRow,
   RunSQLOptions,
-  PrestoDialect,
   StructDef,
   TableSourceDef,
   SQLSourceDef,
@@ -79,7 +78,6 @@ export class AthenaConnection
   implements TestableConnection
 {
   private readonly client: AthenaClient;
-  private readonly dialect = new PrestoDialect();
   private readonly config: AthenaConnectionConfiguration;
   private readonly connectionName: string;
 
@@ -124,10 +122,7 @@ export class AthenaConnection
     }
 
     const queryExecutionId = await this.executeAthenaQuery(sql);
-    const {rows, columns} = await this.fetchAllResults(
-      queryExecutionId,
-      options.rowLimit
-    );
+    const {rows, columns} = await this.fetchQueryResults(queryExecutionId);
 
     const malloyRows = this.parseAthenaResults(rows, columns);
 
@@ -201,26 +196,7 @@ export class AthenaConnection
     return QueryExecutionId;
   }
 
-  // fetch results for normal SQL query (not for schema fetches)
-  private async fetchAllResults(
-    queryExecutionId: string,
-    limit?: number
-  ): Promise<{rows: unknown[][]; columns: ColumnInfo[]}> {
-    const {rows, columns} = await this.fetchRawQueryResults(queryExecutionId);
-
-    // For normal SQL queries, skip the first row (header row)
-    const dataRows = rows.slice(1);
-
-    // Apply limit if specified
-    if (limit) {
-      return {rows: dataRows.slice(0, limit), columns};
-    }
-
-    return {rows: dataRows, columns};
-  }
-
-  // can be use for schema fetch queries as well
-  private async fetchRawQueryResults(
+  private async fetchQueryResults(
     queryExecutionId: string
   ): Promise<{rows: unknown[][]; columns: ColumnInfo[]}> {
     const allRows: unknown[][] = [];
@@ -242,7 +218,7 @@ export class AthenaConnection
         columns.push(...ResultSet.ResultSetMetadata.ColumnInfo);
       }
 
-      // Convert rows to array format - DON'T skip first row
+      // Convert rows to array format
       for (const row of rows) {
         const values = row.Data?.map(col => col.VarCharValue ?? null) ?? [];
         allRows.push(values);
@@ -252,7 +228,10 @@ export class AthenaConnection
       if (!nextToken) break;
     }
 
-    return {rows: allRows, columns};
+    // skip the first row (header row)
+    const dataRows = allRows.slice(1);
+
+    return {rows: dataRows, columns};
   }
 
   private convertAthenaValue(
@@ -287,7 +266,6 @@ export class AthenaConnection
     }
   }
 
-  // parse query results from normal SQL queries (not for schema fetch queries)
   private parseAthenaResults(
     rows: unknown[][],
     columns: ColumnInfo[]
@@ -345,7 +323,7 @@ export class AthenaConnection
     `;
 
     const queryExecutionId = await this.executeAthenaQuery(infoQuery);
-    const {rows} = await this.fetchAllResults(queryExecutionId);
+    const {rows} = await this.fetchQueryResults(queryExecutionId);
 
     return rows.map(row => ({
       name: row[0] as string,
