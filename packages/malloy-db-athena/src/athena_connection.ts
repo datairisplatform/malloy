@@ -344,37 +344,7 @@ export class AthenaConnection
   async fetchSelectSchema(sqlRef: SQLSourceDef): Promise<SQLSourceDef> {
     const structDef: SQLSourceDef = {...sqlRef, fields: []};
 
-    // Use EXPLAIN to get the schema
-    const explainResult = await this.runSQL(`EXPLAIN ${sqlRef.selectStr}`, {});
-
-    if (explainResult.rows.length === 0) {
-      throw new Error(
-        'Received empty explain result when trying to fetch schema.'
-      );
-    }
-
-    // Parse the query plan from EXPLAIN output
-    // The first row should contain the query plan
-    const firstRow = explainResult.rows[0];
-    const planKey = Object.keys(firstRow)[0];
-    const expResult = firstRow[planKey] as string;
-
-    if (!expResult) {
-      throw new Error('Explain result has rows but query plan is not present.');
-    }
-
-    const lines = expResult.split('\n');
-    if (lines?.length === 0) {
-      throw new Error(
-        'Received invalid explain result when trying to fetch schema.'
-      );
-    }
-
-    // Get column info from the query execution
-    // Since we can't access the raw column metadata here, we'll fetch it differently
-    // by actually running the LIMIT 0 query and inspecting the structure
-
-    // Alternative: Run a modified query to get schema
+    // Run a query with LIMIT 1 to get schema from result metadata
     const schemaQuery = `SELECT * FROM (${sqlRef.selectStr}) LIMIT 1`;
     const schemaResult = await this.runSQL(schemaQuery, {rowLimit: 1});
 
