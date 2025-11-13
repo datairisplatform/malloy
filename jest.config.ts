@@ -142,6 +142,14 @@ const config: Config = {
     },
     {
       ...defaultConfig,
+      displayName: 'db-athena',
+      roots: [
+        '<rootDir>/packages/malloy-db-athena/src/',
+        '<rootDir>/test/src/databases/presto-trino/',
+      ],
+    },
+    {
+      ...defaultConfig,
       displayName: 'db-publisher',
       roots: ['<rootDir>/packages/malloy-db-publisher/'],
     },
