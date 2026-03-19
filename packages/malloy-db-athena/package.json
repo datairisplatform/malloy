@@ -1,0 +1,44 @@
+{
+  "name": "@malloydata/db-athena",
+  "version": "0.0.309",
+  "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "homepage": "https://github.com/malloydata/malloy#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/malloydata/malloy.git"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "lint": "eslint '**/*.ts{,x}'",
+    "lint-fix": "eslint '**/*.ts{,x}' --fix",
+    "test": "jest --config=../../jest.config.js",
+    "build": "tsc --build",
+    "clean": "tsc --build --clean",
+    "malloyc": "ts-node ../../scripts/malloy-to-json",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@aws-sdk/client-athena": "^3.0.0",
+    "@malloydata/malloy": "^0.0.309"
+  },
+  "description": "Malloy connector for AWS Athena. Malloy is an experimental language for describing data relationships and transformations. It is both a semantic modeling language and a querying language that runs queries against a relational database.",
+  "bugs": {
+    "url": "https://github.com/malloydata/malloy/issues"
+  },
+  "keywords": [
+    "malloy",
+    "athena",
+    "aws"
+  ],
+  "author": "",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "@types/jest-expect-message": "^1.1.0",
+    "@types/node": "^24.10.0",
+    "jest": "^30.2.0"
+  }
+}

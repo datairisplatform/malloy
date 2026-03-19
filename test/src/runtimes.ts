@@ -35,6 +35,7 @@ import {
   InMemoryModelCache,
   CacheManager,
 } from '@malloydata/malloy';
+import {AthenaConnection} from '@malloydata/db-athena';
 import {BigQueryConnection} from '@malloydata/db-bigquery';
 import {DuckDBConnection} from '@malloydata/db-duckdb';
 import {DuckDBWASMConnection} from '@malloydata/db-duckdb/wasm';
@@ -67,6 +68,23 @@ export class SnowflakeTestConnection extends SnowflakeConnection {
 }
 
 export class BigQueryTestConnection extends BigQueryConnection {
+  // we probably need a better way to do this.
+
+  public async runSQL(
+    sqlCommand: string,
+    options?: RunSQLOptions
+  ): Promise<MalloyQueryData> {
+    try {
+      return await super.runSQL(sqlCommand, options);
+    } catch (e) {
+      // eslint-disable-next-line no-console
+      console.log(`Error in SQL:\n ${sqlCommand}`);
+      throw e;
+    }
+  }
+}
+
+export class AthenaTestConnection extends AthenaConnection {
   // we probably need a better way to do this.
 
   public async runSQL(
@@ -217,6 +235,17 @@ export function runtimeFor(dbName: string): SingleConnectionRuntime {
   let connection: Connection;
   try {
     switch (dbName) {
+      // insert test credentials here
+      case 'athena':
+        connection = new AthenaTestConnection({
+          name: dbName,
+          region: '',
+          accessKeyId: '',
+          secretAccessKey: '',
+          database: 'malloytest',
+          outputLocation: '',
+        });
+        break;
       case 'bigquery':
         connection = new BigQueryTestConnection(
           dbName,
