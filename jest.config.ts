@@ -38,7 +38,7 @@ const defaultConfig: Config = {
 };
 
 const config: Config = {
-  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx'],
+  moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'node'],
   setupFilesAfterEnv: ['<rootDir>/test/jest.setup.ts', 'jest-expect-message'],
   testMatch: ['**/?(*.)spec.(ts|js)?(x)'],
   testPathIgnorePatterns: ['/node_modules/', '/dist/', '/out/'],
@@ -137,6 +137,14 @@ const config: Config = {
       displayName: 'db-presto-trino',
       roots: [
         '<rootDir>/packages/malloy-db-trino/src/',
+        '<rootDir>/test/src/databases/presto-trino/',
+      ],
+    },
+    {
+      ...defaultConfig,
+      displayName: 'db-athena',
+      roots: [
+        '<rootDir>/packages/malloy-db-athena/src/',
         '<rootDir>/test/src/databases/presto-trino/',
       ],
     },
